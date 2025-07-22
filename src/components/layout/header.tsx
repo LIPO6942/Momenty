@@ -12,6 +12,7 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "Tableau de bord" },
     { href: "/journal", label: "Journal" },
+    { href: "/progress", label: "Progrès Visuel" },
   ];
 
   return (

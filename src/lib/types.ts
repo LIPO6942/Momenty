@@ -7,3 +7,11 @@ export interface Habit {
   description: string;
   completed: boolean;
 }
+
+export interface ProgressPhoto {
+  id: string;
+  imageUrl: string;
+  caption: string;
+  category: string;
+  dateTaken: string; // ISO string format
+}
