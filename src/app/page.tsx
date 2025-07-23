@@ -5,6 +5,7 @@ import { AddHabitDialog } from "@/components/dashboard/add-habit-dialog";
 import { HabitCard } from "@/components/dashboard/habit-card";
 import type { Habit } from "@/lib/types";
 import { iconMap } from "@/lib/icons";
+import { NotificationSetter } from "@/components/notifications/notification-setter";
 
 const initialHabits: Habit[] = [
   {
@@ -53,7 +54,10 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-foreground font-headline">Tableau de bord</h1>
-        <AddHabitDialog onAddHabit={handleAddHabit} />
+        <div className="flex items-center gap-2">
+          <NotificationSetter />
+          <AddHabitDialog onAddHabit={handleAddHabit} />
+        </div>
       </div>
       <p className="text-muted-foreground mb-8">
         Vos habitudes quotidiennes pour une vie plus saine et plus sereine.
