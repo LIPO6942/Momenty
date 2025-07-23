@@ -4,9 +4,66 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BellRing } from "lucide-react";
+import { messaging } from "@/lib/firebase";
+import { getToken } from "firebase/messaging";
+
 
 export function NotificationSetter() {
   const { toast } = useToast();
+
+  const requestPermission = async () => {
+    if (!("Notification" in window) || !('serviceWorker' in navigator)) {
+       toast({
+        variant: "destructive",
+        title: "Notifications non supportées",
+        description: "Votre navigateur ne supporte pas les notifications push.",
+      });
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      toast({
+        title: "Permission accordée !",
+        description: "Vous pouvez maintenant recevoir des notifications."
+      });
+      // Get token
+      const messagingInstance = messaging();
+      try {
+        const currentToken = await getToken(messagingInstance, { vapidKey: 'YOUR_VAPID_KEY_HERE' });
+        if (currentToken) {
+          console.log('FCM Token:', currentToken);
+          // In a real app, you would send this token to your server.
+           toast({
+            title: "Jeton FCM obtenu",
+            description: "Le jeton a été enregistré dans la console.",
+          });
+        } else {
+          // Show permission request UI
+          console.log('No registration token available. Request permission to generate one.');
+           toast({
+            variant: "destructive",
+            title: "Jeton non disponible",
+            description: "Demandez la permission pour générer un jeton.",
+          });
+        }
+      } catch (err) {
+        console.log('An error occurred while retrieving token. ', err);
+         toast({
+            variant: "destructive",
+            title: "Erreur de jeton",
+            description: "Une erreur est survenue lors de la récupération du jeton.",
+         });
+      }
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Permission refusée",
+        description: "Vous ne recevrez pas de notifications.",
+      });
+    }
+  }
+
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -16,67 +73,11 @@ export function NotificationSetter() {
     }
   }, []);
 
-  const handleNotificationClick = async () => {
-    if (!("Notification" in window)) {
-      toast({
-        variant: "destructive",
-        title: "Notifications non supportées",
-        description: "Votre navigateur ne supporte pas les notifications.",
-      });
-      return;
-    }
-     if (!('serviceWorker' in navigator)) {
-      toast({
-        variant: "destructive",
-        title: "Service Worker non supporté",
-        description: "Les notifications push ne sont pas supportées par votre navigateur.",
-      });
-      return;
-    }
-
-    if (Notification.permission === "granted") {
-      scheduleNotification();
-    } else if (Notification.permission !== "denied") {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        scheduleNotification();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Permission refusée",
-          description: "Vous ne recevrez pas de notifications.",
-        });
-      }
-    } else {
-       toast({
-        variant: "destructive",
-        title: "Permission bloquée",
-        description: "Veuillez autoriser les notifications dans les paramètres de votre navigateur.",
-      });
-    }
-  };
-
-  const scheduleNotification = () => {
-    navigator.serviceWorker.ready.then((registration) => {
-        setTimeout(() => {
-            registration.showNotification("Fi9 Rappel (local)", {
-                body: "C'est l'heure de votre habitude ! N'oubliez pas de boire de l'eau.",
-                icon: "/icon-192x192.png",
-                badge: "/icon-192x192.png"
-            });
-        }, 5000); // 5 seconds delay for demonstration
-
-        toast({
-          title: "Notification programmée !",
-          description: "Vous recevrez une notification de test dans 5 secondes.",
-        });
-    });
-  };
 
   return (
-    <Button onClick={handleNotificationClick} variant="outline">
+    <Button onClick={requestPermission} variant="outline">
       <BellRing className="mr-2 h-4 w-4" />
-      Programmer une notification test
+      Activer les notifications
     </Button>
   );
 }

@@ -1,34 +1,40 @@
-// This is a basic service worker file.
-// It's responsible for handling push notifications in the background.
+// This file must be in the public folder.
 
-self.addEventListener('install', (event) => {
-  console.log('Service Worker installing.');
+// Give the service worker access to Firebase Messaging.
+// Note that you can only use Firebase Messaging here, other Firebase libraries
+// are not available in the service worker.
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+
+
+// Initialize the Firebase app in the service worker by passing in
+// your app's Firebase config object.
+// https://firebase.google.com/docs/web/setup#config-object
+// TODO: Add your Firebase configuration object here
+firebase.initializeApp({
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 });
 
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating.');
-});
+// Retrieve an instance of Firebase Messaging so that it can handle background
+// messages.
+const messaging = firebase.messaging();
 
-self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Push Received.');
-  console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
-
-  const title = 'Fi9 Rappel';
-  const options = {
-    body: event.data.text(),
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png'
+messaging.onBackgroundMessage((payload) => {
+  console.log(
+    '[firebase-messaging-sw.js] Received background message ',
+    payload
+  );
+  // Customize notification here
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/icon-192x192.png'
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener('notificationclick', (event) => {
-  console.log('[Service Worker] Notification click Received.');
-
-  event.notification.close();
-
-  event.waitUntil(
-    clients.openWindow('/')
-  );
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
