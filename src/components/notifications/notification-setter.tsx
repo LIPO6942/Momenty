@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BellRing } from "lucide-react";
@@ -7,12 +8,28 @@ import { BellRing } from "lucide-react";
 export function NotificationSetter() {
   const { toast } = useToast();
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => console.log('Service Worker registered with scope:', registration.scope))
+        .catch((error) => console.log('Service Worker registration failed:', error));
+    }
+  }, []);
+
   const handleNotificationClick = async () => {
     if (!("Notification" in window)) {
       toast({
         variant: "destructive",
         title: "Notifications non supportées",
         description: "Votre navigateur ne supporte pas les notifications.",
+      });
+      return;
+    }
+     if (!('serviceWorker' in navigator)) {
+      toast({
+        variant: "destructive",
+        title: "Service Worker non supporté",
+        description: "Les notifications push ne sont pas supportées par votre navigateur.",
       });
       return;
     }
@@ -40,16 +57,19 @@ export function NotificationSetter() {
   };
 
   const scheduleNotification = () => {
-    setTimeout(() => {
-      new Notification("Fi9 Rappel", {
-        body: "C'est l'heure de votre habitude ! N'oubliez pas de boire de l'eau.",
-        icon: "/favicon.ico", // Note: This icon needs to exist in your public folder.
-      });
-    }, 5000); // 5 seconds delay for demonstration
+    navigator.serviceWorker.ready.then((registration) => {
+        setTimeout(() => {
+            registration.showNotification("Fi9 Rappel (local)", {
+                body: "C'est l'heure de votre habitude ! N'oubliez pas de boire de l'eau.",
+                icon: "/icon-192x192.png",
+                badge: "/icon-192x192.png"
+            });
+        }, 5000); // 5 seconds delay for demonstration
 
-    toast({
-      title: "Notification programmée !",
-      description: "Vous recevrez une notification de test dans 5 secondes.",
+        toast({
+          title: "Notification programmée !",
+          description: "Vous recevrez une notification de test dans 5 secondes.",
+        });
     });
   };
 

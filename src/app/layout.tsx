@@ -7,6 +7,7 @@ import Header from '@/components/layout/header';
 export const metadata: Metadata = {
   title: 'Fi9 - Suivi d\'habitudes',
   description: 'Prenez soin de vous avec Fi9',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
