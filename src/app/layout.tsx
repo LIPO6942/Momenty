@@ -32,7 +32,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'font-body antialiased min-h-screen bg-background'
+          'font-body antialiased min-h-screen bg-background text-base'
         )}
       >
         <div className="relative flex min-h-screen flex-col">

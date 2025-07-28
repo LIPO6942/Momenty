@@ -16,8 +16,6 @@ export default function Header() {
         return "Fi9";
       case "/journal":
         return "Journal";
-      case "/progress":
-        return "Progrès Visuel";
       case "/login":
         return "Profil";
        case "/calendar":
@@ -29,10 +27,10 @@ export default function Header() {
     }
   };
   
-  const showBackButton = !['/'].includes(pathname);
+  const showBackButton = !['/', '/journal', '/login'].includes(pathname);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm">
       <div className="container flex h-16 items-center">
         {showBackButton ? (
           <Button variant="ghost" size="icon">
