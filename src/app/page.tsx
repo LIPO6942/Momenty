@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 export default function TimelinePage() {
@@ -34,9 +33,9 @@ export default function TimelinePage() {
         <Button variant="ghost" size="icon"><Calendar className="h-5 w-5" /></Button>
       </div>
 
-      <div className="relative">
+      <div className="relative pl-4">
         {/* Central timeline line */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-muted -translate-x-1/2"></div>
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-muted-foreground/20"></div>
         
         <div className="space-y-12">
           {sortedEvents.map((event, index) => {
@@ -47,32 +46,31 @@ export default function TimelinePage() {
             return (
               <div key={event.id} className="relative">
                 {/* Node on the timeline */}
-                <div className={cn("absolute left-1/2 top-0 w-3 h-3 rounded-full -translate-x-1/2", event.color)}></div>
+                <div className={cn("absolute left-4 top-1 w-3 h-3 rounded-full -translate-x-1/2", event.color)}></div>
                 
                  {/* Date Badge */}
                  {showDate && (
-                  <div className="absolute left-1/2 top-8 -translate-x-1/2">
+                  <div className="absolute left-4 top-8 -translate-x-1/2">
                      <p className="p-1 px-3 bg-accent text-accent-foreground rounded-md inline-block text-xs font-bold">{getEventDate(event.date)}</p>
                   </div>
                 )}
 
                 <div className={cn(
-                  "w-[calc(50%-1.5rem)]",
-                   isLeft ? "ml-0" : "ml-[calc(50%+1.5rem)]"
+                  "ml-8"
                 )}>
-                    <div className={cn("flex flex-col", isLeft ? 'items-end' : 'items-start')}>
-                      <div className={cn("flex items-center gap-2", isLeft ? "flex-row-reverse" : "flex-row")}>
-                         <div className="p-1 rounded-full bg-background/60 inline-block">
+                    <div className={cn("flex items-start gap-3", isLeft ? 'flex-row-reverse -ml-16' : 'flex-row')}>
+                       <div className="p-1 rounded-full bg-background/60 inline-block mt-0.5">
                           {event.icon}
                         </div>
+                      <div className={cn("flex flex-col", isLeft ? 'items-end' : 'items-start')}>
                          <h3 className="font-bold text-sm">{event.title}</h3>
+                         <p className="text-muted-foreground text-xs mt-1">{event.description}</p>
+                         <p className="text-xs text-muted-foreground/70 mt-1">{getEventTime(event.date)}</p>
                       </div>
-                      <p className="text-muted-foreground text-xs mt-1">{event.description}</p>
-                      <p className="text-xs text-muted-foreground/70 mt-1">{getEventTime(event.date)}</p>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 mt-1">
-                            <MoreVertical className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isLeft ? "end" : "start"}>
