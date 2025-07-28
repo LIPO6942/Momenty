@@ -1,9 +1,8 @@
 "use client";
 
-import { Plus, Bell, Calendar, CheckCircle, Mic, MapPin, Smile, Image as ImageIcon, BookText } from "lucide-react";
+import { Calendar, BookText, ImageIcon, MapPin, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const dailyEvents: { title: string; time: string; color: string; icon: React.ReactNode, description: string }[] = [
   {
