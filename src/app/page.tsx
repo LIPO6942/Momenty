@@ -1,13 +1,20 @@
 "use client";
 
 import { useContext } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
+import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
 
 export default function TimelinePage() {
-  const { events } = useContext(TimelineContext);
+  const { events, deleteEvent } = useContext(TimelineContext);
 
   // Group events by date
   const groupedEvents = events.reduce((acc, event) => {
@@ -24,6 +31,7 @@ export default function TimelinePage() {
   }
 
   const todayKey = getTodayDateKey();
+  const todayEvents = groupedEvents[todayKey] || [];
 
   return (
     <div className="container mx-auto px-4 py-8 pb-24">
@@ -37,8 +45,8 @@ export default function TimelinePage() {
           <h2 className="text-xl font-bold text-muted-foreground">Aujourd'hui</h2>
         </div>
         
-        {(groupedEvents[todayKey] || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, index) => (
-          <Card key={index} className={`rounded-2xl ${event.color}`}>
+        {todayEvents.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => (
+          <Card key={event.id} className={`rounded-2xl ${event.color}`}>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 rounded-full bg-background/60">
                 {event.icon}
@@ -46,11 +54,31 @@ export default function TimelinePage() {
               <div className="flex-grow">
                 <p className="font-bold">{event.title}</p>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <span>{new Date(event.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{new Date(event.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short'})}</span>
                   <span>•</span>
-                  <span>{event.description}</span>
+                  <span>{new Date(event.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="truncate">• {event.description}</span>
                 </div>
               </div>
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <EditNoteDialog eventToEdit={event}>
+                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      <span>Modifier</span>
+                    </DropdownMenuItem>
+                  </EditNoteDialog>
+                  <DropdownMenuItem onClick={() => deleteEvent(event.id)} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Supprimer</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </CardContent>
           </Card>
         ))}
