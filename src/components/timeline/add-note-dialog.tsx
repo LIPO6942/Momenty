@@ -37,8 +37,8 @@ export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
       title,
       description,
       date: new Date().toISOString(),
-      icon: <BookText className="h-5 w-5 text-purple-700" />,
-      color: 'bg-purple-200/50',
+      icon: <BookText className="h-4 w-4 text-purple-700" />,
+      color: 'bg-purple-400',
     };
 
     addEvent(newEvent);
