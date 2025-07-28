@@ -2,7 +2,7 @@
 
 import { createContext, useState, ReactNode } from 'react';
 import type { TimelineEvent } from '@/lib/types';
-import { BookText, ImageIcon, MapPin, Smile } from "lucide-react";
+import { BookText, ImageIcon, MapPin, Mic, Smile } from "lucide-react";
 
 interface TimelineContextType {
     events: TimelineEvent[];
@@ -43,6 +43,22 @@ const initialEvents: TimelineEvent[] = [
       color: "bg-green-200/50",
       icon: <Smile className="h-5 w-5 text-green-700" />,
       description: "Plutôt productif et content."
+    },
+    {
+      id: "5",
+      title: "Note vocale",
+      date: new Date(new Date().setHours(16, 45)).toISOString(),
+      color: "bg-orange-200/50",
+      icon: <Mic className="h-5 w-5 text-orange-700" />,
+      description: "Rappel : le garagiste s'appelle Ahmed."
+    },
+    {
+      id: "6",
+      title: "Fin de journée",
+      date: new Date(new Date().setHours(18, 0)).toISOString(),
+      color: "bg-purple-200/50",
+      icon: <BookText className="h-5 w-5 text-purple-700" />,
+      description: "Terminer le rapport pour demain."
     }
   ];
   

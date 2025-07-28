@@ -70,3 +70,29 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+    .torn-paper {
+      position: relative;
+    }
+    .torn-paper::after, .torn-paper::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 5px;
+        background-image: linear-gradient(45deg, transparent 75%, hsl(var(--background)) 75%),
+                          linear-gradient(-45deg, transparent 75%, hsl(var(--background)) 75%);
+        background-size: 10px 10px;
+        background-repeat: repeat-x;
+    }
+
+    .torn-paper::before {
+      top: -5px;
+      left: 0;
+    }
+
+    .torn-paper::after {
+      bottom: -5px;
+      left: 0;
+    }
+}

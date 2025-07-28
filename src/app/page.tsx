@@ -3,7 +3,6 @@
 import { useContext } from "react";
 import { Calendar, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,82 +11,79 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export default function TimelinePage() {
   const { events, deleteEvent } = useContext(TimelineContext);
 
-  // Group events by date
-  const groupedEvents = events.reduce((acc, event) => {
-    const date = new Date(event.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(event);
-    return acc;
-  }, {} as Record<string, typeof events>);
-
-  const getTodayDateKey = () => {
-    return new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const getEventDate = (date: string) => {
+    return new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }).toUpperCase();
   }
-
-  const todayKey = getTodayDateKey();
-  const todayEvents = groupedEvents[todayKey] || [];
 
   return (
     <div className="container mx-auto px-4 py-8 pb-24">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-foreground">Ma journée</h1>
         <Button variant="ghost" size="icon"><Calendar className="h-5 w-5" /></Button>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-muted-foreground">Aujourd'hui</h2>
-        </div>
-        
-        {todayEvents.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => (
-          <Card key={event.id} className={`rounded-2xl ${event.color}`}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-background/60">
-                {event.icon}
-              </div>
-              <div className="flex-grow">
-                <p className="font-bold">{event.title}</p>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <span>{new Date(event.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short'})}</span>
-                  <span>•</span>
-                  <span>{new Date(event.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                  <span className="truncate">• {event.description}</span>
-                </div>
-              </div>
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <EditNoteDialog eventToEdit={event}>
-                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      <span>Modifier</span>
-                    </DropdownMenuItem>
-                  </EditNoteDialog>
-                  <DropdownMenuItem onClick={() => deleteEvent(event.id)} className="text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Supprimer</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardContent>
-          </Card>
-        ))}
-         {(!groupedEvents[todayKey] || groupedEvents[todayKey].length === 0) && (
-            <div className="text-center py-10 text-muted-foreground">
-                <p>Aucun événement aujourd'hui.</p>
-                <p className="text-sm">Cliquez sur le bouton "+" pour commencer.</p>
+      <div className="relative">
+        <Separator orientation="vertical" className="absolute left-1/2 -ml-[1px] h-full" />
+        <div className="space-y-12">
+          {events.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((event, index) => (
+            <div key={event.id} className="relative">
+               {/* Timeline Node */}
+               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground/50"></div>
+
+               <div className={cn(
+                   "flex items-center",
+                   index % 2 === 0 ? "flex-row-reverse" : ""
+               )}>
+                   <div className="w-1/2 px-4">
+                       <div className={cn(
+                           "p-1 px-3 bg-accent text-accent-foreground rounded-md inline-block mb-2 torn-paper",
+                           index % 2 === 0 ? "float-left" : "float-right"
+                       )}>
+                           <p className="font-bold text-sm">{getEventDate(event.date)}</p>
+                       </div>
+                   </div>
+                   <div className="w-1/2 px-4"></div>
+               </div>
+
+               <div className={cn("mt-2", index % 2 === 0 ? "w-1/2 pr-12" : "w-1/2 ml-auto pl-12 text-right")}>
+                  <div className="flex items-center gap-2">
+                     <div className={cn("p-2 rounded-full bg-background/60 inline-block", index % 2 === 0 ? "" : "ml-auto")}>
+                        {event.icon}
+                      </div>
+                      <h3 className="font-bold">{event.title}</h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm mt-1">{event.description}</p>
+                  <p className="text-xs text-muted-foreground mt-2">{new Date(event.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className={cn("h-8 w-8 mt-2", index % 2 === 0 ? "" : "ml-auto")}>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align={index % 2 === 0 ? "start" : "end"}>
+                        <EditNoteDialog eventToEdit={event}>
+                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Modifier</span>
+                          </DropdownMenuItem>
+                        </EditNoteDialog>
+                        <DropdownMenuItem onClick={() => deleteEvent(event.id)} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Supprimer</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+               </div>
             </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );
