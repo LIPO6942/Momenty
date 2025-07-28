@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusCircle, Calendar, Settings, BookText, Smile, MapPin, Image as ImageIcon, Mic } from "lucide-react";
+import { Home, PlusCircle, Calendar, BookText, Smile, MapPin, Image as ImageIcon, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -13,7 +13,6 @@ import { AddMoodDialog } from "../timeline/add-mood-dialog";
 const navLinks = [
   { href: "/", label: "Timeline", icon: Home },
   { href: "/journal", label: "Journal", icon: Calendar },
-  { href: "/progress", label: "Progrès", icon: Settings },
 ];
 
 const addActions = [
@@ -85,8 +84,7 @@ export default function BottomNav() {
             </SheetContent>
         </Sheet>
 
-
-        {navLinks.slice(1).map((link) => {
+        {navLinks.slice(1, 2).map((link) => {
           const isActive = pathname === link.href;
           return (
             <Link
