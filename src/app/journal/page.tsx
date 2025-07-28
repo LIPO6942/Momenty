@@ -22,19 +22,19 @@ const history = [
 
 export default function JournalPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-foreground font-headline mb-2">Journal de Progrès</h1>
+    <div className="container mx-auto px-4 py-8 pb-24">
+      <h1 className="text-3xl font-bold text-foreground mb-2">Journal de Progrès</h1>
       <p className="text-muted-foreground mb-8">
         Visualisez votre constance et célébrez vos réussites.
       </p>
 
       <div className="mb-12">
-        <h2 className="text-2xl font-bold font-headline mb-4">Progression Hebdomadaire</h2>
+        <h2 className="text-2xl font-bold mb-4">Progression Hebdomadaire</h2>
         <WeeklyProgressChart />
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold font-headline mb-4">Historique des actions</h2>
+        <h2 className="text-2xl font-bold mb-4">Historique des actions</h2>
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <Table>
             <TableCaption>Un historique de vos 30 derniers jours d'activité.</TableCaption>
@@ -54,7 +54,7 @@ export default function JournalPage() {
                   <TableCell>{entry.habit}</TableCell>
                   <TableCell className="text-right">
                     {entry.status === 'Terminé' ? (
-                      <Badge className="bg-accent text-accent-foreground border-transparent hover:bg-accent/80">
+                      <Badge className="bg-primary/20 text-primary-foreground border-transparent hover:bg-primary/30">
                         {entry.status}
                       </Badge>
                     ) : (

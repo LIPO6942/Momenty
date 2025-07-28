@@ -2,47 +2,43 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { HeartPulse } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Header() {
   const pathname = usePathname();
 
-  const navLinks = [
-    { href: "/", label: "Tableau de bord" },
-    { href: "/journal", label: "Journal" },
-    { href: "/progress", label: "Progrès Visuel" },
-  ];
+  const getTitle = () => {
+    switch (pathname) {
+      case "/":
+        return "Invoice";
+      case "/journal":
+        return "Journal";
+      case "/progress":
+        return "Progrès Visuel";
+      default:
+        return "Fi9";
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-sm">
       <div className="container flex h-16 items-center">
-        <Link href="/" className="mr-8 flex items-center gap-2">
-          <HeartPulse className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold font-headline">Fi9</span>
-        </Link>
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "transition-colors hover:text-foreground/80",
-                pathname === link.href ? "text-foreground" : "text-foreground/60"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <Button variant="ghost" size="icon">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold ml-4">{getTitle()}</h1>
         <div className="flex flex-1 items-center justify-end gap-2">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Se connecter</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/signup">S'inscrire</Link>
-          </Button>
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/login">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="https://i.pravatar.cc/40" alt="User" />
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                </Link>
+            </Button>
         </div>
       </div>
     </header>
