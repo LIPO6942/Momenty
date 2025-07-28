@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import type { Habit } from "@/lib/types";
-import { iconMap } from "@/lib/icons";
 import { Plus, Bell, Calendar, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
