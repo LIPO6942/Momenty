@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, PlusCircle, Calendar, BookText, Smile, MapPin, Image as ImageIcon, Mic } from "lucide-react";
@@ -50,7 +51,7 @@ export default function BottomNav() {
           // Insert the SheetTrigger in the middle
           if (index === 0) {
             return (
-              <>
+              <React.Fragment key="timeline-and-add">
                 {content}
                 <Sheet>
                     <SheetTrigger asChild>
@@ -87,7 +88,7 @@ export default function BottomNav() {
                         </div>
                     </SheetContent>
                 </Sheet>
-              </>
+              </React.Fragment>
             );
           }
           
