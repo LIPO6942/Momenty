@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusCircle, Calendar, Settings } from "lucide-react";
+import { Home, PlusCircle, Calendar, Settings, BookText, Smile, MapPin, Image as ImageIcon, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 
 const navLinks = [
   { href: "/", label: "Timeline", icon: Home },
-  { href: "/calendar", label: "Calendrier", icon: Calendar },
-  { href: "/settings", label: "Réglages", icon: Settings },
+  { href: "/journal", label: "Journal", icon: Calendar },
+  { href: "/progress", label: "Progrès", icon: Settings },
 ];
+
+const addActions = [
+    { label: "Note écrite", icon: BookText, color: "text-purple-700" },
+    { label: "Note vocale", icon: Mic, color: "text-orange-700" },
+    { label: "Photo", icon: ImageIcon, color: "text-accent-foreground" },
+    { label: "Lieu", icon: MapPin, color: "text-blue-700" },
+    { label: "Humeur", icon: Smile, color: "text-green-700" },
+]
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -37,9 +46,29 @@ export default function BottomNav() {
           );
         })}
         
-        <Button size="icon" className="h-16 w-16 rounded-full shadow-lg -translate-y-4 bg-primary hover:bg-primary/90">
-          <PlusCircle className="h-8 w-8" />
-        </Button>
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button size="icon" className="h-16 w-16 rounded-full shadow-lg -translate-y-4 bg-primary hover:bg-primary/90">
+                    <PlusCircle className="h-8 w-8" />
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+                <SheetHeader className="mb-4">
+                    <SheetTitle className="text-center">Ajouter un événement</SheetTitle>
+                </SheetHeader>
+                <div className="grid grid-cols-3 gap-4">
+                    {addActions.map((action) => (
+                        <div key={action.label} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 cursor-pointer">
+                            <div className={cn("p-3 rounded-full bg-background/80", action.color)}>
+                                <action.icon className="h-6 w-6" />
+                            </div>
+                            <span className="text-xs text-center font-medium">{action.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </SheetContent>
+        </Sheet>
+
 
         {navLinks.slice(1).map((link) => {
           const isActive = pathname === link.href;
