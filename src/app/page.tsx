@@ -1,78 +1,67 @@
 "use client";
 
-import { Plus, Bell, Calendar, CheckCircle } from "lucide-react";
+import { Plus, Bell, Calendar, CheckCircle, Mic, MapPin, Smile, Image as ImageIcon, BookText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const upcomingActivities: { title: string; time: string; color: string; icon: React.ReactNode, user: { name: string, image?: string } }[] = [
+const dailyEvents: { title: string; time: string; color: string; icon: React.ReactNode, description: string }[] = [
   {
-    title: "Envoyer un rappel de paiement",
-    time: "à 9h",
+    title: "Réunion de projet",
+    time: "9:05",
     color: "bg-purple-200/50",
-    icon: <Bell className="h-5 w-5 text-purple-700" />,
-    user: { name: "Jessi Johnson", image: "https://i.pravatar.cc/40?u=jessi" }
+    icon: <BookText className="h-5 w-5 text-purple-700" />,
+    description: "Discussion sur les nouvelles fonctionnalités."
   },
   {
-    title: "Appeler pour le contrat",
-    time: "à 9h",
+    title: "Pause café",
+    time: "10:30",
     color: "bg-accent",
-    icon: <Calendar className="h-5 w-5 text-accent-foreground" />,
-    user: { name: "Brian Carpenter", image: "https://i.pravatar.cc/40?u=brian" }
+    icon: <ImageIcon className="h-5 w-5 text-accent-foreground" />,
+    description: "Photo du latte art."
   },
   {
-    title: "Valider le design",
-    time: "à 11h",
+    title: "Déjeuner chez 'Le Zeyer'",
+    time: "12:15",
+    color: "bg-blue-200/50",
+    icon: <MapPin className="h-5 w-5 text-blue-700" />,
+    description: "Avec l'équipe marketing."
+  },
+  {
+    title: "Sentiment de la journée",
+    time: "15:00",
     color: "bg-green-200/50",
-    icon: <CheckCircle className="h-5 w-5 text-green-700" />,
-    user: { name: "Anna Lee", image: "https://i.pravatar.cc/40?u=anna" }
+    icon: <Smile className="h-5 w-5 text-green-700" />,
+    description: "Plutôt productif et content."
   }
 ];
 
 
-export default function DashboardPage() {
+export default function TimelinePage() {
   return (
     <div className="container mx-auto px-4 py-8 pb-24">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Activité</h1>
-        <div className="flex items-center gap-2">
-           <Button variant="ghost" size="icon"><Bell className="h-5 w-5" /></Button>
-           <Button variant="ghost" size="icon"><Calendar className="h-5 w-5" /></Button>
-        </div>
+        <h1 className="text-3xl font-bold text-foreground">Ma journée</h1>
+        <Button variant="ghost" size="icon"><Calendar className="h-5 w-5" /></Button>
       </div>
-      
-       <div className="flex items-center gap-4 mb-8 p-4 bg-card rounded-xl shadow-sm">
-         <Button className="flex-1" size="lg">
-           <Plus className="mr-2" /> Créer
-         </Button>
-         <Button variant="outline" size="lg">Historique</Button>
-         <Button variant="outline" size="lg">Rappels</Button>
-         <Button variant="outline" size="lg">Messages</Button>
-      </div>
-
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">À venir</h2>
-            <span className="font-bold text-muted-foreground">{upcomingActivities.length} Activités</span>
+            <h2 className="text-xl font-bold text-muted-foreground">Aujourd'hui</h2>
         </div>
         
-        {upcomingActivities.map((activity, index) => (
-          <Card key={index} className={`rounded-2xl ${activity.color}`}>
+        {dailyEvents.map((event, index) => (
+          <Card key={index} className={`rounded-2xl ${event.color}`}>
             <CardContent className="p-4 flex items-center gap-4">
                 <div className="p-3 rounded-full bg-background/60">
-                    {activity.icon}
+                    {event.icon}
                 </div>
                 <div className="flex-grow">
-                    <p className="font-bold">{activity.title}</p>
+                    <p className="font-bold">{event.title}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <Avatar className="h-5 w-5">
-                            <AvatarImage src={activity.user.image} alt={activity.user.name} />
-                            <AvatarFallback>{activity.user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{activity.user.name}</span>
+                        <span>{event.time}</span>
                         <span>•</span>
-                        <span>{activity.time}</span>
+                        <span>{event.description}</span>
                     </div>
                 </div>
             </CardContent>

@@ -6,8 +6,8 @@ import Header from '@/components/layout/header';
 import BottomNav from '@/components/layout/bottom-nav';
 
 export const metadata: Metadata = {
-  title: 'Fi9 - Suivi d\'habitudes',
-  description: 'Prenez soin de vous avec Fi9',
+  title: 'Fi9 - Journal de vie',
+  description: 'Capturez chaque moment de votre journée.',
   manifest: '/manifest.json',
 };
 
