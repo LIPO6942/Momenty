@@ -6,6 +6,7 @@ import { Home, PlusCircle, Calendar, Settings, BookText, Smile, MapPin, Image as
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
+import { AddPhotoDialog } from "../timeline/add-photo-dialog";
 
 const navLinks = [
   { href: "/", label: "Timeline", icon: Home },
@@ -14,11 +15,11 @@ const navLinks = [
 ];
 
 const addActions = [
-    { label: "Note écrite", icon: BookText, color: "text-purple-700" },
-    { label: "Note vocale", icon: Mic, color: "text-orange-700" },
-    { label: "Photo", icon: ImageIcon, color: "text-accent-foreground" },
-    { label: "Lieu", icon: MapPin, color: "text-blue-700" },
-    { label: "Humeur", icon: Smile, color: "text-green-700" },
+    { label: "Note écrite", icon: BookText, color: "text-purple-700", component: null },
+    { label: "Note vocale", icon: Mic, color: "text-orange-700", component: null },
+    { label: "Photo", icon: ImageIcon, color: "text-accent-foreground", component: AddPhotoDialog },
+    { label: "Lieu", icon: MapPin, color: "text-blue-700", component: null },
+    { label: "Humeur", icon: Smile, color: "text-green-700", component: null },
 ]
 
 export default function BottomNav() {
@@ -57,14 +58,27 @@ export default function BottomNav() {
                     <SheetTitle className="text-center">Ajouter un événement</SheetTitle>
                 </SheetHeader>
                 <div className="grid grid-cols-3 gap-4">
-                    {addActions.map((action) => (
-                        <div key={action.label} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 cursor-pointer">
-                            <div className={cn("p-3 rounded-full bg-background/80", action.color)}>
-                                <action.icon className="h-6 w-6" />
+                    {addActions.map((action) => {
+                        const ActionComponent = action.component;
+                        const content = (
+                             <div className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 cursor-pointer">
+                                <div className={cn("p-3 rounded-full bg-background/80", action.color)}>
+                                    <action.icon className="h-6 w-6" />
+                                </div>
+                                <span className="text-xs text-center font-medium">{action.label}</span>
                             </div>
-                            <span className="text-xs text-center font-medium">{action.label}</span>
-                        </div>
-                    ))}
+                        );
+
+                        if (ActionComponent) {
+                            return <ActionComponent key={action.label} trigger={content} />;
+                        }
+
+                        return (
+                            <div key={action.label}>
+                                {content}
+                            </div>
+                        );
+                    })}
                 </div>
             </SheetContent>
         </Sheet>

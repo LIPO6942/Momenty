@@ -1,17 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Camera, Plus, Trash2, Upload, X } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import type { ProgressPhoto } from "@/lib/types";
+import type { TimelineEvent } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -35,15 +27,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-const initialPhotos: ProgressPhoto[] = [
-    { id: '1', imageUrl: 'https://placehold.co/600x400.png', caption: 'Repas sain !', category: 'Alimentation', dateTaken: new Date().toISOString() },
-    { id: '2', imageUrl: 'https://placehold.co/600x400.png', caption: 'Posture du guerrier', category: 'Sport', dateTaken: new Date(Date.now() - 86400000 * 2).toISOString() },
-];
+interface AddPhotoDialogProps {
+  onAddEvent?: (event: Omit<TimelineEvent, 'id' | 'time' | 'icon'>) => void;
+  trigger: ReactNode;
+}
 
-
-export function ProgressTracker() {
+export function AddPhotoDialog({ onAddEvent, trigger }: AddPhotoDialogProps) {
   const { toast } = useToast();
-  const [photos, setPhotos] = useState<ProgressPhoto[]>(initialPhotos);
   const [hasCameraPermission, setHasCameraPermission] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
   const [open, setOpen] = useState(false);
@@ -52,7 +42,7 @@ export function ProgressTracker() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (showCamera) {
+    if (open && showCamera) {
       const getCameraPermission = async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -78,7 +68,7 @@ export function ProgressTracker() {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-  }, [showCamera, toast]);
+  }, [showCamera, open, toast]);
   
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -102,40 +92,35 @@ export function ProgressTracker() {
         return;
     }
     const formData = new FormData(event.currentTarget);
-    const caption = formData.get("caption") as string;
-    const category = formData.get("category") as string;
+    const title = formData.get("title") as string;
+    const description = formData.get("description") as string;
 
-    const newPhoto: ProgressPhoto = {
-        id: Date.now().toString(),
-        imageUrl: capturedImage,
-        caption,
-        category,
-        dateTaken: new Date().toISOString(),
-    };
+    // This is where you would typically handle the new event data
+    // For now, we just show a toast
+    console.log({ title, description, photo: capturedImage });
 
-    setPhotos(prev => [newPhoto, ...prev]);
     setOpen(false);
     setCapturedImage(null);
-    toast({ title: "Photo ajoutée avec succès !"});
+    toast({ title: "Événement photo ajouté (dans la console) !" });
   };
-
-  const deletePhoto = (id: string) => {
-    setPhotos(photos.filter(p => p.id !== id));
-    toast({ title: "Photo supprimée."});
+  
+  const cleanup = () => {
+    setCapturedImage(null);
+    setShowCamera(false);
   }
 
   return (
-    <div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if(!isOpen) cleanup();
+      }}>
         <DialogTrigger asChild>
-          <Button>
-            <Plus className="mr-2" /> Ajouter une Photo
-          </Button>
+          {trigger}
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
          <form onSubmit={handleFormSubmit}>
           <DialogHeader>
-            <DialogTitle>Ajouter une nouvelle photo</DialogTitle>
+            <DialogTitle>Ajouter une photo</DialogTitle>
           </DialogHeader>
             {showCamera ? (
                  <div className="space-y-4">
@@ -173,22 +158,12 @@ export function ProgressTracker() {
                     )}
 
                     <div className="grid gap-2">
-                        <Label htmlFor="caption">Légende</Label>
-                        <Textarea id="caption" name="caption" placeholder="Décrivez votre progrès..." required />
+                        <Label htmlFor="title">Titre</Label>
+                        <Input id="title" name="title" placeholder="Ex: Mon déjeuner" required />
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="category">Catégorie</Label>
-                        <Select name="category" required defaultValue="Sport">
-                            <SelectTrigger>
-                            <SelectValue placeholder="Choisir une catégorie" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="Sport">Sport</SelectItem>
-                            <SelectItem value="Bien-être">Bien-être</SelectItem>
-                            <SelectItem value="Alimentation">Alimentation</SelectItem>
-                            <SelectItem value="Développement personnel">Développement personnel</SelectItem>
-                            </SelectContent>
-                        </Select>
+                     <div className="grid gap-2">
+                        <Label htmlFor="description">Description (optionnel)</Label>
+                        <Textarea id="description" name="description" placeholder="Quelques détails..." />
                     </div>
                 </div>
             )}
@@ -201,34 +176,5 @@ export function ProgressTracker() {
           </form>
         </DialogContent>
       </Dialog>
-
-
-      <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {photos.sort((a,b) => new Date(b.dateTaken).getTime() - new Date(a.dateTaken).getTime()).map((photo) => (
-          <Card key={photo.id} className="overflow-hidden group">
-             <CardHeader className="p-0 relative">
-                <Image
-                    src={photo.imageUrl}
-                    alt={photo.caption}
-                    width={600}
-                    height={400}
-                    className="aspect-video object-cover w-full"
-                    data-ai-hint="healthy lifestyle"
-                />
-                <Button onClick={() => deletePhoto(photo.id)} variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </CardHeader>
-            <CardContent className="p-4">
-              <p className="font-semibold">{photo.caption}</p>
-              <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-                <span>{photo.category}</span>
-                <span>{new Date(photo.dateTaken).toLocaleDateString('fr-FR')}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
   );
 }
