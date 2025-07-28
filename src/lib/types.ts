@@ -9,11 +9,11 @@ export interface Habit {
 }
 
 export interface TimelineEvent {
-    id: string;
     title: string;
-    time: string;
-    icon: React.ReactNode;
     description: string;
+    date: string; // ISO String
+    icon: React.ReactNode;
+    color: string;
 }
 
 export interface TimelineEventPhoto {

@@ -1,42 +1,30 @@
 "use client";
 
-import { Calendar, BookText, ImageIcon, MapPin, Smile } from "lucide-react";
+import { useContext } from "react";
+import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-const dailyEvents: { title: string; time: string; color: string; icon: React.ReactNode, description: string }[] = [
-  {
-    title: "Réunion de projet",
-    time: "9:05",
-    color: "bg-purple-200/50",
-    icon: <BookText className="h-5 w-5 text-purple-700" />,
-    description: "Discussion sur les nouvelles fonctionnalités."
-  },
-  {
-    title: "Pause café",
-    time: "10:30",
-    color: "bg-accent",
-    icon: <ImageIcon className="h-5 w-5 text-accent-foreground" />,
-    description: "Photo du latte art."
-  },
-  {
-    title: "Déjeuner chez 'Le Zeyer'",
-    time: "12:15",
-    color: "bg-blue-200/50",
-    icon: <MapPin className="h-5 w-5 text-blue-700" />,
-    description: "Avec l'équipe marketing."
-  },
-  {
-    title: "Sentiment de la journée",
-    time: "15:00",
-    color: "bg-green-200/50",
-    icon: <Smile className="h-5 w-5 text-green-700" />,
-    description: "Plutôt productif et content."
-  }
-];
-
+import { TimelineContext } from "@/context/timeline-context";
 
 export default function TimelinePage() {
+  const { events } = useContext(TimelineContext);
+
+  // Group events by date
+  const groupedEvents = events.reduce((acc, event) => {
+    const date = new Date(event.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(event);
+    return acc;
+  }, {} as Record<string, typeof events>);
+
+  const getTodayDateKey = () => {
+    return new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  const todayKey = getTodayDateKey();
+
   return (
     <div className="container mx-auto px-4 py-8 pb-24">
       <div className="flex justify-between items-center mb-6">
@@ -46,26 +34,32 @@ export default function TimelinePage() {
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-muted-foreground">Aujourd'hui</h2>
+          <h2 className="text-xl font-bold text-muted-foreground">Aujourd'hui</h2>
         </div>
         
-        {dailyEvents.map((event, index) => (
+        {(groupedEvents[todayKey] || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, index) => (
           <Card key={index} className={`rounded-2xl ${event.color}`}>
             <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 rounded-full bg-background/60">
-                    {event.icon}
+              <div className="p-3 rounded-full bg-background/60">
+                {event.icon}
+              </div>
+              <div className="flex-grow">
+                <p className="font-bold">{event.title}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                  <span>{new Date(event.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>•</span>
+                  <span>{event.description}</span>
                 </div>
-                <div className="flex-grow">
-                    <p className="font-bold">{event.title}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <span>{event.time}</span>
-                        <span>•</span>
-                        <span>{event.description}</span>
-                    </div>
-                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
+         {(!groupedEvents[todayKey] || groupedEvents[todayKey].length === 0) && (
+            <div className="text-center py-10 text-muted-foreground">
+                <p>Aucun événement aujourd'hui.</p>
+                <p className="text-sm">Cliquez sur le bouton "+" pour commencer.</p>
+            </div>
+        )}
       </div>
     </div>
   );

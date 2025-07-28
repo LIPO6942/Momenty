@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import BottomNav from '@/components/layout/bottom-nav';
+import { TimelineProvider } from '@/context/timeline-context';
 
 export const metadata: Metadata = {
   title: 'Fi9 - Journal de vie',
@@ -35,12 +36,14 @@ export default function RootLayout({
           'font-body antialiased min-h-screen bg-background text-base'
         )}
       >
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <BottomNav />
-        </div>
-        <Toaster />
+        <TimelineProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <BottomNav />
+          </div>
+          <Toaster />
+        </TimelineProvider>
       </body>
     </html>
   );

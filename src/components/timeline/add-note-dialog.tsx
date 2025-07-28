@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import type { TimelineEvent } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -16,15 +15,17 @@ import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { TimelineContext } from "@/context/timeline-context";
+import { BookText } from "lucide-react";
 
 interface AddNoteDialogProps {
-  onAddEvent?: (event: Omit<TimelineEvent, 'id' | 'time' | 'icon'>) => void;
   trigger: ReactNode;
 }
 
-export function AddNoteDialog({ onAddEvent, trigger }: AddNoteDialogProps) {
+export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const { addEvent } = useContext(TimelineContext);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,10 +33,18 @@ export function AddNoteDialog({ onAddEvent, trigger }: AddNoteDialogProps) {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
 
-    console.log({ title, description });
+    const newEvent = {
+      title,
+      description,
+      date: new Date().toISOString(),
+      icon: <BookText className="h-5 w-5 text-purple-700" />,
+      color: 'bg-purple-200/50',
+    };
+
+    addEvent(newEvent);
 
     setOpen(false);
-    toast({ title: "Note ajoutée (dans la console) !" });
+    toast({ title: "Note ajoutée à votre timeline !" });
   };
   
   return (
