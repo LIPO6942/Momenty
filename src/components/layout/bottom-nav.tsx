@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { AddPhotoDialog } from "../timeline/add-photo-dialog";
+import { AddNoteDialog } from "../timeline/add-note-dialog";
+import { AddMoodDialog } from "../timeline/add-mood-dialog";
 
 const navLinks = [
   { href: "/", label: "Timeline", icon: Home },
@@ -15,11 +17,11 @@ const navLinks = [
 ];
 
 const addActions = [
-    { label: "Note écrite", icon: BookText, color: "text-purple-700", component: null },
+    { label: "Note écrite", icon: BookText, color: "text-purple-700", component: AddNoteDialog },
     { label: "Note vocale", icon: Mic, color: "text-orange-700", component: null },
     { label: "Photo", icon: ImageIcon, color: "text-accent-foreground", component: AddPhotoDialog },
     { label: "Lieu", icon: MapPin, color: "text-blue-700", component: null },
-    { label: "Humeur", icon: Smile, color: "text-green-700", component: null },
+    { label: "Humeur", icon: Smile, color: "text-green-700", component: AddMoodDialog },
 ]
 
 export default function BottomNav() {
