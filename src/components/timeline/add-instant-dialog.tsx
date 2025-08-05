@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -17,7 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Video } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Video, Image as ImageIcon } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -265,11 +266,11 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 ) : (
                 <>
                 <div className="flex gap-1">
-                 <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
-                    <Camera className="h-5 w-5" />
+                 <Button type="button" variant="ghost" size="icon" className="h-12 w-12" onClick={() => fileInputRef.current?.click()}>
+                    <ImageIcon className="h-6 w-6" />
                 </Button>
-                 <Button type="button" variant="ghost" size="icon" onClick={() => setIsCameraMode(true)}>
-                    <Video className="h-5 w-5" />
+                 <Button type="button" variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsCameraMode(true)}>
+                    <Camera className="h-6 w-6" />
                 </Button>
                 </div>
                  <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />

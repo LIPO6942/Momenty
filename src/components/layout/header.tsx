@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -23,9 +24,9 @@ export default function Header() {
               <Search className="h-6 w-6" />
             </Button>
 
-            <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
+            <Button variant="ghost" size="icon" className="rounded-full w-12 h-12" asChild>
                 <Link href="/login">
-                  <User className="h-6 w-6" />
+                  <User className="h-7 w-7" />
                 </Link>
             </Button>
         </div>

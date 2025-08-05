@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useContext } from "react";
@@ -74,19 +73,19 @@ export default function TimelinePage() {
             <div className="space-y-6">
               {dayData.instants.map((instant) => (
                 <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-                  <CardHeader className={cn("flex flex-row items-center justify-between p-4", instant.color)}>
+                  <CardHeader className="flex flex-row items-center justify-between p-4">
                       <div className="flex items-center gap-4">
-                         <div className="w-10 h-10 flex items-center justify-center">
+                         <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg", instant.color)}>
                            {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                          </div>
                          <div className="flex flex-col">
-                            <span className="font-bold text-base text-white">{instant.location}</span>
-                            <span className="text-sm text-white">{getInstantDate(instant.date)}</span>
+                            <span className="font-bold text-base text-foreground">{instant.location}</span>
+                            <span className="text-sm text-muted-foreground">{getInstantDate(instant.date)}</span>
                          </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white hover:bg-white/20 focus-visible:text-white">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
