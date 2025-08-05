@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext } from "react";
+import React, { useContext } from "react";
 import Image from "next/image";
 import { MoreVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
