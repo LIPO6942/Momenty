@@ -1,47 +1,58 @@
+
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
+import { useContext } from "react";
+import { TimelineContext } from "@/context/timeline-context";
 
-// Dynamically import the MapView component to ensure it's client-side only
-const MapView = dynamic(() => import('@/components/map/map-view'), { 
-    ssr: false,
-    loading: () => <Skeleton className="h-[400px] w-full" />
-});
+// Dummy coordinates for locations
+const locationCoordinates: { [key: string]: [number, number] } = {
+    "Tozeur, Tunisie": [33.918, 8.134],
+    "Chébika, Tunisie": [34.321, 8.021],
+    "Campement près de Tozeur": [33.918, 8.134],
+    "Tunis, Tunisie": [36.806, 10.181],
+    "Paris, France": [48.8566, 2.3522],
+};
 
 export default function MapPage() {
+    const { instants } = useContext(TimelineContext);
+
+    // Filter unique locations
+    const uniqueLocations = Array.from(new Set(instants.map(i => i.location)))
+        .map(location => ({
+            name: location,
+            coords: locationCoordinates[location] || null,
+            count: instants.filter(i => i.location === location).length,
+        }));
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-foreground mb-6">Ma Carte de Voyage</h1>
-      <Card>
-        <CardContent className="p-2">
-            <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-                <MapView />
-            </Suspense>
-        </CardContent>
-      </Card>
-       <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Lieux Visitées</h2>
-            <div className="space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Tozeur, Tunisie</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">3 instants capturés.</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Tunis, Tunisie</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">2 instants capturés.</p>
-                    </CardContent>
-                </Card>
-            </div>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Ma Carte de Voyage</h1>
+        <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
+      </div>
+      
+       <div className="space-y-4">
+        {uniqueLocations.map(location => (
+            <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
+                    </div>
+                    {location.coords && (
+                        <Button asChild variant="outline">
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${location.coords[0]},${location.coords[1]}`} target="_blank" rel="noopener noreferrer">
+                                <MapPin className="mr-2 h-4 w-4" />
+                                Voir la carte
+                            </a>
+                        </Button>
+                    )}
+                </CardHeader>
+            </Card>
+        ))}
         </div>
     </div>
   );
