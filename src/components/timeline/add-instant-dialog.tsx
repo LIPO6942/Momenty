@@ -9,20 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-  SheetClose,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
-interface AddInstantSheetProps {
+interface AddInstantDialogProps {
   children: ReactNode;
 }
 
@@ -35,7 +35,7 @@ const moods = [
   { name: "Nostalgique", icon: "😢" },
 ];
 
-export function AddInstantSheet({ children }: AddInstantSheetProps) {
+export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const { addInstant } = useContext(TimelineContext);
@@ -179,20 +179,20 @@ export function AddInstantSheet({ children }: AddInstantSheetProps) {
   };
   
   return (
-      <Sheet open={open} onOpenChange={(isOpen) => {
+      <Dialog open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen);
         if (!isOpen) cleanup();
       }}>
-        <SheetTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <DialogTrigger asChild>
           {children}
-        </SheetTrigger>
-        <SheetContent side="bottom" className="grid-rows-[auto,1fr,auto] max-h-[90vh] rounded-t-2xl">
-         <form onSubmit={handleFormSubmit} className="grid grid-rows-[auto,1fr,auto] h-full overflow-hidden">
-          <SheetHeader className="text-left">
-            <SheetTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</SheetTitle>
-          </SheetHeader>
-          <ScrollArea className="pr-6 -mr-6">
-            <div className="space-y-4 py-4">
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+         <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
+          <DialogHeader className="text-left">
+            <DialogTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="pr-6 -mr-6 flex-grow">
+            <div className="space-y-6 py-4">
                 {isCameraMode ? (
                     <div className="space-y-4">
                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted playsInline />
@@ -208,6 +208,17 @@ export function AddInstantSheet({ children }: AddInstantSheetProps) {
                     </div>
                 ) : (
                 <>
+                 <div>
+                    <Label className="text-muted-foreground">Qu'avez-vous en tête ?</Label>
+                    <Textarea 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Décrivez votre moment..." 
+                        required 
+                        className="min-h-[100px] mt-2"
+                    />
+                 </div>
+
                 {photo && (
                     <div className="relative group">
                         <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
@@ -216,26 +227,22 @@ export function AddInstantSheet({ children }: AddInstantSheetProps) {
                         </Button>
                     </div>
                 )}
-                <Textarea 
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Qu'avez-vous en tête ?" 
-                    required 
-                    className="min-h-[100px]"
-                />
-                 <div className="flex items-center gap-1">
-                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <Input 
-                        name="location" 
-                        placeholder="Lieu (ex: Paris, France)" 
-                        className="border-0 focus-visible:ring-0 flex-grow"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                    />
-                    <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating}>
-                        {isLocating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
-                    </Button>
-                </div>
+                 <div>
+                    <Label className="text-muted-foreground">Où étiez-vous ?</Label>
+                    <div className="flex items-center gap-1 mt-2">
+                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <Input 
+                            name="location" 
+                            placeholder="Lieu (ex: Paris, France)" 
+                            className="border-0 focus-visible:ring-0 flex-grow"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating}>
+                            {isLocating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
+                        </Button>
+                    </div>
+                 </div>
                  <div className="pt-2">
                     <Label className="text-muted-foreground">Quelle était votre humeur ?</Label>
                     <div className="flex flex-wrap gap-2 pt-2">
@@ -257,7 +264,7 @@ export function AddInstantSheet({ children }: AddInstantSheetProps) {
                 )}
             </div>
             </ScrollArea>
-            <SheetFooter className="justify-between sm:justify-between pt-4">
+            <DialogFooter className="justify-between sm:justify-between pt-4 mt-auto">
                 {isCameraMode ? (
                      <div className="w-full flex justify-between">
                         <Button type="button" variant="ghost" onClick={() => setIsCameraMode(false)}>Retour</Button>
@@ -276,16 +283,16 @@ export function AddInstantSheet({ children }: AddInstantSheetProps) {
                  <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
 
                 <div className="flex gap-2">
-                    <SheetClose asChild>
+                    <DialogClose asChild>
                         <Button type="button" variant="ghost">Fermer</Button>
-                    </SheetClose>
+                    </DialogClose>
                     <Button type="submit">Publier</Button>
                 </div>
                 </>
                 )}
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
   );
 }

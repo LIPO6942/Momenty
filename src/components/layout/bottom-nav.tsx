@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, Map, Compass, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AddInstantSheet } from "../timeline/add-instant-sheet";
+import { AddInstantDialog } from "../timeline/add-instant-dialog";
 import { Button } from "../ui/button";
 import {
   Tooltip,
@@ -52,8 +52,8 @@ export default function BottomNav() {
             );
           })}
           <Tooltip>
-            <TooltipTrigger asChild>
-                <AddInstantSheet>
+             <AddInstantDialog>
+                <TooltipTrigger asChild>
                     <Button
                       variant="default"
                       size="icon"
@@ -61,8 +61,8 @@ export default function BottomNav() {
                     >
                       <Plus className="h-6 w-6" />
                     </Button>
-                </AddInstantSheet>
-            </TooltipTrigger>
+                </TooltipTrigger>
+            </AddInstantDialog>
             <TooltipContent>
                 <p>Ajouter un instant</p>
             </TooltipContent>
