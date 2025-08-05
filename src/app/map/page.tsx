@@ -1,4 +1,15 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Dynamically import the MapView component to ensure it's client-side only
+const MapView = dynamic(() => import('@/components/map/map-view'), { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[400px] w-full" />
+});
 
 export default function MapPage() {
   return (
@@ -6,9 +17,9 @@ export default function MapPage() {
       <h1 className="text-3xl font-bold text-foreground mb-6">Ma Carte de Voyage</h1>
       <Card>
         <CardContent className="p-2">
-            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">La carte interactive sera bientôt disponible ici.</p>
-            </div>
+            <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <MapView />
+            </Suspense>
         </CardContent>
       </Card>
        <div className="mt-8">
