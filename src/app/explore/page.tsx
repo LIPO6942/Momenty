@@ -25,8 +25,10 @@ const suggestions = {
 export default function ExplorePage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-foreground mb-2">Explorer Autour de Moi</h1>
-      <p className="text-muted-foreground mb-8">Suggestions basées sur votre position actuelle à Marrakech.</p>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Explorer Autour de Moi</h1>
+        <p className="text-muted-foreground">Suggestions basées sur votre position actuelle à Marrakech.</p>
+      </div>
 
       <div className="space-y-8">
         {Object.entries(suggestions).map(([category, places]) => (
@@ -34,9 +36,9 @@ export default function ExplorePage() {
                 <h2 className="text-2xl font-bold mb-4">{category}</h2>
                 <div className="grid gap-6 md:grid-cols-2">
                     {places.map((place) => (
-                        <Card key={place.name}>
+                        <Card key={place.name} className="border-none shadow-md shadow-slate-200/80">
                             <CardHeader>
-                                <CardTitle className="text-lg">{place.name}</CardTitle>
+                                <CardTitle className="text-lg font-semibold">{place.name}</CardTitle>
                                 <CardDescription>{place.description}</CardDescription>
                             </CardHeader>
                             <CardContent>

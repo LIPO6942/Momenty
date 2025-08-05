@@ -23,22 +23,24 @@ export function SignupForm() {
     router.push("/");
   };
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">Inscription</CardTitle>
+    <Card className="w-full max-w-sm border-none shadow-none">
+      <CardHeader className="text-center">
+        <CardTitle className="text-3xl font-bold">Créer un compte</CardTitle>
         <CardDescription>
-          Créez un compte pour commencer à suivre vos habitudes.
+          Rejoignez InsTXP et commencez votre aventure.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSignup}>
         <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="first-name">Prénom</Label>
-            <Input id="first-name" placeholder="Max" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="last-name">Nom</Label>
-            <Input id="last-name" placeholder="Robinson" required />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="first-name">Prénom</Label>
+              <Input id="first-name" placeholder="Max" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="last-name">Nom</Label>
+              <Input id="last-name" placeholder="Robinson" required />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
@@ -54,13 +56,13 @@ export function SignupForm() {
             <Input id="password" type="password" />
           </div>
           <Button type="submit" className="w-full">
-            Créer un compte
+            Créer mon compte
           </Button>
         </CardContent>
       </form>
       <div className="mb-4 text-center text-sm">
         Déjà un compte ?{" "}
-        <Link href="/login" className="underline">
+        <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
           Se connecter
         </Link>
       </div>
