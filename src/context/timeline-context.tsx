@@ -6,7 +6,7 @@ import type { Instant } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -38,7 +38,7 @@ const getCategoryAttributes = (category?: string) => {
     }
 };
 
-const initialInstants: Omit<Instant, 'id' | 'icon' | 'color'>[] = [
+const initialInstants: Omit<Instant, 'id'>[] = [
     {
       type: 'note',
       title: "Arrivée à Tozeur",
@@ -103,32 +103,39 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
 
     useEffect(() => {
-        const loadInstants = async () => {
-          const instantsWithIdsAndAttrs = initialInstants.map((inst, index) => {
-            const { icon, color } = getCategoryAttributes(inst.category);
-            return {
+        const loadData = async () => {
+          let loadedInstants = await getInstants();
+          if (loadedInstants.length === 0) {
+            // First time load, populate with initial data and save
+            const instantsToSave = initialInstants.map((inst, index) => ({
               ...inst,
-              id: `initial-${index}-${new Date(inst.date).getTime()}`,
-              icon,
-              color,
+              id: `initial-${index}-${new Date(inst.date).getTime()}`
+            }));
+            for (const inst of instantsToSave) {
+              await saveInstant(inst as Instant);
             }
-          });
+            loadedInstants = await getInstants();
+          }
     
-          const loadedInstants = await Promise.all(
-            instantsWithIdsAndAttrs.map(async (inst) => {
-              if (inst.photo && inst.photo.startsWith('https://')) {
-                return inst;
+          // Add icons and colors, and resolve local images
+          const processedInstants = await Promise.all(
+            loadedInstants.map(async (inst) => {
+              const { icon, color } = getCategoryAttributes(inst.category);
+              let photoUrl = inst.photo;
+              if (photoUrl && !photoUrl.startsWith('https://') && !photoUrl.startsWith('data:')) {
+                  // It's an ID, try to load from IDB
+                  const localPhoto = await getImage(inst.id);
+                  photoUrl = localPhoto || 'https://placehold.co/500x300.png'; // Fallback
               }
-              const localPhoto = await getImage(inst.id);
-              return { ...inst, photo: localPhoto || inst.photo };
+              return { ...inst, icon, color, photo: photoUrl };
             })
           );
-          setInstants(loadedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         };
-        loadInstants();
+        loadData();
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => {
+    const addInstant = async (instant: Omit<Instant, 'id'>) => {
         let category = 'Note';
         try {
             const result = await categorizeInstant({
@@ -141,56 +148,68 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         }
 
         const { icon, color } = getCategoryAttributes(category);
+        const newInstantId = new Date().toISOString() + Math.random();
 
-        const newInstantWithId = { 
+        if (instant.photo) {
+            await saveImage(newInstantId, instant.photo);
+        }
+
+        const newInstantWithId: Instant = { 
             ...instant, 
-            id: new Date().toISOString() + Math.random(),
+            id: newInstantId,
             category,
             icon,
             color
         };
+        
+        await saveInstant(newInstantWithId);
 
         setInstants(prevInstants => [...prevInstants, newInstantWithId].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
-        let fullUpdatedInstant: Instant | undefined;
+        
+        const originalInstant = instants.find(inst => inst.id === id);
+        if (!originalInstant) return;
 
-        setInstants(prevInstants => {
-            const newInstants = prevInstants.map(instant => {
-                if (instant.id === id) {
-                    fullUpdatedInstant = { ...instant, ...updatedInstantData };
-                    return fullUpdatedInstant;
-                }
-                return instant;
-            });
-            return newInstants;
-        });
+        const updatedInstant = { ...originalInstant, ...updatedInstantData };
 
-        if (fullUpdatedInstant) {
+        if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo) {
+            await saveImage(id, updatedInstant.photo);
+        }
+
+        // Recategorize if title or description changed
+        if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
             try {
                 const { category } = await categorizeInstant({
-                    title: fullUpdatedInstant.title,
-                    description: fullUpdatedInstant.description,
+                    title: updatedInstant.title,
+                    description: updatedInstant.description,
                 });
-
-                const { icon, color } = getCategoryAttributes(category);
-                
-                setInstants(prevInstants => prevInstants.map(instant =>
-                    instant.id === id ? { ...instant, category, icon, color } : instant
-                ));
-
+                updatedInstant.category = category;
             } catch (error) {
                  console.error("AI categorization failed on update", error);
             }
         }
+        
+        const { icon, color } = getCategoryAttributes(updatedInstant.category);
+        updatedInstant.icon = icon;
+        updatedInstant.color = color;
+
+        await saveInstant(updatedInstant as Instant);
+        
+        setInstants(prevInstants => prevInstants.map(instant =>
+            instant.id === id ? (updatedInstant as Instant) : instant
+        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
-    const deleteInstant = (id: string) => {
+    const deleteInstant = async (id: string) => {
+        await deleteInstantFromDB(id);
         setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 
     const groupedInstants = useMemo(() => {
+      if (instants.length === 0) return {};
+      
       const sortedDayKeys = [...new Set(instants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
           .sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
 

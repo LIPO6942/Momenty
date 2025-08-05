@@ -1,11 +1,12 @@
 
 "use client";
-import type { GeneratedStory } from './types';
+import type { GeneratedStory, Instant } from './types';
 
 const DB_NAME = "InsTXP_DB";
 const IMAGE_STORE_NAME = "images";
 const STORY_STORE_NAME = "stories";
-const DB_VERSION = 2; // Incremented version for schema change
+const INSTANT_STORE_NAME = "instants";
+const DB_VERSION = 3; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
@@ -34,6 +35,9 @@ const initDB = (): Promise<IDBDatabase> => {
       }
       if (!dbInstance.objectStoreNames.contains(STORY_STORE_NAME)) {
         dbInstance.createObjectStore(STORY_STORE_NAME, { keyPath: "id" });
+      }
+       if (!dbInstance.objectStoreNames.contains(INSTANT_STORE_NAME)) {
+        dbInstance.createObjectStore(INSTANT_STORE_NAME, { keyPath: "id" });
       }
     };
   });
@@ -129,3 +133,53 @@ export const deleteStory = async (id: string): Promise<void> => {
         };
     });
 };
+
+
+// Instant functions
+export const getInstants = async (): Promise<Instant[]> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([INSTANT_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(INSTANT_STORE_NAME);
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+            const sortedInstants = request.result.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            resolve(sortedInstants);
+        };
+        request.onerror = () => {
+            console.error('Get instants error:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+export const saveInstant = async (instant: Instant): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([INSTANT_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(INSTANT_STORE_NAME);
+        const request = store.put(instant);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error('Save instant error:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+export const deleteInstantFromDB = async (id: string): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([INSTANT_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(INSTANT_STORE_NAME);
+        const request = store.delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error('Delete instant error:', request.error);
+            reject(request.error);
+        };
+    });
+}

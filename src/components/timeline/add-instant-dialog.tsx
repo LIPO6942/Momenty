@@ -198,7 +198,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
       date: new Date().toISOString(),
       location: location || "Lieu inconnu",
       emotion: emotion || "Neutre",
-      photo: photo
+      photo: photo,
+      category: 'Note' // Default category, will be updated by context
     };
     addInstant(newInstant);
     setOpen(false);
