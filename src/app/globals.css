@@ -8,27 +8,27 @@ body {
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 204 20% 98%; /* Light Blue */
     --foreground: 224 18% 27%;
     --card: 0 0% 100%;
     --card-foreground: 224 18% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 18% 27%;
-    --primary: 160 80% 60%;
-    --primary-foreground: 160 28% 15%;
+    --primary: 45 50% 85%; /* Sand */
+    --primary-foreground: 45 28% 15%;
     --secondary: 210 15% 90%;
     --secondary-foreground: 224 18% 27%;
     --muted: 210 15% 90%;
     --muted-foreground: 210 10% 45%;
-    --accent: 50 100% 85%;
-    --accent-foreground: 50 25% 25%;
+    --accent: 140 30% 80%; /* Palm Green */
+    --accent-foreground: 140 25% 25%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 15% 88%;
     --input: 210 15% 92%;
-    --ring: 160 80% 60%;
-    --chart-1: 160 80% 60%;
-    --chart-2: 50 96% 83%;
+    --ring: 45 50% 85%;
+    --chart-1: 140 30% 80%;
+    --chart-2: 45 50% 85%;
     --chart-3: 260 100% 90%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
@@ -41,21 +41,21 @@ body {
     --card-foreground: 210 20% 97%;
     --popover: 224 18% 15%;
     --popover-foreground: 210 20% 97%;
-    --primary: 160 80% 70%;
-    --primary-foreground: 160 28% 15%;
+    --primary: 45 50% 70%;
+    --primary-foreground: 45 28% 15%;
     --secondary: 210 15% 25%;
     --secondary-foreground: 210 20% 97%;
     --muted: 210 15% 25%;
     --muted-foreground: 210 10% 65%;
-    --accent: 50 96% 83%;
-    --accent-foreground: 50 25% 15%;
+    --accent: 140 30% 70%;
+    --accent-foreground: 140 25% 15%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 15% 28%;
     --input: 210 15% 32%;
-    --ring: 160 80% 70%;
-    --chart-1: 160 80% 70%;
-    --chart-2: 50 96% 83%;
+    --ring: 45 50% 70%;
+    --chart-1: 140 30% 70%;
+    --chart-2: 45 50% 85%;
     --chart-3: 260 100% 90%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;

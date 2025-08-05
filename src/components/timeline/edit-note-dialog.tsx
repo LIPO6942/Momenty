@@ -16,31 +16,31 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import type { TimelineEvent } from "@/lib/types";
+import type { Instant } from "@/lib/types";
 
 interface EditNoteDialogProps {
   children: ReactNode;
-  eventToEdit: TimelineEvent;
+  instantToEdit: Instant;
 }
 
-export function EditNoteDialog({ children, eventToEdit }: EditNoteDialogProps) {
+export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { updateEvent } = useContext(TimelineContext);
+  const { updateInstant } = useContext(TimelineContext);
   
-  const [title, setTitle] = useState(eventToEdit.title);
-  const [description, setDescription] = useState(eventToEdit.description);
+  const [title, setTitle] = useState(instantToEdit.title);
+  const [description, setDescription] = useState(instantToEdit.description);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
    
-    updateEvent(eventToEdit.id, {
+    updateInstant(instantToEdit.id, {
       title,
       description,
     });
 
     setOpen(false);
-    toast({ title: "Note mise à jour !" });
+    toast({ title: "Instant mis à jour !" });
   };
   
   return (
@@ -51,7 +51,7 @@ export function EditNoteDialog({ children, eventToEdit }: EditNoteDialogProps) {
         <DialogContent className="sm:max-w-md">
          <form onSubmit={handleFormSubmit}>
           <DialogHeader>
-            <DialogTitle>Modifier la note</DialogTitle>
+            <DialogTitle>Modifier l'instant</DialogTitle>
           </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="grid gap-2">
@@ -65,7 +65,7 @@ export function EditNoteDialog({ children, eventToEdit }: EditNoteDialogProps) {
                     />
                 </div>
                  <div className="grid gap-2">
-                    <Label htmlFor="description">Contenu de la note</Label>
+                    <Label htmlFor="description">Contenu</Label>
                     <Textarea 
                       id="description" 
                       name="description" 

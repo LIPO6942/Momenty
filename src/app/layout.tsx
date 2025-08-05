@@ -7,8 +7,8 @@ import BottomNav from '@/components/layout/bottom-nav';
 import { TimelineProvider } from '@/context/timeline-context';
 
 export const metadata: Metadata = {
-  title: 'Fi9 - Journal de vie',
-  description: 'Capturez chaque moment de votre journée.',
+  title: 'InsTXP - Votre journal de voyage',
+  description: 'Mémorisez et organisez les instants de votre voyage.',
   manifest: '/manifest.json',
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({
         <TimelineProvider>
           <div className="relative flex min-h-screen flex-col">
             <Header />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 pb-24">{children}</main>
             <BottomNav />
           </div>
           <Toaster />

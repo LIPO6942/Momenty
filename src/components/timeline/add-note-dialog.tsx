@@ -25,7 +25,7 @@ interface AddNoteDialogProps {
 export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addEvent } = useContext(TimelineContext);
+  const { addInstant } = useContext(TimelineContext);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,15 +33,18 @@ export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
 
-    const newEvent = {
+    const newInstant = {
+      type: "note",
       title,
       description,
       date: new Date().toISOString(),
       icon: <BookText className="h-4 w-4 text-purple-700" />,
       color: 'bg-purple-400',
+      location: "Paris, France", // Placeholder
+      emotion: "Neutre" // Placeholder
     };
 
-    addEvent(newEvent);
+    addInstant(newInstant);
 
     setOpen(false);
     toast({ title: "Note ajoutée à votre timeline !" });
@@ -60,7 +63,7 @@ export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
             <div className="space-y-4 py-4">
                 <div className="grid gap-2">
                     <Label htmlFor="title">Titre</Label>
-                    <Input id="title" name="title" placeholder="Ex: Idée de projet" required />
+                    <Input id="title" name="title" placeholder="Ex: Découverte d'un café" required />
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="description">Contenu de la note</Label>

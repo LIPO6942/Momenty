@@ -1,73 +1,91 @@
 "use client";
 
-import { createContext, useState, ReactNode } from 'react';
-import type { TimelineEvent } from '@/lib/types';
+import { createContext, useState, ReactNode, useMemo } from 'react';
+import type { Instant } from '@/lib/types';
 import { BookText, ImageIcon, MapPin, Mic, Smile } from "lucide-react";
+import { format, startOfDay, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-interface TimelineContextType {
-    events: TimelineEvent[];
-    addEvent: (event: Omit<TimelineEvent, 'id'>) => void;
-    updateEvent: (id: string, updatedEvent: Partial<Omit<TimelineEvent, 'id'>>) => void;
-    deleteEvent: (id: string) => void;
+interface GroupedInstants {
+    [key: string]: {
+        title: string;
+        instants: Instant[];
+    };
 }
 
-const initialEvents: TimelineEvent[] = [
+interface TimelineContextType {
+    instants: Instant[];
+    groupedInstants: GroupedInstants;
+    addInstant: (instant: Omit<Instant, 'id'>) => void;
+    updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
+    deleteInstant: (id: string) => void;
+}
+
+const initialInstants: Instant[] = [
     {
       id: "1",
-      title: "Réunion de projet",
-      date: new Date(new Date().setHours(9, 36)).toISOString(),
-      color: "bg-purple-400",
+      type: 'note',
+      title: "Arrivée à Tozeur",
+      description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
+      date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
       icon: <BookText className="h-4 w-4 text-purple-700" />,
-      description: "Discussion sur les nouvelles fonctionnalités."
+      color: "bg-purple-400",
+      location: "Tozeur, Tunisie",
+      emotion: "Excité"
     },
     {
       id: "2",
-      title: "Pause café",
-      date: new Date(new Date().setHours(10, 52)).toISOString(),
-      color: "bg-yellow-400",
-      icon: <ImageIcon className="h-4 w-4 text-yellow-700" />,
-      description: "Photo du latte art."
+      type: 'photo',
+      title: "Oasis de Chébika",
+      description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
+      date: new Date(new Date(new Date().setDate(new Date().getDate() - 2)).setHours(14, 30)).toISOString(),
+      icon: <ImageIcon className="h-4 w-4 text-blue-700" />,
+      color: "bg-blue-400",
+      location: "Chébika, Tunisie",
+      emotion: "Émerveillé"
     },
     {
       id: "3",
-      title: "Déjeuner chez 'Le Zeyer'",
-      date: new Date(new Date().setHours(12, 15)).toISOString(),
-      color: "bg-blue-400",
-      icon: <MapPin className="h-4 w-4 text-blue-700" />,
-      description: "Avec l'équipe marketing."
+      type: 'note',
+      title: "Dîner sous les étoiles",
+      description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
+      date: new Date(new Date(new Date().setDate(new Date().getDate() - 2)).setHours(20, 0)).toISOString(),
+      icon: <BookText className="h-4 w-4 text-purple-700" />,
+      color: "bg-purple-400",
+      location: "Campement près de Tozeur",
+      emotion: "Heureux"
     },
     {
       id: "4",
-      title: "Sentiment de la journée",
-      date: new Date(new Date().setHours(15, 0)).toISOString(),
-      color: "bg-green-400",
-      icon: <Smile className="h-4 w-4 text-green-700" />,
-      description: "Plutôt productif et content."
+      type: 'note',
+      title: "Exploration de la médina",
+      description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
+      date: new Date().toISOString(),
+      icon: <BookText className="h-4 w-4 text-purple-700" />,
+      color: "bg-purple-400",
+      location: "Tunis, Tunisie",
+      emotion: "Curieux"
     },
     {
       id: "5",
-      title: "Note vocale",
-      date: new Date(new Date().setHours(16, 45)).toISOString(),
-      color: "bg-orange-400",
-      icon: <Mic className="h-4 w-4 text-orange-700" />,
-      description: "Rappel : le garagiste s'appelle Ahmed."
-    },
-    {
-      id: "6",
-      title: "Fin de journée",
-      date: new Date(new Date().setHours(18, 5)).toISOString(),
-      color: "bg-purple-400",
-      icon: <BookText className="h-4 w-4 text-purple-700" />,
-      description: "Terminer le rapport pour demain."
+      type: 'mood',
+      title: "Sentiment de la journée",
+      description: "Journée de transition, un peu fatigué mais content.",
+      date: new Date(new Date().setHours(18, 0)).toISOString(),
+      color: "bg-green-400",
+      icon: <Smile className="h-4 w-4 text-green-700" />,
+      location: "Tunis, Tunisie",
+      emotion: "Bien"
     }
   ];
   
 
 export const TimelineContext = createContext<TimelineContextType>({
-    events: [],
-    addEvent: () => {},
-    updateEvent: () => {},
-    deleteEvent: () => {},
+    instants: [],
+    groupedInstants: {},
+    addInstant: () => {},
+    updateInstant: () => {},
+    deleteInstant: () => {},
 });
 
 interface TimelineProviderProps {
@@ -75,25 +93,51 @@ interface TimelineProviderProps {
 }
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
-    const [events, setEvents] = useState<TimelineEvent[]>(initialEvents);
+    const [instants, setInstants] = useState<Instant[]>(initialInstants);
 
-    const addEvent = (event: Omit<TimelineEvent, 'id'>) => {
-        const newEvent = { ...event, id: new Date().toISOString() + Math.random() };
-        setEvents(prevEvents => [...prevEvents, newEvent]);
+    const addInstant = (instant: Omit<Instant, 'id'>) => {
+        const newInstant = { ...instant, id: new Date().toISOString() + Math.random() };
+        setInstants(prevInstants => [...prevInstants, newInstant].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
 
-    const updateEvent = (id: string, updatedEventData: Partial<Omit<TimelineEvent, 'id'>>) => {
-        setEvents(prevEvents => prevEvents.map(event =>
-            event.id === id ? { ...event, ...updatedEventData } : event
+    const updateInstant = (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
+        setInstants(prevInstants => prevInstants.map(instant =>
+            instant.id === id ? { ...instant, ...updatedInstantData } : instant
         ));
     }
 
-    const deleteEvent = (id: string) => {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
+    const deleteInstant = (id: string) => {
+        setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 
+    const groupedInstants = useMemo(() => {
+      const groups: GroupedInstants = {};
+      const sortedInstants = [...instants].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      sortedInstants.forEach(instant => {
+          const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
+          if (!groups[dayKey]) {
+              const dayIndex = Object.keys(groups).length + 1;
+              groups[dayKey] = {
+                  title: `Jour ${dayIndex} - ${format(parseISO(instant.date), 'd MMMM yyyy', { locale: fr })}`,
+                  instants: []
+              };
+          }
+          groups[dayKey].instants.push(instant);
+      });
+
+      // Reverse order of instants within each group
+      Object.values(groups).forEach(group => {
+          group.instants.reverse();
+      });
+
+      // Reverse order of days
+      return Object.fromEntries(Object.entries(groups).reverse());
+
+    }, [instants]);
+
     return (
-        <TimelineContext.Provider value={{ events, addEvent, updateEvent, deleteEvent }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant }}>
             {children}
         </TimelineContext.Provider>
     )
