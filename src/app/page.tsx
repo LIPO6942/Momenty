@@ -61,7 +61,7 @@ export default function TimelinePage() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
        <div className="py-16 space-y-2">
-        <h1 className="text-4xl font-bold">Bienvenue sur InsTXP</h1>
+        <h1 className="text-4xl font-bold text-primary">Bienvenue sur InsTXP</h1>
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
 
@@ -72,19 +72,19 @@ export default function TimelinePage() {
             <div className="space-y-6">
               {dayData.instants.map((instant) => (
                 <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-                  <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                         <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", instant.color)}>
-                           {instant.icon}
+                  <CardHeader className={cn("flex flex-row items-center justify-between p-4 text-white", instant.color)}>
+                      <div className="flex items-center gap-4">
+                         <div className="w-8 h-8 flex items-center justify-center">
+                           {React.cloneElement(instant.icon as React.ReactElement, { className: "h-6 w-6 text-white" })}
                          </div>
                          <div className="flex flex-col">
                             <span className="font-bold text-sm">{instant.location}</span>
-                            <span className="text-xs text-muted-foreground">{getInstantDate(instant.date)}</span>
+                            <span className="text-xs opacity-80">{getInstantDate(instant.date)}</span>
                          </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white hover:bg-white/20 focus-visible:text-white">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

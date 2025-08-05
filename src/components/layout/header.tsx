@@ -14,18 +14,18 @@ import {
 export default function Header() {
   return (
     <header className="fixed top-0 z-40 w-full p-4">
-      <div className="container flex h-16 max-w-2xl items-center justify-between rounded-full bg-card p-2 shadow-lg ring-1 ring-black/5 mx-auto">
+      <div className="container flex h-16 max-w-2xl items-center justify-between rounded-full bg-card/80 backdrop-blur-sm p-2 shadow-lg ring-1 ring-black/5 mx-auto">
         <div className="flex items-center gap-2 pl-4">
-            <Link href="/" className="text-xl font-bold text-foreground">InsTXP</Link>
+            <Link href="/" className="text-2xl font-bold text-foreground">InsTXP</Link>
         </div>
         <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Search className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
+              <Search className="h-6 w-6" />
             </Button>
 
-            <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
                 <Link href="/login">
-                  <User className="h-5 w-5" />
+                  <User className="h-6 w-6" />
                 </Link>
             </Button>
         </div>
