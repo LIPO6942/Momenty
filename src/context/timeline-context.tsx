@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 import type { Instant } from '@/lib/types';
-import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Ship, Heart, Plane } from "lucide-react";
+import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getImage } from '@/lib/idb';
@@ -26,14 +26,15 @@ interface TimelineContextType {
 
 const getCategoryAttributes = (category?: string) => {
     switch (category) {
-        case 'Gastronomie': return { icon: <Utensils className="h-4 w-4 text-white" />, color: 'bg-orange-500' };
-        case 'Culture': return { icon: <Landmark className="h-4 w-4 text-white" />, color: 'bg-purple-500' };
-        case 'Nature': return { icon: <Mountain className="h-4 w-4 text-white" />, color: 'bg-green-500' };
-        case 'Shopping': return { icon: <ShoppingBag className="h-4 w-4 text-white" />, color: 'bg-pink-500' };
-        case 'Art': return { icon: <Palette className="h-4 w-4 text-white" />, color: 'bg-red-500' };
-        case 'Détente': return { icon: <Heart className="h-4 w-4 text-white" />, color: 'bg-teal-500' };
-        case 'Voyage': return { icon: <Plane className="h-4 w-4 text-white" />, color: 'bg-sky-500' };
-        default: return { icon: <BookText className="h-4 w-4 text-white" />, color: 'bg-gray-500' };
+        case 'Gastronomie': return { icon: <Utensils />, color: 'bg-orange-500' };
+        case 'Culture': return { icon: <Landmark />, color: 'bg-purple-600' };
+        case 'Nature': return { icon: <Leaf />, color: 'bg-green-500' };
+        case 'Shopping': return { icon: <ShoppingBag />, color: 'bg-pink-500' };
+        case 'Art': return { icon: <Palette />, color: 'bg-red-500' };
+        case 'Détente': return { icon: <Heart />, color: 'bg-teal-500' };
+        case 'Voyage': return { icon: <Plane />, color: 'bg-sky-500' };
+        case 'Sport': return { icon: <Anchor />, color: 'bg-indigo-500' };
+        default: return { icon: <BookText />, color: 'bg-gray-500' };
     }
 };
 

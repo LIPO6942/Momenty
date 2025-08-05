@@ -38,7 +38,7 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
         />
       )}
       <div className={cn("px-1 py-3", instant.photo && "pt-4")}>
-        <p className="font-bold text-sm text-foreground">{instant.title}</p>
+        <p className="font-bold text-lg text-foreground">{instant.title}</p>
         {instant.description && <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>}
       </div>
     </div>
@@ -68,18 +68,18 @@ export default function TimelinePage() {
       <div className="space-y-10">
         {Object.entries(groupedInstants).map(([day, dayData]) => (
           <div key={day}>
-            <h2 className="text-lg font-bold text-foreground mb-4">{dayData.title}</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">{dayData.title}</h2>
             <div className="space-y-6">
               {dayData.instants.map((instant) => (
                 <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
                   <CardHeader className={cn("flex flex-row items-center justify-between p-4 text-white", instant.color)}>
                       <div className="flex items-center gap-4">
-                         <div className="w-8 h-8 flex items-center justify-center">
-                           {React.cloneElement(instant.icon as React.ReactElement, { className: "h-6 w-6 text-white" })}
+                         <div className="w-10 h-10 flex items-center justify-center">
+                           {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                          </div>
                          <div className="flex flex-col">
-                            <span className="font-bold text-sm">{instant.location}</span>
-                            <span className="text-xs opacity-80">{getInstantDate(instant.date)}</span>
+                            <span className="font-bold text-base">{instant.location}</span>
+                            <span className="text-sm opacity-80">{getInstantDate(instant.date)}</span>
                          </div>
                       </div>
                       <DropdownMenu>
