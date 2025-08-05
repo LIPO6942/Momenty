@@ -19,7 +19,7 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => void;
+    addInstant: (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => void;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
 }
@@ -87,7 +87,7 @@ const initialInstants: Omit<Instant, 'id'>[] = [
     }
 ];
 
-const addRuntimeAttributes = (instant: Instant): Instant => {
+const addRuntimeAttributes = (instant: Omit<Instant, 'icon' | 'color'>): Instant => {
     const { icon, color } = getCategoryAttributes(instant.category);
     return { ...instant, icon, color };
 };
@@ -126,8 +126,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
               let photoUrl = inst.photo;
-              if (photoUrl && !photoUrl.startsWith('https://') && !photoUrl.startsWith('data:')) {
-                  // It's an ID, try to load from IDB
+              if (inst.photo && inst.photo === 'local') {
+                  // It's a local photo stored by reference (ID)
                   const localPhoto = await getImage(inst.id);
                   photoUrl = localPhoto || 'https://placehold.co/500x300.png'; // Fallback
               }
@@ -139,7 +139,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         loadData();
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => {
+    const addInstant = async (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => {
         let category = 'Note';
         try {
             const result = await categorizeInstant({
@@ -153,7 +153,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
-        const newInstantForDb: Instant = {
+        let newInstantForDb = {
             ...instant,
             id: newInstantId,
             category,
@@ -161,11 +161,16 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         
         if (instant.photo) {
             await saveImage(newInstantId, instant.photo);
+            // Don't store the large data URL in the main instant object, just a marker
+            newInstantForDb.photo = 'local';
         }
         
         await saveInstant(newInstantForDb);
         
-        const newInstantForState = addRuntimeAttributes(newInstantForDb);
+        const newInstantForState = addRuntimeAttributes({
+            ...newInstantForDb,
+            photo: instant.photo // Keep the data URL for immediate display in the UI
+        });
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
@@ -175,10 +180,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
 
-        let updatedInstant: Instant = { ...originalInstant, ...updatedInstantData };
+        let updatedInstant = { ...originalInstant, ...updatedInstantData };
         
+        // Handle photo saving and prevent storing data URL in DB
         if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo) {
-            await saveImage(id, updatedInstant.photo);
+            if (updatedInstant.photo.startsWith('data:')) {
+                 await saveImage(id, updatedInstant.photo);
+            }
         }
 
         // Recategorize if title or description changed
@@ -194,7 +202,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
         
-        const updatedInstantForDb: Instant = {
+        const updatedInstantForDb: Omit<Instant, 'icon'|'color'> = {
             id: updatedInstant.id,
             type: updatedInstant.type,
             title: updatedInstant.title,
@@ -202,13 +210,16 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: updatedInstant.date,
             location: updatedInstant.location,
             emotion: updatedInstant.emotion,
-            photo: updatedInstant.photo,
+            photo: updatedInstant.photo ? 'local' : null,
             category: updatedInstant.category
         };
 
         await saveInstant(updatedInstantForDb);
         
-        const updatedInstantForState = addRuntimeAttributes(updatedInstantForDb);
+        const updatedInstantForState = addRuntimeAttributes({
+            ...updatedInstantForDb,
+            photo: updatedInstant.photo // Keep the full data URL for the UI state
+        });
 
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
@@ -217,6 +228,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const deleteInstant = async (id: string) => {
         await deleteInstantFromDB(id);
+        // Also delete the associated image if it exists
+        await saveImage(id, ''); // Overwrite with empty to "delete"
         setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 
