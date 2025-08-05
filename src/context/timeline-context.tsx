@@ -4,7 +4,7 @@
 import { createContext, useState, ReactNode, useMemo } from 'react';
 import type { Instant } from '@/lib/types';
 import { BookText, ImageIcon, MapPin, Mic, Smile } from "lucide-react";
-import { format, startOfDay, parseISO } from 'date-fns';
+import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface GroupedInstants {
@@ -29,8 +29,8 @@ const initialInstants: Instant[] = [
       title: "Arrivée à Tozeur",
       description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
       date: "2024-07-20T10:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-purple-700" />,
-      color: "bg-purple-400",
+      icon: <BookText className="h-4 w-4" />,
+      color: "bg-purple-500",
       location: "Tozeur, Tunisie",
       emotion: "Excité"
     },
@@ -40,8 +40,8 @@ const initialInstants: Instant[] = [
       title: "Oasis de Chébika",
       description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
       date: "2024-07-20T14:30:00.000Z",
-      icon: <ImageIcon className="h-4 w-4 text-blue-700" />,
-      color: "bg-blue-400",
+      icon: <ImageIcon className="h-4 w-4" />,
+      color: "bg-blue-500",
       location: "Chébika, Tunisie",
       emotion: "Émerveillé"
     },
@@ -51,8 +51,8 @@ const initialInstants: Instant[] = [
       title: "Dîner sous les étoiles",
       description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
       date: "2024-07-20T20:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-purple-700" />,
-      color: "bg-purple-400",
+      icon: <BookText className="h-4 w-4" />,
+      color: "bg-purple-500",
       location: "Campement près de Tozeur",
       emotion: "Heureux"
     },
@@ -61,9 +61,9 @@ const initialInstants: Instant[] = [
       type: 'note',
       title: "Exploration de la médina",
       description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
-      date: "2024-07-22T10:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-purple-700" />,
-      color: "bg-purple-400",
+      date: "2024-07-22T11:00:00.000Z",
+      icon: <BookText className="h-4 w-4" />,
+      color: "bg-purple-500",
       location: "Tunis, Tunisie",
       emotion: "Curieux"
     },
@@ -73,8 +73,8 @@ const initialInstants: Instant[] = [
       title: "Sentiment de la journée",
       description: "Journée de transition, un peu fatigué mais content.",
       date: "2024-07-22T18:00:00.000Z",
-      color: "bg-green-400",
-      icon: <Smile className="h-4 w-4 text-green-700" />,
+      color: "bg-green-500",
+      icon: <Smile className="h-4 w-4" />,
       location: "Tunis, Tunisie",
       emotion: "Bien"
     }
@@ -92,6 +92,12 @@ export const TimelineContext = createContext<TimelineContextType>({
 interface TimelineProviderProps {
     children: ReactNode;
 }
+
+const formatDateTitle = (date: Date) => {
+    if (isToday(date)) return "Aujourd'hui";
+    if (isYesterday(date)) return "Hier";
+    return format(date, 'EEEE d MMMM yyyy', { locale: fr });
+};
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>(initialInstants);
@@ -112,28 +118,36 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }
 
     const groupedInstants = useMemo(() => {
+      // First, create a sorted list of unique day keys (e.g., '2024-07-22')
+      const sortedDayKeys = [...new Set(instants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
+          .sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+
+      // Then, create the groups object based on these sorted keys
       const groups: GroupedInstants = {};
-      const sortedInstants = [...instants].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
-      sortedInstants.forEach(instant => {
+      // We need a way to assign 'Jour X' correctly
+      const reversedDayKeys = [...sortedDayKeys].reverse();
+
+      sortedDayKeys.forEach(dayKey => {
+          const dayDate = parseISO(dayKey);
+          const dayIndex = reversedDayKeys.indexOf(dayKey) + 1;
+
+          groups[dayKey] = {
+              title: `Jour ${dayIndex} - ${format(dayDate, 'd MMMM yyyy', { locale: fr })}`,
+              instants: []
+          };
+      });
+
+      // Finally, populate the instants into the correct group
+      instants.forEach(instant => {
           const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
-          if (!groups[dayKey]) {
-              const dayIndex = Object.keys(groups).length + 1;
-              groups[dayKey] = {
-                  title: `Jour ${dayIndex} - ${format(parseISO(instant.date), 'd MMMM yyyy', { locale: fr })}`,
-                  instants: []
-              };
+          if (groups[dayKey]) {
+              groups[dayKey].instants.push(instant);
           }
-          groups[dayKey].instants.push(instant);
       });
-
-      // Reverse order of instants within each group
-      Object.values(groups).forEach(group => {
-          group.instants.reverse();
-      });
-
-      // Reverse order of days
-      return Object.fromEntries(Object.entries(groups).reverse());
+      
+      // The instants within each day group are already sorted because the main list is sorted
+      return groups;
 
     }, [instants]);
 
