@@ -78,7 +78,7 @@ export default function TimelinePage() {
                          <div className="w-10 h-10 flex items-center justify-center">
                            {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                          </div>
-                         <div className="flex flex-col text-white">
+                         <div className="flex flex-col text-white/90">
                             <span className="font-bold text-base">{instant.location}</span>
                             <span className="text-sm">{getInstantDate(instant.date)}</span>
                          </div>
