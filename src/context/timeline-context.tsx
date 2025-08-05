@@ -26,15 +26,15 @@ interface TimelineContextType {
 
 const getCategoryAttributes = (category?: string) => {
     switch (category) {
-        case 'Gastronomie': return { icon: <Utensils />, color: 'bg-orange-500' };
-        case 'Culture': return { icon: <Landmark />, color: 'bg-purple-600' };
-        case 'Nature': return { icon: <Leaf />, color: 'bg-green-500' };
-        case 'Shopping': return { icon: <ShoppingBag />, color: 'bg-pink-500' };
-        case 'Art': return { icon: <Palette />, color: 'bg-red-500' };
-        case 'Détente': return { icon: <Heart />, color: 'bg-teal-500' };
-        case 'Voyage': return { icon: <Plane />, color: 'bg-sky-500' };
-        case 'Sport': return { icon: <Anchor />, color: 'bg-indigo-500' };
-        default: return { icon: <BookText />, color: 'bg-gray-500' };
+        case 'Gastronomie': return { icon: <Utensils />, color: 'bg-orange-600' };
+        case 'Culture': return { icon: <Landmark />, color: 'bg-purple-700' };
+        case 'Nature': return { icon: <Leaf />, color: 'bg-green-600' };
+        case 'Shopping': return { icon: <ShoppingBag />, color: 'bg-pink-600' };
+        case 'Art': return { icon: <Palette />, color: 'bg-red-600' };
+        case 'Détente': return { icon: <Heart />, color: 'bg-teal-600' };
+        case 'Voyage': return { icon: <Plane />, color: 'bg-sky-600' };
+        case 'Sport': return { icon: <Anchor />, color: 'bg-indigo-600' };
+        default: return { icon: <BookText />, color: 'bg-gray-600' };
     }
 };
 

@@ -79,7 +79,7 @@ export default function TimelinePage() {
                          </div>
                          <div className="flex flex-col">
                             <span className="font-bold text-base">{instant.location}</span>
-                            <span className="text-sm opacity-80">{getInstantDate(instant.date)}</span>
+                            <span className="text-sm">{getInstantDate(instant.date)}</span>
                          </div>
                       </div>
                       <DropdownMenu>
