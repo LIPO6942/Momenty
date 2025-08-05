@@ -54,7 +54,7 @@ export default function TimelinePage() {
         return format(parsedDate, "d MMMM yyyy 'à' HH:mm", { locale: fr });
     } catch (error) {
         console.error("Invalid date format:", date, error);
-        return "Invalid date";
+        return "Date invalide";
     }
   }
 

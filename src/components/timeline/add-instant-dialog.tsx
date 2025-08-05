@@ -55,7 +55,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     const getCameraPermission = async () => {
       if (isCameraMode) {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({video: true});
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
           setHasCameraPermission(true);
   
           if (videoRef.current) {
