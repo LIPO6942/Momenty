@@ -217,11 +217,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
          <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
-          <DialogHeader className="text-left">
+          <DialogHeader className="text-left shrink-0">
             <DialogTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</DialogTitle>
           </DialogHeader>
-          <div className="flex-grow overflow-hidden">
-          <ScrollArea className="h-full pr-6 -mr-6">
+          <div className="flex-grow overflow-y-auto pr-6 -mr-6">
             <div className="space-y-6 py-4">
                 {isCameraMode ? (
                     <div className="space-y-4">
@@ -323,7 +322,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 </>
                 )}
             </div>
-            </ScrollArea>
             </div>
             <DialogFooter className="justify-between sm:justify-between pt-4 mt-auto shrink-0">
                 {isCameraMode ? (

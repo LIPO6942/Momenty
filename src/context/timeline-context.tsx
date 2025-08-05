@@ -149,11 +149,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const { icon, color } = getCategoryAttributes(category);
         const newInstantId = new Date().toISOString() + Math.random();
-
-        if (instant.photo) {
-            await saveImage(newInstantId, instant.photo);
-        }
-
+        
         const newInstantWithId: Instant = { 
             ...instant, 
             id: newInstantId,
@@ -161,6 +157,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             icon,
             color
         };
+
+        if (instant.photo) {
+            await saveImage(newInstantId, instant.photo);
+        }
         
         await saveInstant(newInstantWithId);
 
