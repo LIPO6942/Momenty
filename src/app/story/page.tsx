@@ -1,15 +1,37 @@
 
 "use client";
 
-import { useState, useContext, useMemo } from 'react';
+import { useState, useContext, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TimelineContext } from '@/context/timeline-context';
 import { generateStory } from '@/ai/flows/generate-story-flow';
-import type { Instant } from '@/lib/types';
-import { Loader2, Wand2 } from 'lucide-react';
+import type { GeneratedStory } from '@/lib/types';
+import { Loader2, Wand2, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/idb';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const StoryPreview = ({ story }: { story: string }) => {
     // A simple markdown-to-html renderer
@@ -26,14 +48,25 @@ const StoryPreview = ({ story }: { story: string }) => {
       })
       .join('');
   
-    return <div dangerouslySetInnerHTML={{ __html: html }} className="prose dark:prose-invert" />;
+    return <div dangerouslySetInnerHTML={{ __html: html }} className="prose dark:prose-invert max-w-none" />;
 };
 
 export default function StoryPage() {
     const { groupedInstants } = useContext(TimelineContext);
+    const { toast } = useToast();
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
-    const [story, setStory] = useState<string | null>(null);
+    const [stories, setStories] = useState<GeneratedStory[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isEditing, setIsEditing] = useState<GeneratedStory | null>(null);
+    const [editText, setEditText] = useState("");
+
+    useEffect(() => {
+        const loadStories = async () => {
+            const loadedStories = await getStories();
+            setStories(loadedStories);
+        };
+        loadStories();
+    }, []);
 
     const dayOptions = useMemo(() => {
         return Object.keys(groupedInstants).map(dayKey => ({
@@ -46,7 +79,6 @@ export default function StoryPage() {
         if (!selectedDay || !groupedInstants[selectedDay]) return;
 
         setIsLoading(true);
-        setStory(null);
         try {
             const dayData = groupedInstants[selectedDay];
             const instantsForStory = dayData.instants.map(i => ({
@@ -61,13 +93,44 @@ export default function StoryPage() {
                 day: dayData.title,
                 instants: instantsForStory
             });
-            setStory(result.story);
+            
+            const newStory: GeneratedStory = {
+                id: selectedDay,
+                date: selectedDay,
+                title: dayData.title,
+                story: result.story
+            };
+
+            await saveStory(newStory);
+            setStories(prev => [...prev.filter(s => s.id !== selectedDay), newStory].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            toast({ title: "Histoire générée et sauvegardée !" });
+
         } catch (error) {
             console.error("Failed to generate story:", error);
-            // You might want to show a toast message here
+            toast({ variant: "destructive", title: "La génération a échoué." });
         } finally {
             setIsLoading(false);
         }
+    };
+    
+    const handleEditStory = (story: GeneratedStory) => {
+        setIsEditing(story);
+        setEditText(story.story);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!isEditing) return;
+        const updatedStory = { ...isEditing, story: editText };
+        await saveStory(updatedStory);
+        setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setIsEditing(null);
+        toast({ title: "Histoire mise à jour." });
+    };
+
+    const handleDeleteStory = async (storyId: string) => {
+        await deleteStoryFromDB(storyId);
+        setStories(prev => prev.filter(s => s.id !== storyId));
+        toast({ title: "Histoire supprimée." });
     };
 
     const selectedDayInstants = selectedDay ? groupedInstants[selectedDay]?.instants : [];
@@ -81,9 +144,9 @@ export default function StoryPage() {
 
             <Card className="mb-8">
                 <CardHeader>
-                    <CardTitle>1. Sélectionnez une journée</CardTitle>
+                    <CardTitle>1. Créez ou recréez une histoire</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                     <Select onValueChange={setSelectedDay} value={selectedDay || ""}>
                         <SelectTrigger>
                             <SelectValue placeholder="Choisissez une date..." />
@@ -96,58 +159,87 @@ export default function StoryPage() {
                             ))}
                         </SelectContent>
                     </Select>
+
+                    {selectedDay && (
+                        <div className='pt-2'>
+                             <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-4">
+                                {selectedDayInstants?.map(instant => (
+                                    instant.photo && (
+                                        <Image key={instant.id} src={instant.photo} alt={instant.title} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                                    )
+                                ))}
+                             </div>
+                             <Button onClick={handleGenerateStory} disabled={isLoading} className="w-full">
+                                {isLoading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Wand2 className="mr-2 h-4 w-4" />
+                                )}
+                                {stories.some(s => s.id === selectedDay) ? 'Régénérer l\'histoire' : 'Générer mon histoire'}
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
-            {selectedDay && (
-                 <Card className="mb-8">
-                    <CardHeader>
-                        <CardTitle>2. Ingrédients de votre histoire</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                            {selectedDayInstants?.map(instant => (
-                                instant.photo && (
-                                    <Image key={instant.id} src={instant.photo} alt={instant.title} width={100} height={100} className="rounded-md object-cover aspect-square" />
-                                )
-                            ))}
-                        </div>
-                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                            {selectedDayInstants?.map(instant => (
-                                <li key={instant.id}>{instant.title} ({instant.emotion})</li>
-                            ))}
-                        </ul>
-                         <Button onClick={handleGenerateStory} disabled={isLoading} className="w-full">
-                            {isLoading ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Wand2 className="mr-2 h-4 w-4" />
-                            )}
-                            Générer mon histoire
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
+            <div className="space-y-6">
+                 <h2 className="text-2xl font-bold text-foreground">Mes Histoires</h2>
+                {stories.length > 0 ? stories.map(story => (
+                    <Card key={story.id}>
+                        <CardContent className="p-6">
+                            <StoryPreview story={story.story} />
+                        </CardContent>
+                        <CardFooter className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditStory(story)}>
+                                <Edit className="mr-2 h-4 w-4" /> Modifier
+                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible. L'histoire sera définitivement supprimée.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteStory(story.id)}>
+                                        Supprimer
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </CardFooter>
+                    </Card>
+                )) : (
+                    <p className="text-muted-foreground text-center py-8">Aucune histoire générée pour le moment.</p>
+                )}
+            </div>
 
-            {isLoading && (
-                <div className="text-center p-8">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Votre histoire est en cours de rédaction...</p>
-                </div>
-            )}
-
-            {story && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>3. Votre Récit</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="p-4 bg-secondary/50 rounded-lg">
-                           <StoryPreview story={story} />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+            {/* Edit Dialog */}
+            <Dialog open={isEditing !== null} onOpenChange={(open) => !open && setIsEditing(null)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Modifier l'histoire</DialogTitle>
+                    </DialogHeader>
+                    <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="min-h-[400px] my-4"
+                    />
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="ghost">Annuler</Button>
+                        </DialogClose>
+                        <Button onClick={handleSaveEdit}>Enregistrer</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

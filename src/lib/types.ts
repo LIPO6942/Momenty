@@ -28,3 +28,10 @@ export interface TimelineEventPhoto {
   description: string;
   dateTaken: string; // ISO string format
 }
+
+export interface GeneratedStory {
+  id: string; // Typically the day string 'yyyy-MM-dd'
+  date: string; // The day string 'yyyy-MM-dd'
+  title: string;
+  story: string;
+}
