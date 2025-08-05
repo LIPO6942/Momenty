@@ -19,6 +19,7 @@ import {
 import { TimelineContext } from "@/context/timeline-context";
 import { BookText, Camera, MapPin, Smile, Trash2, LocateFixed, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -132,15 +133,16 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
           {children}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-         <form onSubmit={handleFormSubmit}>
+        <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
+         <form onSubmit={handleFormSubmit} className="grid grid-rows-[auto,1fr,auto] h-full overflow-hidden">
           <DialogHeader>
             <DialogTitle>Ajouter un instant</DialogTitle>
           </DialogHeader>
+          <ScrollArea className="pr-6">
             <div className="space-y-4 py-4">
                 {photo && (
                     <div className="relative group">
-                        <Image src={photo} alt="Aperçu" width={400} height={200} className="rounded-md object-cover w-full" />
+                        <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-full" />
                         <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPhoto(null)}>
                             <Trash2 className="h-4 w-4"/>
                         </Button>
@@ -184,7 +186,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </div>
                  </div>
             </div>
-            <DialogFooter className="justify-between sm:justify-between">
+            </ScrollArea>
+            <DialogFooter className="justify-between sm:justify-between pt-4">
                 <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
                     <Camera className="h-5 w-5" />
                 </Button>
