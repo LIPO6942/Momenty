@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import {googleAI} from '@genkit-ai/googleai';
 
 const DescribePhotoInputSchema = z.object({
   photoDataUri: z
@@ -34,6 +35,7 @@ const prompt = ai.definePrompt({
   name: 'describePhotoPrompt',
   input: {schema: DescribePhotoInputSchema},
   output: {schema: DescribePhotoOutputSchema},
+  model: googleAI.model('gemini-1.5-flash-latest'),
   prompt: `Tu es un influenceur voyage talentueux. Ta tâche est d'analyser la photo fournie et de générer une légende courte et percutante en français pour un post sur les réseaux sociaux.
 
   La légende doit être poétique et capturer l'essence du moment en 1 ou 2 phrases maximum.
