@@ -3,8 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, Map, Compass } from "lucide-react";
+import { Globe, Map, Compass, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddNoteDialog } from "../timeline/add-note-dialog";
+import { AddPhotoDialog } from "../timeline/add-photo-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "../ui/button";
 
 const navLinks = [
   { href: "/", label: "Timeline", icon: Globe },
@@ -12,29 +21,56 @@ const navLinks = [
   { href: "/explore", label: "Explorer", icon: Compass },
 ];
 
+const addNoteTrigger = (
+  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+    Ajouter une note
+  </DropdownMenuItem>
+);
+
+const addPhotoTrigger = (
+  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+    Ajouter une photo
+  </DropdownMenuItem>
+);
+
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
-      <nav className="container relative flex h-16 max-w-2xl items-center justify-around">
+    <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
+      <nav className="flex items-center gap-2 rounded-full bg-card p-2 shadow-lg ring-1 ring-black/5">
         {navLinks.map((link) => {
           const isActive = pathname === link.href;
-          return(
+          return (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors w-20",
+                "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
                 isActive
-                  ? "text-primary-foreground font-bold"
-                  : "text-muted-foreground hover:bg-accent/50"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary"
               )}
             >
-              <link.icon className={cn("h-6 w-6", isActive && 'text-primary')} />
+              <link.icon className="h-6 w-6" />
             </Link>
           );
         })}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="default"
+              size="icon"
+              className="h-14 w-14 rounded-full"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="mb-2">
+            <AddNoteDialog trigger={addNoteTrigger} />
+            <AddPhotoDialog trigger={addPhotoTrigger} />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </nav>
     </div>
   );

@@ -8,32 +8,33 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%; /* Lighter, cleaner background */
     --foreground: 224 18% 27%;
-    --card: 0 0% 100%;
+    --card: 210 40% 98%; /* Match background for borderless cards */
     --card-foreground: 224 18% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 18% 27%;
-    --primary: 205 90% 76%; /* Soft Blue */
-    --primary-foreground: 205 30% 25%;
-    --secondary: 210 40% 96.1%;
+    --primary: 217.2 91.2% 59.8%; /* A more vibrant blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 90%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 90%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 34.9 91.6% 65.1%; /* Warm Sand */
-    --accent-foreground: 210 40% 98%;
+    --accent: 34.9 91.6% 65.1%; /* Warm Sand for accents */
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 217.2 91.2% 59.8%;
     --chart-1: 140 30% 80%;
     --chart-2: 45 50% 85%;
     --chart-3: 260 100% 90%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.8rem; /* Slightly more rounded corners */
   }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;

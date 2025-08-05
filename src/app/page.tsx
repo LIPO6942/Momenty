@@ -33,11 +33,14 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
           alt={instant.title}
           width={500}
           height={300}
-          className="w-full object-cover aspect-video"
+          className="w-full rounded-lg object-cover aspect-video"
           data-ai-hint="travel photo"
         />
       )}
-      {instant.description && <p className="text-sm text-foreground px-4 py-3">{instant.description}</p>}
+      <div className={cn("px-1 py-3", instant.photo && "pt-4")}>
+        <p className="font-bold text-sm text-foreground">{instant.title}</p>
+        {instant.description && <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>}
+      </div>
     </div>
   );
 };
@@ -56,20 +59,28 @@ export default function TimelinePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-0 py-4 sm:px-4">
-      <div className="space-y-8">
+    <div className="container mx-auto max-w-2xl px-4 py-4 sm:px-4">
+       <div className="mb-8">
+        <h1 className="text-3xl font-bold">Bienvenue</h1>
+        <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
+      </div>
+
+      <div className="space-y-10">
         {Object.entries(groupedInstants).map(([day, dayData]) => (
           <div key={day}>
-            <h2 className="text-sm font-semibold text-muted-foreground px-4 mb-4">{dayData.title.toUpperCase()}</h2>
-            <div className="space-y-4">
+            <h2 className="text-lg font-bold text-foreground mb-4">{dayData.title}</h2>
+            <div className="space-y-6">
               {dayData.instants.map((instant) => (
-                <Card key={instant.id} className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
+                <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
                   <CardHeader className="flex flex-row items-center justify-between p-4">
                       <div className="flex items-center gap-3">
                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", instant.color)}>
                            {instant.icon}
                          </div>
-                         <p className="font-bold text-sm">{instant.title}</p>
+                         <div className="flex flex-col">
+                            <span className="font-bold text-sm">{instant.location}</span>
+                            <span className="text-xs text-muted-foreground">{getInstantDate(instant.date)}</span>
+                         </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -92,16 +103,12 @@ export default function TimelinePage() {
                       </DropdownMenu>
                   </CardHeader>
                   
-                  <CardContent className="p-0">
+                  <CardContent className="p-0 px-4">
                     <InstantContent instant={instant} />
                   </CardContent>
 
-                  <CardFooter className="p-4 flex flex-col items-start gap-3">
+                  <CardFooter className="p-4 pt-2">
                     {instant.category && <Badge variant="secondary">{instant.category}</Badge>}
-                     <div className="flex justify-between w-full text-xs text-muted-foreground">
-                        <span>{instant.location}</span>
-                        <span>{getInstantDate(instant.date)}</span>
-                     </div>
                   </CardFooter>
                 </Card>
               ))}
