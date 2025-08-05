@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to describe a photo.
@@ -20,8 +21,8 @@ const DescribePhotoInputSchema = z.object({
 export type DescribePhotoInput = z.infer<typeof DescribePhotoInputSchema>;
 
 const DescribePhotoOutputSchema = z.object({
-  description: z.string().describe('A detailed description of what is in the photo.'),
-  location: z.string().describe('The location (city, country) where the photo was likely taken. Be as specific as possible. If unknown, leave empty.')
+  description: z.string().describe('Une courte narration poétique et évocatrice en français sur la photo, dans le style d\'un journal de voyage. La narration doit capturer l\'atmosphère et l\'émotion du moment.'),
+  location: z.string().describe('Le lieu (ville, pays) où la photo a probablement été prise. Si inconnu, laisser vide.')
 });
 export type DescribePhotoOutput = z.infer<typeof DescribePhotoOutputSchema>;
 
@@ -33,11 +34,11 @@ const prompt = ai.definePrompt({
   name: 'describePhotoPrompt',
   input: {schema: DescribePhotoInputSchema},
   output: {schema: DescribePhotoOutputSchema},
-  prompt: `You are an expert travel assistant. Your task is to analyze the provided photo and extract meaningful information for a travel journal.
+  prompt: `Tu es un écrivain et poète spécialisé dans les récits de voyage. Ta tâche est d'analyser la photo fournie et de générer une narration courte et évocatrice en français pour un journal de voyage.
 
-  Based on the image, provide a detailed description of the scene.
-  
-  Also, try to identify the location (city, country) where the photo might have been taken. Look for landmarks, text, architectural styles, or any other clues. If you can identify the location, provide it. If you are uncertain, leave the location field empty.
+  Au lieu de simplement décrire l'image, crée une histoire ou une ambiance qui capture l'essence du moment. Utilise un langage poétique. Par exemple : "Un moment de calme capturé dans une ruelle silencieuse. Les murs bleus reflètent la douceur de l’après-midi. À travers l’image, on sent le silence d’une ville figée dans le temps."
+
+  Essaie également d'identifier le lieu (ville, pays) où la photo a pu être prise. Intègre ce lieu dans ta narration si possible. Si tu n'es pas sûr, laisse le champ "location" vide.
 
   Photo: {{media url=photoDataUri}}`,
 });
