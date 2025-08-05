@@ -3,11 +3,10 @@
 
 import { useState, useMemo, useContext } from "react";
 import { TimelineContext } from "@/context/timeline-context";
-import type { Instant } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { InstantCard } from "@/components/timeline/instant-card";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ExplorePage() {
   const { instants } = useContext(TimelineContext);
@@ -41,7 +40,7 @@ export default function ExplorePage() {
 
   const FilterSection = ({ title, items, activeItem, onToggle }: { title: string, items: string[], activeItem: string | null, onToggle: (item: string) => void}) => (
     <div className="space-y-3">
-        <h3 className="font-semibold text-foreground">{title}</h3>
+        <h3 className="font-semibold text-sm text-muted-foreground">{title}</h3>
         <div className="flex flex-wrap gap-2">
             {items.map(item => (
                 <Badge 
@@ -64,7 +63,7 @@ export default function ExplorePage() {
         <p className="text-muted-foreground">Recherchez et filtrez à travers votre journal de voyage.</p>
       </div>
 
-      <div className="space-y-6 mb-8">
+      <div className="space-y-8 mb-8">
         <Input
           placeholder="Rechercher par mot-clé..."
           value={searchTerm}
@@ -72,24 +71,31 @@ export default function ExplorePage() {
           className="w-full"
         />
 
-        <div className="grid md:grid-cols-3 gap-6">
-            <FilterSection title="Par Catégorie" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
-            <FilterSection title="Par Émotion" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
-            <FilterSection title="Par Lieu" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl">Filtres</CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-3 gap-8">
+                <FilterSection title="Par Catégorie" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
+                <FilterSection title="Par Émotion" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
+                <FilterSection title="Par Lieu" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
+            </CardContent>
+        </Card>
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">{filteredInstants.length} Résultat(s)</h2>
-        <div className="space-y-6">
-          {filteredInstants.length > 0 ? (
-            filteredInstants.map(instant => (
-                <InstantCard key={instant.id} instant={instant} />
-            ))
-          ) : (
-            <p className="text-muted-foreground text-center py-8">Aucun souvenir ne correspond à votre recherche.</p>
-          )}
-        </div>
+        <h2 className="text-2xl font-bold mb-6">{filteredInstants.length} Résultat(s)</h2>
+        {filteredInstants.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-8">
+                {filteredInstants.map(instant => (
+                    <InstantCard key={instant.id} instant={instant} />
+                ))}
+            </div>
+        ) : (
+            <div className="text-center py-16">
+                 <p className="text-muted-foreground">Aucun souvenir ne correspond à votre recherche.</p>
+            </div>
+        )}
       </div>
     </div>
   );
