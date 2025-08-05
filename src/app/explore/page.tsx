@@ -24,9 +24,9 @@ const suggestions = {
 
 export default function ExplorePage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Explorer Autour de Moi</h1>
+    <div className="container mx-auto px-4 py-8 min-h-screen">
+       <div className="py-16 space-y-2">
+        <h1 className="text-3xl font-bold text-foreground">Explorer Autour de Moi</h1>
         <p className="text-muted-foreground">Suggestions basées sur votre position actuelle à Marrakech.</p>
       </div>
 

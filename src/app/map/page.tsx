@@ -28,9 +28,9 @@ export default function MapPage() {
         }));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Ma Carte de Voyage</h1>
+    <div className="container mx-auto px-4 py-8 min-h-screen">
+      <div className="py-16 space-y-2">
+        <h1 className="text-3xl font-bold text-foreground">Ma Carte de Voyage</h1>
         <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
       </div>
       

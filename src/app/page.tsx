@@ -59,9 +59,9 @@ export default function TimelinePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-4 sm:px-4 pt-24">
-       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">Bienvenue sur InsTXP</h1>
+    <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+       <div className="py-16 space-y-2">
+        <h1 className="text-4xl font-bold">Bienvenue sur InsTXP</h1>
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
 
