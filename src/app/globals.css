@@ -14,19 +14,19 @@ body {
     --card-foreground: 24 10% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 24 10% 20%;
-    --primary: 25 95% 53%; /* #F97316 - Vibrant Orange */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 10% 95%;
+    --primary: 204 94% 65%; /* #A0D2EB - Soft Blue */
+    --primary-foreground: 24 10% 10%;
+    --secondary: 204 20% 96%; /* #E8F4F8 - Light Desaturated Blue */
     --secondary-foreground: 24 10% 20%;
-    --muted: 30 10% 90%;
+    --muted: 204 20% 90%;
     --muted-foreground: 24 10% 40%;
-    --accent: 206 93% 74%; /* #81C4F8 - Sky Blue */
+    --accent: 108 58% 78%; /* #B8E8A7 - Mint Green */
     --accent-foreground: 24 10% 20%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 10% 90%;
-    --input: 30 10% 90%;
-    --ring: 25 95% 53%;
+    --border: 204 20% 85%;
+    --input: 204 20% 85%;
+    --ring: 204 94% 65%;
     --chart-1: 140 30% 80%;
     --chart-2: 45 50% 85%;
     --chart-3: 260 100% 90%;
@@ -42,19 +42,19 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 24 10% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 25 95% 53%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 204 94% 65%;
+    --primary-foreground: 24 10% 10%;
     --secondary: 24 10% 15%;
     --secondary-foreground: 0 0% 98%;
     --muted: 24 10% 15%;
     --muted-foreground: 0 0% 60%;
-    --accent: 206 93% 74%;
+    --accent: 108 58% 78%;
     --accent-foreground: 24 10% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 24 10% 15%;
     --input: 24 10% 15%;
-    --ring: 25 95% 53%;
+    --ring: 204 94% 65%;
     --chart-1: 140 30% 70%;
     --chart-2: 45 50% 85%;
     --chart-3: 260 100% 90%;
@@ -68,6 +68,6 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-secondary text-foreground;
   }
 }
