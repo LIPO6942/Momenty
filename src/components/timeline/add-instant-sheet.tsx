@@ -9,20 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Video, Image as ImageIcon } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
-interface AddInstantDialogProps {
+interface AddInstantSheetProps {
   children: ReactNode;
 }
 
@@ -35,7 +35,7 @@ const moods = [
   { name: "Nostalgique", icon: "😢" },
 ];
 
-export function AddInstantDialog({ children }: AddInstantDialogProps) {
+export function AddInstantSheet({ children }: AddInstantSheetProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const { addInstant } = useContext(TimelineContext);
@@ -179,19 +179,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   };
   
   return (
-      <Dialog open={open} onOpenChange={(isOpen) => {
+      <Sheet open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen);
         if (!isOpen) cleanup();
       }}>
-        <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <SheetTrigger asChild onClick={(e) => e.stopPropagation()}>
           {children}
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
+        </SheetTrigger>
+        <SheetContent side="bottom" className="grid-rows-[auto,1fr,auto] max-h-[90vh] rounded-t-2xl">
          <form onSubmit={handleFormSubmit} className="grid grid-rows-[auto,1fr,auto] h-full overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="pr-6">
+          <SheetHeader className="text-left">
+            <SheetTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="pr-6 -mr-6">
             <div className="space-y-4 py-4">
                 {isCameraMode ? (
                     <div className="space-y-4">
@@ -210,7 +210,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 <>
                 {photo && (
                     <div className="relative group">
-                        <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-full" />
+                        <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
                         <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPhoto(null)}>
                             <Trash2 className="h-4 w-4"/>
                         </Button>
@@ -257,7 +257,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 )}
             </div>
             </ScrollArea>
-            <DialogFooter className="justify-between sm:justify-between pt-4">
+            <SheetFooter className="justify-between sm:justify-between pt-4">
                 {isCameraMode ? (
                      <div className="w-full flex justify-between">
                         <Button type="button" variant="ghost" onClick={() => setIsCameraMode(false)}>Retour</Button>
@@ -276,16 +276,16 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                  <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
 
                 <div className="flex gap-2">
-                    <DialogClose asChild>
+                    <SheetClose asChild>
                         <Button type="button" variant="ghost">Fermer</Button>
-                    </DialogClose>
+                    </SheetClose>
                     <Button type="submit">Publier</Button>
                 </div>
                 </>
                 )}
-            </DialogFooter>
+            </SheetFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
   );
 }

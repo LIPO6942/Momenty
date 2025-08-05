@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, Map, Compass, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AddInstantDialog } from "../timeline/add-instant-dialog";
+import { AddInstantSheet } from "../timeline/add-instant-sheet";
 import { Button } from "../ui/button";
 
 const navLinks = [
@@ -37,7 +38,7 @@ export default function BottomNav() {
             </Link>
           );
         })}
-        <AddInstantDialog>
+        <AddInstantSheet>
             <Button
               variant="default"
               size="icon"
@@ -45,7 +46,7 @@ export default function BottomNav() {
             >
               <Plus className="h-6 w-6" />
             </Button>
-        </AddInstantDialog>
+        </AddInstantSheet>
       </nav>
     </div>
   );
