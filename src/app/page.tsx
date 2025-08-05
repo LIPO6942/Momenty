@@ -56,8 +56,7 @@ export default function TimelinePage() {
   const { groupedInstants, deleteInstant } = useContext(TimelineContext);
 
   const defaultOpenValue = useMemo(() => {
-    const dayKeys = Object.keys(groupedInstants);
-    return dayKeys.length > 0 ? [dayKeys[0]] : [];
+    return Object.keys(groupedInstants);
   }, [groupedInstants]);
 
   return (

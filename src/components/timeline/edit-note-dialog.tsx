@@ -20,7 +20,7 @@ import {
 import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
 import { ScrollArea } from "../ui/scroll-area";
-import { Camera, Image as ImageIcon, Loader2, LocateFixed, MapPin, Trash2, Wand2 } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 
 interface EditNoteDialogProps {
@@ -43,6 +43,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const { updateInstant } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize state with values from the instant to be edited
   const [description, setDescription] = useState(instantToEdit.description);
   const [location, setLocation] = useState(instantToEdit.location);
   const [photo, setPhoto] = useState<string | null | undefined>(instantToEdit.photo);
@@ -53,6 +54,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
 
     const finalDescription = description || "Note";
 
+    // Call the context function to update the instant
     updateInstant(instantToEdit.id, {
       title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
       description,
@@ -61,7 +63,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       emotion: emotion || "Neutre",
     });
 
-    setOpen(false);
+    setOpen(false); // Close the dialog
     toast({ title: "Instant mis à jour !" });
   };
   
@@ -77,8 +79,8 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     }
   };
 
+  // Function to reset state when the dialog is closed without saving
   const cleanup = () => {
-    // Reset state to initial props when dialog closes
     setDescription(instantToEdit.description);
     setLocation(instantToEdit.location);
     setPhoto(instantToEdit.photo);
@@ -88,7 +90,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
           setOpen(isOpen);
-          if(!isOpen) cleanup();
+          if(!isOpen) cleanup(); // Reset state if dialog is closed
       }}>
         <DialogTrigger asChild>
           {children}
