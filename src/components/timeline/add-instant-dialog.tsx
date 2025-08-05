@@ -112,8 +112,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
       title: description.substring(0, 30) + (description.length > 30 ? '...' : ''), // Simple title generation
       description,
       date: new Date().toISOString(),
-      icon: photo ? <Camera className="h-4 w-4 text-white" /> : <BookText className="h-4 w-4 text-white" />,
-      color: photo ? 'bg-blue-500' : 'bg-purple-500',
       location: location || "Lieu inconnu",
       emotion: emotion || "Neutre",
       photo: photo

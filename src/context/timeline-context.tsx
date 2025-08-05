@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 import type { Instant } from '@/lib/types';
-import { BookText, ImageIcon, MapPin, Mic, Smile } from "lucide-react";
+import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Ship, Heart, Plane } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getImage } from '@/lib/idb';
@@ -24,57 +24,65 @@ interface TimelineContextType {
     deleteInstant: (id: string) => void;
 }
 
-const initialInstants: Omit<Instant, 'id'>[] = [
+const getCategoryAttributes = (category?: string) => {
+    switch (category) {
+        case 'Gastronomie': return { icon: <Utensils className="h-4 w-4 text-white" />, color: 'bg-orange-500' };
+        case 'Culture': return { icon: <Landmark className="h-4 w-4 text-white" />, color: 'bg-purple-500' };
+        case 'Nature': return { icon: <Mountain className="h-4 w-4 text-white" />, color: 'bg-green-500' };
+        case 'Shopping': return { icon: <ShoppingBag className="h-4 w-4 text-white" />, color: 'bg-pink-500' };
+        case 'Art': return { icon: <Palette className="h-4 w-4 text-white" />, color: 'bg-red-500' };
+        case 'Détente': return { icon: <Heart className="h-4 w-4 text-white" />, color: 'bg-teal-500' };
+        case 'Voyage': return { icon: <Plane className="h-4 w-4 text-white" />, color: 'bg-sky-500' };
+        default: return { icon: <BookText className="h-4 w-4 text-white" />, color: 'bg-gray-500' };
+    }
+};
+
+const initialInstants: Omit<Instant, 'id' | 'icon' | 'color'>[] = [
     {
       type: 'note',
       title: "Arrivée à Tozeur",
       description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
       date: "2024-07-20T10:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-white" />,
-      color: "bg-purple-500",
       location: "Tozeur, Tunisie",
-      emotion: "Excité"
+      emotion: "Excité",
+      category: "Voyage",
     },
     {
-      type: 'note',
+      type: 'photo',
       title: "Oasis de Chébika",
       description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
       date: "2024-07-20T14:30:00.000Z",
-      icon: <ImageIcon className="h-4 w-4 text-white" />,
-      color: "bg-blue-500",
       location: "Chébika, Tunisie",
       emotion: "Émerveillé",
-      photo: "https://placehold.co/500x300.png"
+      photo: "https://placehold.co/500x300.png",
+      category: "Nature",
     },
     {
       type: 'note',
       title: "Dîner sous les étoiles",
       description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
       date: "2024-07-20T20:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-white" />,
-      color: "bg-purple-500",
       location: "Campement près de Tozeur",
-      emotion: "Heureux"
+      emotion: "Heureux",
+      category: "Gastronomie",
     },
     {
       type: 'note',
       title: "Exploration de la médina",
       description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
       date: "2024-07-22T11:00:00.000Z",
-      icon: <BookText className="h-4 w-4 text-white" />,
-      color: "bg-purple-500",
       location: "Tunis, Tunisie",
-      emotion: "Curieux"
+      emotion: "Curieux",
+      category: "Culture",
     },
     {
       type: 'mood',
       title: "Sentiment de la journée",
       description: "Journée de transition, un peu fatigué mais content.",
       date: "2024-07-22T18:00:00.000Z",
-      color: "bg-green-500",
-      icon: <Smile className="h-4 w-4 text-white" />,
       location: "Tunis, Tunisie",
-      emotion: "Bien"
+      emotion: "Bien",
+      category: "Détente"
     }
 ];
 
@@ -95,15 +103,18 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     useEffect(() => {
         const loadInstants = async () => {
-          // Initialize with IDs and load photos from IndexedDB
-          const instantsWithIds = initialInstants.map((inst, index) => ({
-            ...inst,
-            id: `initial-${index}-${new Date(inst.date).getTime()}`,
-          }));
+          const instantsWithIdsAndAttrs = initialInstants.map((inst, index) => {
+            const { icon, color } = getCategoryAttributes(inst.category);
+            return {
+              ...inst,
+              id: `initial-${index}-${new Date(inst.date).getTime()}`,
+              icon,
+              color,
+            }
+          });
     
           const loadedInstants = await Promise.all(
-            instantsWithIds.map(async (inst) => {
-              // Don't overwrite placeholder photos with empty local data
+            instantsWithIdsAndAttrs.map(async (inst) => {
               if (inst.photo && inst.photo.startsWith('https://')) {
                 return inst;
               }
@@ -116,18 +127,27 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         loadInstants();
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id'>) => {
-        const newInstantWithId = { ...instant, id: new Date().toISOString() + Math.random() };
-        
+    const addInstant = async (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => {
+        let category = 'Note';
         try {
-            const { category } = await categorizeInstant({
-                title: newInstantWithId.title,
-                description: newInstantWithId.description,
+            const result = await categorizeInstant({
+                title: instant.title,
+                description: instant.description,
             });
-            newInstantWithId.category = category;
+            category = result.category;
         } catch (error) {
             console.error("AI categorization failed", error);
         }
+
+        const { icon, color } = getCategoryAttributes(category);
+
+        const newInstantWithId = { 
+            ...instant, 
+            id: new Date().toISOString() + Math.random(),
+            category,
+            icon,
+            color
+        };
 
         setInstants(prevInstants => [...prevInstants, newInstantWithId].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
@@ -152,10 +172,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                     title: fullUpdatedInstant.title,
                     description: fullUpdatedInstant.description,
                 });
+
+                const { icon, color } = getCategoryAttributes(category);
                 
-                // Final update with category
                 setInstants(prevInstants => prevInstants.map(instant =>
-                    instant.id === id ? { ...instant, category: category } : instant
+                    instant.id === id ? { ...instant, category, icon, color } : instant
                 ));
 
             } catch (error) {
