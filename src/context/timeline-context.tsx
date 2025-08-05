@@ -1,11 +1,13 @@
 
 "use client";
 
-import React, { createContext, useState, useMemo } from 'react';
+import React, { createContext, useState, useMemo, useEffect } from 'react';
 import type { Instant } from '@/lib/types';
 import { BookText, ImageIcon, MapPin, Mic, Smile } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getImage } from '@/lib/idb';
+import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
     [key: string]: {
@@ -22,9 +24,8 @@ interface TimelineContextType {
     deleteInstant: (id: string) => void;
 }
 
-const initialInstants: Instant[] = [
+const initialInstants: Omit<Instant, 'id'>[] = [
     {
-      id: "1",
       type: 'note',
       title: "Arrivée à Tozeur",
       description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
@@ -35,8 +36,7 @@ const initialInstants: Instant[] = [
       emotion: "Excité"
     },
     {
-      id: "2",
-      type: 'photo',
+      type: 'note',
       title: "Oasis de Chébika",
       description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
       date: "2024-07-20T14:30:00.000Z",
@@ -44,10 +44,9 @@ const initialInstants: Instant[] = [
       color: "bg-blue-500",
       location: "Chébika, Tunisie",
       emotion: "Émerveillé",
-      contentUrl: "https://placehold.co/500x500.png"
+      photo: "https://placehold.co/500x300.png"
     },
     {
-      id: "3",
       type: 'note',
       title: "Dîner sous les étoiles",
       description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
@@ -58,7 +57,6 @@ const initialInstants: Instant[] = [
       emotion: "Heureux"
     },
     {
-      id: "4",
       type: 'note',
       title: "Exploration de la médina",
       description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
@@ -69,7 +67,6 @@ const initialInstants: Instant[] = [
       emotion: "Curieux"
     },
     {
-      id: "5",
       type: 'mood',
       title: "Sentiment de la journée",
       description: "Journée de transition, un peu fatigué mais content.",
@@ -79,8 +76,7 @@ const initialInstants: Instant[] = [
       location: "Tunis, Tunisie",
       emotion: "Bien"
     }
-  ];
-  
+];
 
 export const TimelineContext = createContext<TimelineContextType>({
     instants: [],
@@ -95,17 +91,77 @@ interface TimelineProviderProps {
 }
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
-    const [instants, setInstants] = useState<Instant[]>(initialInstants);
+    const [instants, setInstants] = useState<Instant[]>([]);
 
-    const addInstant = (instant: Omit<Instant, 'id'>) => {
-        const newInstant = { ...instant, id: new Date().toISOString() + Math.random() };
-        setInstants(prevInstants => [...prevInstants, newInstant].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    useEffect(() => {
+        const loadInstants = async () => {
+          // Initialize with IDs and load photos from IndexedDB
+          const instantsWithIds = initialInstants.map((inst, index) => ({
+            ...inst,
+            id: `initial-${index}-${new Date(inst.date).getTime()}`,
+          }));
+    
+          const loadedInstants = await Promise.all(
+            instantsWithIds.map(async (inst) => {
+              // Don't overwrite placeholder photos with empty local data
+              if (inst.photo && inst.photo.startsWith('https://')) {
+                return inst;
+              }
+              const localPhoto = await getImage(inst.id);
+              return { ...inst, photo: localPhoto || inst.photo };
+            })
+          );
+          setInstants(loadedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        };
+        loadInstants();
+      }, []);
+
+    const addInstant = async (instant: Omit<Instant, 'id'>) => {
+        const newInstantWithId = { ...instant, id: new Date().toISOString() + Math.random() };
+        
+        try {
+            const { category } = await categorizeInstant({
+                title: newInstantWithId.title,
+                description: newInstantWithId.description,
+            });
+            newInstantWithId.category = category;
+        } catch (error) {
+            console.error("AI categorization failed", error);
+        }
+
+        setInstants(prevInstants => [...prevInstants, newInstantWithId].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
 
-    const updateInstant = (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
-        setInstants(prevInstants => prevInstants.map(instant =>
-            instant.id === id ? { ...instant, ...updatedInstantData } : instant
-        ));
+    const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
+        let fullUpdatedInstant: Instant | undefined;
+
+        setInstants(prevInstants => {
+            const newInstants = prevInstants.map(instant => {
+                if (instant.id === id) {
+                    fullUpdatedInstant = { ...instant, ...updatedInstantData };
+                    return fullUpdatedInstant;
+                }
+                return instant;
+            });
+            return newInstants;
+        });
+
+        if (fullUpdatedInstant) {
+            try {
+                const { category } = await categorizeInstant({
+                    title: fullUpdatedInstant.title,
+                    description: fullUpdatedInstant.description,
+                });
+                
+                // Final update with category
+                setInstants(prevInstants => prevInstants.map(instant =>
+                    instant.id === id ? { ...instant, category: category } : instant
+                ));
+
+            } catch (error) {
+                 console.error("AI categorization failed on update", error);
+            }
+        }
     }
 
     const deleteInstant = (id: string) => {

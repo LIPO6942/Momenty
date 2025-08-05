@@ -22,41 +22,29 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 const InstantContent = ({ instant }: { instant: Instant }) => {
-  if (instant.type === 'photo' && instant.contentUrl) {
-    return (
-      <Image
-        src={instant.contentUrl}
-        alt={instant.title}
-        width={500}
-        height={500}
-        className="aspect-square w-full object-cover"
-        data-ai-hint="travel photo"
-      />
-    );
-  }
   return (
-    <div className="px-6 pb-4">
-      <p className="text-sm text-foreground">{instant.description}</p>
+    <div className="pt-2">
+      {instant.photo && (
+        <Image
+          src={instant.photo}
+          alt={instant.title}
+          width={500}
+          height={300}
+          className="w-full object-cover aspect-video"
+          data-ai-hint="travel photo"
+        />
+      )}
+      {instant.description && <p className="text-sm text-foreground px-4 py-3">{instant.description}</p>}
     </div>
   );
 };
 
-
 export default function TimelinePage() {
   const { groupedInstants, deleteInstant } = useContext(TimelineContext);
 
-  const getInstantTime = (date: string) => {
-    try {
-        const parsedDate = parseISO(date);
-        return format(parsedDate, 'HH:mm');
-    } catch (error) {
-        console.error("Invalid date format:", date, error);
-        return "Invalid time";
-    }
-  }
-  
   const getInstantDate = (date: string) => {
     try {
         const parsedDate = parseISO(date);
@@ -108,9 +96,12 @@ export default function TimelinePage() {
                     <InstantContent instant={instant} />
                   </CardContent>
 
-                  <CardFooter className="p-4 flex flex-col items-start gap-2">
-                     <p className="text-xs text-muted-foreground">{instant.location}</p>
-                     <p className="text-xs text-muted-foreground">{getInstantDate(instant.date)}</p>
+                  <CardFooter className="p-4 flex flex-col items-start gap-3">
+                    {instant.category && <Badge variant="secondary">{instant.category}</Badge>}
+                     <div className="flex justify-between w-full text-xs text-muted-foreground">
+                        <span>{instant.location}</span>
+                        <span>{getInstantDate(instant.date)}</span>
+                     </div>
                   </CardFooter>
                 </Card>
               ))}

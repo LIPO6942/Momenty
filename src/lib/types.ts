@@ -8,7 +8,8 @@ export interface Instant {
     color: string;
     location: string;
     emotion: string;
-    contentUrl?: string; // for photo, video, audio
+    photo?: string | null; // Data URL for the image
+    category?: string; // AI-generated category
 }
 
 export interface TimelineEvent {
