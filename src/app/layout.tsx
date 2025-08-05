@@ -33,7 +33,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'font-body antialiased min-h-screen bg-background text-base'
+          'font-body antialiased min-h-screen bg-secondary text-base'
         )}
       >
         <TimelineProvider>

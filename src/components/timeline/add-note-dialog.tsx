@@ -34,11 +34,11 @@ export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
     const description = formData.get("description") as string;
 
     const newInstant = {
-      type: "note",
+      type: "note" as const,
       title,
       description,
       date: new Date().toISOString(),
-      icon: <BookText className="h-4 w-4 text-purple-700" />,
+      icon: <BookText className="h-4 w-4 text-white" />,
       color: 'bg-purple-400',
       location: "Paris, France", // Placeholder
       emotion: "Neutre" // Placeholder
@@ -52,7 +52,7 @@ export function AddNoteDialog({ trigger }: AddNoteDialogProps) {
   
   return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+        <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
           {trigger}
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">

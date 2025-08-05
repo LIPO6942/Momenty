@@ -114,7 +114,7 @@ export function AddPhotoDialog({ onAddEvent, trigger }: AddPhotoDialogProps) {
           setOpen(isOpen);
           if(!isOpen) cleanup();
       }}>
-        <DialogTrigger asChild>
+        <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
           {trigger}
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
