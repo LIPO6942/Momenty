@@ -5,14 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, Map, Compass, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AddNoteDialog } from "../timeline/add-note-dialog";
-import { AddPhotoDialog } from "../timeline/add-photo-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AddInstantDialog } from "../timeline/add-instant-dialog";
 import { Button } from "../ui/button";
 
 const navLinks = [
@@ -20,18 +13,6 @@ const navLinks = [
   { href: "/map", label: "Carte", icon: Map },
   { href: "/explore", label: "Explorer", icon: Compass },
 ];
-
-const addNoteTrigger = (
-  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-    Ajouter une note
-  </DropdownMenuItem>
-);
-
-const addPhotoTrigger = (
-  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-    Ajouter une photo
-  </DropdownMenuItem>
-);
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -56,8 +37,7 @@ export default function BottomNav() {
             </Link>
           );
         })}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <AddInstantDialog>
             <Button
               variant="default"
               size="icon"
@@ -65,12 +45,7 @@ export default function BottomNav() {
             >
               <Plus className="h-6 w-6" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="mb-2">
-            <AddNoteDialog trigger={addNoteTrigger} />
-            <AddPhotoDialog trigger={addPhotoTrigger} />
-          </DropdownMenuContent>
-        </DropdownMenu>
+        </AddInstantDialog>
       </nav>
     </div>
   );
