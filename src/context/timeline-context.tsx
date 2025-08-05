@@ -19,7 +19,7 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id'>) => void;
+    addInstant: (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => void;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
 }
@@ -87,6 +87,11 @@ const initialInstants: Omit<Instant, 'id'>[] = [
     }
 ];
 
+const addRuntimeAttributes = (instant: Instant): Instant => {
+    const { icon, color } = getCategoryAttributes(instant.category);
+    return { ...instant, icon, color };
+};
+
 export const TimelineContext = createContext<TimelineContextType>({
     instants: [],
     groupedInstants: {},
@@ -120,14 +125,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           // Add icons and colors, and resolve local images
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
-              const { icon, color } = getCategoryAttributes(inst.category);
               let photoUrl = inst.photo;
               if (photoUrl && !photoUrl.startsWith('https://') && !photoUrl.startsWith('data:')) {
                   // It's an ID, try to load from IDB
                   const localPhoto = await getImage(inst.id);
                   photoUrl = localPhoto || 'https://placehold.co/500x300.png'; // Fallback
               }
-              return { ...inst, icon, color, photo: photoUrl };
+              return addRuntimeAttributes({...inst, photo: photoUrl});
             })
           );
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -135,7 +139,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         loadData();
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id'>) => {
+    const addInstant = async (instant: Omit<Instant, 'id' | 'icon' | 'color'>) => {
         let category = 'Note';
         try {
             const result = await categorizeInstant({
@@ -147,24 +151,23 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             console.error("AI categorization failed", error);
         }
 
-        const { icon, color } = getCategoryAttributes(category);
         const newInstantId = new Date().toISOString() + Math.random();
         
-        const newInstantWithId: Instant = { 
-            ...instant, 
+        const newInstantForDb: Instant = {
+            ...instant,
             id: newInstantId,
             category,
-            icon,
-            color
         };
-
+        
         if (instant.photo) {
             await saveImage(newInstantId, instant.photo);
         }
         
-        await saveInstant(newInstantWithId);
+        await saveInstant(newInstantForDb);
+        
+        const newInstantForState = addRuntimeAttributes(newInstantForDb);
 
-        setInstants(prevInstants => [...prevInstants, newInstantWithId].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
@@ -172,8 +175,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
 
-        const updatedInstant = { ...originalInstant, ...updatedInstantData };
-
+        let updatedInstant: Instant = { ...originalInstant, ...updatedInstantData };
+        
         if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo) {
             await saveImage(id, updatedInstant.photo);
         }
@@ -191,14 +194,24 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
         
-        const { icon, color } = getCategoryAttributes(updatedInstant.category);
-        updatedInstant.icon = icon;
-        updatedInstant.color = color;
+        const updatedInstantForDb: Instant = {
+            id: updatedInstant.id,
+            type: updatedInstant.type,
+            title: updatedInstant.title,
+            description: updatedInstant.description,
+            date: updatedInstant.date,
+            location: updatedInstant.location,
+            emotion: updatedInstant.emotion,
+            photo: updatedInstant.photo,
+            category: updatedInstant.category
+        };
 
-        await saveInstant(updatedInstant as Instant);
+        await saveInstant(updatedInstantForDb);
         
+        const updatedInstantForState = addRuntimeAttributes(updatedInstantForDb);
+
         setInstants(prevInstants => prevInstants.map(instant =>
-            instant.id === id ? (updatedInstant as Instant) : instant
+            instant.id === id ? updatedInstantForState : instant
         ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 

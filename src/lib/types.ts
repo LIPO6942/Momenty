@@ -4,8 +4,9 @@ export interface Instant {
     title: string;
     description: string;
     date: string; // ISO String
-    icon: React.ReactNode;
-    color: string;
+    // icon and color will be added at runtime
+    icon?: React.ReactNode; 
+    color?: string;
     location: string;
     emotion: string;
     photo?: string | null; // Data URL for the image
