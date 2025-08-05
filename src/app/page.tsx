@@ -55,7 +55,7 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
 export default function TimelinePage() {
   const { groupedInstants, deleteInstant } = useContext(TimelineContext);
 
-  const defaultOpenValue = useMemo(() => {
+  const allDayKeys = useMemo(() => {
     return Object.keys(groupedInstants);
   }, [groupedInstants]);
 
@@ -66,7 +66,7 @@ export default function TimelinePage() {
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
 
-      <Accordion type="multiple" defaultValue={defaultOpenValue} className="w-full space-y-4">
+      <Accordion type="multiple" value={allDayKeys} className="w-full space-y-4">
         {Object.entries(groupedInstants).map(([day, dayData]) => (
           <AccordionItem key={day} value={day} className="border-none">
              <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
