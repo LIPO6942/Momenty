@@ -22,6 +22,7 @@ import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
+import { Separator } from "../ui/separator";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -184,14 +185,16 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!description) {
-        toast({variant: "destructive", title: "Veuillez ajouter une description."});
+    if (!description && !photo) {
+        toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
         return;
     }
+    const finalDescription = description || (photo ? "Photo souvenir" : "Note");
+
     const newInstant = {
       type: photo ? "photo" as const : "note" as const,
-      title: description.substring(0, 30) + (description.length > 30 ? '...' : ''),
-      description,
+      title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
+      description: finalDescription,
       date: new Date().toISOString(),
       location: location || "Lieu inconnu",
       emotion: emotion || "Neutre",
@@ -216,7 +219,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
           <DialogHeader className="text-left">
             <DialogTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="pr-6 -mr-6 flex-grow">
+          <div className="flex-grow overflow-hidden">
+          <ScrollArea className="h-full pr-6 -mr-6">
             <div className="space-y-6 py-4">
                 {isCameraMode ? (
                     <div className="space-y-4">
@@ -233,19 +237,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </div>
                 ) : (
                 <>
-                 <div>
-                    <Label className="text-muted-foreground flex items-center gap-2">
-                        Qu'avez-vous en tête ?
-                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
-                    </Label>
-                    <Textarea 
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Décrivez votre moment... ou laissez l'IA le faire pour vous à partir d'une photo." 
-                        required 
-                        className="min-h-[100px] mt-2"
-                        disabled={isAnalyzing}
-                    />
+                 <div className="space-y-2">
+                    <Label className="text-muted-foreground">Ajouter un souvenir visuel</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
+                            <ImageIcon className="h-6 w-6" />
+                            <span>Importer</span>
+                        </Button>
+                        <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => setIsCameraMode(true)}>
+                            <Camera className="h-6 w-6" />
+                            <span>Prendre photo</span>
+                        </Button>
+                    </div>
+                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
 
                 {photo && (
@@ -261,6 +265,23 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         </div>
                     </div>
                 )}
+                 
+                 <Separator />
+
+                 <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Qu'avez-vous en tête ?
+                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </Label>
+                    <Textarea 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Décrivez votre moment... ou laissez l'IA le faire pour vous à partir d'une photo." 
+                        className="min-h-[100px] mt-2"
+                        disabled={isAnalyzing}
+                    />
+                 </div>
+
                  <div>
                     <Label className="text-muted-foreground flex items-center gap-2">
                         Où étiez-vous ?
@@ -302,7 +323,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 )}
             </div>
             </ScrollArea>
-            <DialogFooter className="justify-between sm:justify-between pt-4 mt-auto">
+            </div>
+            <DialogFooter className="justify-between sm:justify-between pt-4 mt-auto shrink-0">
                 {isCameraMode ? (
                      <div className="w-full flex justify-between">
                         <Button type="button" variant="ghost" onClick={() => setIsCameraMode(false)}>Retour</Button>
@@ -310,16 +332,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </div>
                 ) : (
                 <>
-                <div className="flex gap-1">
-                 <Button type="button" variant="ghost" size="icon" className="h-12 w-12" onClick={() => fileInputRef.current?.click()}>
-                    <ImageIcon className="h-6 w-6" />
-                </Button>
-                 <Button type="button" variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsCameraMode(true)}>
-                    <Camera className="h-6 w-6" />
-                </Button>
-                </div>
-                 <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
-
                 <div className="flex gap-2">
                     <DialogClose asChild>
                         <Button type="button" variant="ghost">Fermer</Button>

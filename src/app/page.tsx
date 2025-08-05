@@ -17,6 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
 import { cn } from "@/lib/utils";
@@ -49,16 +55,6 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
 export default function TimelinePage() {
   const { groupedInstants, deleteInstant } = useContext(TimelineContext);
 
-  const getInstantDate = (date: string) => {
-    try {
-        const parsedDate = parseISO(date);
-        return format(parsedDate, "d MMMM yyyy 'à' HH:mm", { locale: fr });
-    } catch (error) {
-        console.error("Invalid date format:", date, error);
-        return "Date invalide";
-    }
-  }
-
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
        <div className="py-16 space-y-2">
@@ -66,57 +62,61 @@ export default function TimelinePage() {
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
 
-      <div className="space-y-10">
+      <Accordion type="multiple" className="w-full space-y-4">
         {Object.entries(groupedInstants).map(([day, dayData]) => (
-          <div key={day}>
-            <h2 className="text-xl font-bold text-foreground mb-4">{dayData.title}</h2>
-            <div className="space-y-6">
-              {dayData.instants.map((instant) => (
-                <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-                  <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <div className="flex items-center gap-4">
-                         <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg", instant.color)}>
-                           {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
-                         </div>
-                         <div className="flex flex-col">
-                            <span className="font-bold text-base text-foreground">{instant.location}</span>
-                            <span className="text-sm text-muted-foreground">{getInstantDate(instant.date)}</span>
-                         </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <EditNoteDialog instantToEdit={instant}>
-                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Modifier</span>
-                            </DropdownMenuItem>
-                          </EditNoteDialog>
-                          <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Supprimer</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                  </CardHeader>
-                  
-                  <CardContent className="p-0 px-4">
-                    <InstantContent instant={instant} />
-                  </CardContent>
+          <AccordionItem key={day} value={day} className="border-none">
+             <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+                {dayData.title}
+             </AccordionTrigger>
+             <AccordionContent>
+                <div className="space-y-6 pt-4">
+                  {dayData.instants.map((instant) => (
+                    <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
+                      <CardHeader className="flex flex-row items-center justify-between p-4">
+                          <div className="flex items-center gap-4">
+                            <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg", instant.color)}>
+                              {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-base text-foreground">{instant.location}</span>
+                                <span className="text-sm text-muted-foreground">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <EditNoteDialog instantToEdit={instant}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Modifier</span>
+                                </DropdownMenuItem>
+                              </EditNoteDialog>
+                              <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Supprimer</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                      </CardHeader>
+                      
+                      <CardContent className="p-0 px-4">
+                        <InstantContent instant={instant} />
+                      </CardContent>
 
-                  <CardFooter className="p-4 pt-2">
-                    {instant.category && <Badge variant="secondary">{instant.category}</Badge>}
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </div>
+                      <CardFooter className="p-4 pt-2">
+                        {instant.category && <Badge variant="secondary">{instant.category}</Badge>}
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+             </AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </div>
   );
 }
