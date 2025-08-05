@@ -72,12 +72,12 @@ export default function TimelinePage() {
             <div className="space-y-6">
               {dayData.instants.map((instant) => (
                 <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-                  <CardHeader className={cn("flex flex-row items-center justify-between p-4 text-white", instant.color)}>
+                  <CardHeader className={cn("flex flex-row items-center justify-between p-4", instant.color)}>
                       <div className="flex items-center gap-4">
                          <div className="w-10 h-10 flex items-center justify-center">
                            {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                          </div>
-                         <div className="flex flex-col">
+                         <div className="flex flex-col text-white/90">
                             <span className="font-bold text-base">{instant.location}</span>
                             <span className="text-sm">{getInstantDate(instant.date)}</span>
                          </div>
