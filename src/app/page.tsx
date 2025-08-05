@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import Image from "next/image";
 import { MoreVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,11 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
 export default function TimelinePage() {
   const { groupedInstants, deleteInstant } = useContext(TimelineContext);
 
+  const defaultOpenValue = useMemo(() => {
+    const dayKeys = Object.keys(groupedInstants);
+    return dayKeys.length > 0 ? [dayKeys[0]] : [];
+  }, [groupedInstants]);
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
        <div className="py-16 space-y-2">
@@ -62,7 +67,7 @@ export default function TimelinePage() {
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
 
-      <Accordion type="multiple" className="w-full space-y-4">
+      <Accordion type="multiple" defaultValue={defaultOpenValue} className="w-full space-y-4">
         {Object.entries(groupedInstants).map(([day, dayData]) => (
           <AccordionItem key={day} value={day} className="border-none">
              <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">

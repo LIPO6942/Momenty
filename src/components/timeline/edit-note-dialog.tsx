@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, ReactNode, useContext, useRef } from "react";
@@ -18,37 +19,46 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
-import { saveImage, getImage } from "@/lib/idb";
-import { Camera, Trash2 } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
+import { Camera, Image as ImageIcon, Loader2, LocateFixed, MapPin, Trash2, Wand2 } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 interface EditNoteDialogProps {
   children: ReactNode;
   instantToEdit: Instant;
 }
 
+const moods = [
+  { name: "Heureux", icon: "😊" },
+  { name: "Excité", icon: "🤩" },
+  { name: "Émerveillé", icon: "🤯" },
+  { name: "Détendu", icon: "😌" },
+  { name: "Curieux", icon: "🤔" },
+  { name: "Nostalgique", icon: "😢" },
+];
+
 export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const { updateInstant } = useContext(TimelineContext);
-  
-  const [title, setTitle] = useState(instantToEdit.title);
-  const [description, setDescription] = useState(instantToEdit.description);
-  const [photo, setPhoto] = useState<string | null | undefined>(instantToEdit.photo);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [description, setDescription] = useState(instantToEdit.description);
+  const [location, setLocation] = useState(instantToEdit.location);
+  const [photo, setPhoto] = useState<string | null | undefined>(instantToEdit.photo);
+  const [emotion, setEmotion] = useState<string | null>(instantToEdit.emotion);
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    let photoUrl = photo;
-    if (photo && photo.startsWith('blob:')) {
-       // Should not happen with current logic, but as a safeguard
-       photoUrl = instantToEdit.photo; // Keep old photo if new one is not a data URL
-    }
-   
+    const finalDescription = description || "Note";
+
     updateInstant(instantToEdit.id, {
-      title,
+      title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
       description,
-      photo: photoUrl,
+      photo,
+      location,
+      emotion: emotion || "Neutre",
     });
 
     setOpen(false);
@@ -59,83 +69,108 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const result = reader.result as string;
-        try {
-          await saveImage(instantToEdit.id, result);
-          setPhoto(result);
-          toast({title: "Photo ajoutée localement."});
-        } catch (error) {
-          console.error("Failed to save image to IndexedDB", error);
-          toast({variant: "destructive", title: "Erreur de sauvegarde de l'image"});
-        }
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+        toast({title: "Photo mise à jour."});
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleRemovePhoto = async () => {
-    try {
-        await saveImage(instantToEdit.id, ''); // "Delete" by saving an empty string
-        setPhoto(null);
-        toast({title: "Photo supprimée."});
-    } catch(error) {
-        console.error("Failed to remove image", error);
-        toast({variant: "destructive", title: "Erreur de suppression de l'image"});
-    }
+  const cleanup = () => {
+    // Reset state to initial props when dialog closes
+    setDescription(instantToEdit.description);
+    setLocation(instantToEdit.location);
+    setPhoto(instantToEdit.photo);
+    setEmotion(instantToEdit.emotion);
   }
 
   return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if(!isOpen) cleanup();
+      }}>
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-         <form onSubmit={handleFormSubmit}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+         <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader>
             <DialogTitle>Modifier l'instant</DialogTitle>
           </DialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="title">Titre</Label>
-                    <Input 
-                      id="title" 
-                      name="title" 
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      required 
-                    />
-                </div>
-                 <div className="grid gap-2">
-                    <Label htmlFor="description">Contenu</Label>
-                    <Textarea 
-                      id="description" 
-                      name="description" 
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      required 
-                    />
-                </div>
+           <div className="flex-grow overflow-hidden">
+             <ScrollArea className="h-full pr-6 -mr-6">
+               <div className="space-y-6 py-4">
+                 <div className="space-y-2">
+                    <Label className="text-muted-foreground">Souvenir visuel</Label>
+                    {photo ? (
+                        <div className="relative group">
+                            <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
+                                    <Trash2 className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
+                            <ImageIcon className="h-6 w-6" />
+                            <span>Importer une nouvelle photo</span>
+                        </Button>
+                    )}
+                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                 </div>
+                 
+                 <Separator />
 
-                <div className="grid gap-2">
-                  <Label>Photo</Label>
-                  {photo ? (
-                    <div className="relative group">
-                       <Image src={photo} alt="Aperçu" width={400} height={200} className="rounded-md object-cover" />
-                       <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleRemovePhoto}>
-                          <Trash2 className="h-4 w-4"/>
-                       </Button>
+                 <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Qu'avez-vous en tête ?
+                    </Label>
+                    <Textarea 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Décrivez votre moment..." 
+                        className="min-h-[100px] mt-2"
+                    />
+                 </div>
+
+                 <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Où étiez-vous ?
+                    </Label>
+                    <div className="flex items-center gap-1 mt-2">
+                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <Input 
+                            name="location" 
+                            placeholder="Lieu (ex: Paris, France)" 
+                            className="border-0 focus-visible:ring-0 flex-grow"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                        />
                     </div>
-                  ) : (
-                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                      <Camera className="mr-2 h-4 w-4" />
-                      Ajouter une photo
-                    </Button>
-                  )}
-                  <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
-                </div>
-            </div>
-            <DialogFooter>
+                 </div>
+                 <div className="pt-2">
+                    <Label className="text-muted-foreground">Quelle était votre humeur ?</Label>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {moods.map(mood => (
+                            <Button 
+                                key={mood.name} 
+                                type="button" 
+                                variant={emotion === mood.name ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setEmotion(mood.name)}
+                                className="rounded-full"
+                            >
+                                {mood.icon} {mood.name}
+                            </Button>
+                        ))}
+                    </div>
+                 </div>
+               </div>
+            </ScrollArea>
+           </div>
+            <DialogFooter className="pt-4 mt-auto shrink-0">
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Fermer</Button>
                 </DialogClose>

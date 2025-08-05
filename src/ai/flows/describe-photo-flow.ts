@@ -21,7 +21,7 @@ const DescribePhotoInputSchema = z.object({
 export type DescribePhotoInput = z.infer<typeof DescribePhotoInputSchema>;
 
 const DescribePhotoOutputSchema = z.object({
-  description: z.string().describe('Une courte narration poétique et évocatrice en français sur la photo, dans le style d\'un journal de voyage. La narration doit capturer l\'atmosphère et l\'émotion du moment.'),
+  description: z.string().describe('Une légende courte, poétique et évocatrice pour la photo, en français, dans le style d\'un post pour les réseaux sociaux. La légende doit capturer l\'atmosphère et l\'émotion du moment en 1 ou 2 phrases. Par exemple : "Bleu intense et calme absolu. Se perdre dans les ruelles de Sidi Bou Said."'),
   location: z.string().describe('Le lieu (ville, pays) où la photo a probablement été prise. Si inconnu, laisser vide.')
 });
 export type DescribePhotoOutput = z.infer<typeof DescribePhotoOutputSchema>;
@@ -34,11 +34,16 @@ const prompt = ai.definePrompt({
   name: 'describePhotoPrompt',
   input: {schema: DescribePhotoInputSchema},
   output: {schema: DescribePhotoOutputSchema},
-  prompt: `Tu es un écrivain et poète spécialisé dans les récits de voyage. Ta tâche est d'analyser la photo fournie et de générer une narration courte et évocatrice en français pour un journal de voyage.
+  prompt: `Tu es un influenceur voyage talentueux. Ta tâche est d'analyser la photo fournie et de générer une légende courte et percutante en français pour un post sur les réseaux sociaux.
 
-  Au lieu de simplement décrire l'image, crée une histoire ou une ambiance qui capture l'essence du moment. Utilise un langage poétique. Par exemple : "Un moment de calme capturé dans une ruelle silencieuse. Les murs bleus reflètent la douceur de l’après-midi. À travers l’image, on sent le silence d’une ville figée dans le temps."
+  La légende doit être poétique et capturer l'essence du moment en 1 ou 2 phrases maximum.
 
-  Essaie également d'identifier le lieu (ville, pays) où la photo a pu être prise. Intègre ce lieu dans ta narration si possible. Si tu n'es pas sûr, laisse le champ "location" vide.
+  Exemples de style :
+  - "Un moment de calme capturé dans une ruelle silencieuse. Les murs bleus reflètent la douceur de l’après-midi."
+  - "Perdu dans les souks, où chaque couleur raconte une histoire."
+  - "Le silence du désert, juste avant que le soleil ne se couche. Magique."
+
+  Identifie également le lieu (ville, pays) où la photo a pu être prise. Intègre-le dans ta narration si possible. Si tu n'es pas sûr, laisse le champ "location" vide.
 
   Photo: {{media url=photoDataUri}}`,
 });
