@@ -51,7 +51,7 @@ export default function TimelinePage() {
   const getInstantDate = (date: string) => {
     try {
         const parsedDate = parseISO(date);
-        return format(parsedDate, 'd MMMM yyyy', { locale: fr });
+        return format(parsedDate, "d MMMM yyyy 'à' HH:mm", { locale: fr });
     } catch (error) {
         console.error("Invalid date format:", date, error);
         return "Invalid date";

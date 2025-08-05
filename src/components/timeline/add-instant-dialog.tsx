@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode, useContext, useRef } from "react";
+import { useState, ReactNode, useContext, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +17,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { BookText, Camera, MapPin, Smile, Trash2, LocateFixed, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Video } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -39,12 +39,50 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [open, setOpen] = useState(false);
   const { addInstant } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [emotion, setEmotion] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isCameraMode, setIsCameraMode] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const getCameraPermission = async () => {
+      if (isCameraMode) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({video: true});
+          setHasCameraPermission(true);
+  
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Accès à la caméra refusé',
+            description: 'Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.',
+          });
+        }
+      }
+    };
+    getCameraPermission();
+
+    return () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+    }
+  }, [isCameraMode, toast]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,6 +101,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setLocation("");
     setPhoto(null);
     setEmotion(null);
+    setIsCameraMode(false);
+    setHasCameraPermission(null);
   }
 
   const handleGetLocation = () => {
@@ -70,9 +110,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         toast({ variant: "destructive", title: "La géolocalisation n'est pas supportée par votre navigateur."});
         return;
     }
-
     setIsLocating(true);
-
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const { latitude, longitude } = position.coords;
@@ -101,25 +139,39 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     );
   };
 
+  const handleTakePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            setPhoto(dataUrl);
+            setIsCameraMode(false); // Exit camera mode after taking photo
+            toast({title: "Photo capturée !"});
+        }
+    }
+  }
+
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!description) {
         toast({variant: "destructive", title: "Veuillez ajouter une description."});
         return;
     }
-
     const newInstant = {
       type: photo ? "photo" as const : "note" as const,
-      title: description.substring(0, 30) + (description.length > 30 ? '...' : ''), // Simple title generation
+      title: description.substring(0, 30) + (description.length > 30 ? '...' : ''),
       description,
       date: new Date().toISOString(),
       location: location || "Lieu inconnu",
       emotion: emotion || "Neutre",
       photo: photo
     };
-
     addInstant(newInstant);
-
     setOpen(false);
     cleanup();
     toast({ title: "Nouvel instant ajouté !" });
@@ -136,10 +188,25 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
          <form onSubmit={handleFormSubmit} className="grid grid-rows-[auto,1fr,auto] h-full overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Ajouter un instant</DialogTitle>
+            <DialogTitle>{isCameraMode ? "Prendre une photo" : "Ajouter un instant"}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="pr-6">
             <div className="space-y-4 py-4">
+                {isCameraMode ? (
+                    <div className="space-y-4">
+                       <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted playsInline />
+                       <canvas ref={canvasRef} className="hidden" />
+                        {hasCameraPermission === false && (
+                            <Alert variant="destructive">
+                                <AlertTitle>Accès à la caméra requis</AlertTitle>
+                                <AlertDescription>
+                                    Veuillez autoriser l'accès à la caméra pour utiliser cette fonctionnalité.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
+                ) : (
+                <>
                 {photo && (
                     <div className="relative group">
                         <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-full" />
@@ -185,12 +252,26 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         ))}
                     </div>
                  </div>
+                </>
+                )}
             </div>
             </ScrollArea>
             <DialogFooter className="justify-between sm:justify-between pt-4">
-                <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                {isCameraMode ? (
+                     <div className="w-full flex justify-between">
+                        <Button type="button" variant="ghost" onClick={() => setIsCameraMode(false)}>Retour</Button>
+                        <Button type="button" onClick={handleTakePhoto} disabled={!hasCameraPermission}>Capturer</Button>
+                    </div>
+                ) : (
+                <>
+                <div className="flex gap-1">
+                 <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
                     <Camera className="h-5 w-5" />
                 </Button>
+                 <Button type="button" variant="ghost" size="icon" onClick={() => setIsCameraMode(true)}>
+                    <Video className="h-5 w-5" />
+                </Button>
+                </div>
                  <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
 
                 <div className="flex gap-2">
@@ -199,6 +280,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </DialogClose>
                     <Button type="submit">Publier</Button>
                 </div>
+                </>
+                )}
             </DialogFooter>
           </form>
         </DialogContent>
