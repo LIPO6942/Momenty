@@ -18,9 +18,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { describePhoto } from "@/ai/flows/describe-photo-flow";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -48,6 +49,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [emotion, setEmotion] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
@@ -85,13 +87,34 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     }
   }, [isCameraMode, toast]);
 
+  const handleAnalyzePhoto = async (photoDataUri: string) => {
+    setIsAnalyzing(true);
+    try {
+        const result = await describePhoto({ photoDataUri });
+        if (result.description) {
+            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
+        }
+        if (result.location) {
+            setLocation(result.location);
+        }
+        toast({ title: "Analyse IA terminée." });
+    } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "L'analyse par IA a échoué."});
+    } finally {
+        setIsAnalyzing(false);
+    }
+  }
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhoto(reader.result as string);
+        const result = reader.result as string;
+        setPhoto(result);
         toast({ title: "Photo prête à être ajoutée." });
+        handleAnalyzePhoto(result);
       };
       reader.readAsDataURL(file);
     }
@@ -104,6 +127,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setEmotion(null);
     setIsCameraMode(false);
     setHasCameraPermission(null);
+    setIsAnalyzing(false);
   }
 
   const handleGetLocation = () => {
@@ -153,6 +177,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             setPhoto(dataUrl);
             setIsCameraMode(false); // Exit camera mode after taking photo
             toast({title: "Photo capturée !"});
+            handleAnalyzePhoto(dataUrl);
         }
     }
   }
@@ -209,26 +234,38 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 ) : (
                 <>
                  <div>
-                    <Label className="text-muted-foreground">Qu'avez-vous en tête ?</Label>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Qu'avez-vous en tête ?
+                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </Label>
                     <Textarea 
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Décrivez votre moment..." 
+                        placeholder="Décrivez votre moment... ou laissez l'IA le faire pour vous à partir d'une photo." 
                         required 
                         className="min-h-[100px] mt-2"
+                        disabled={isAnalyzing}
                     />
                  </div>
 
                 {photo && (
                     <div className="relative group">
                         <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPhoto(null)}>
-                            <Trash2 className="h-4 w-4"/>
-                        </Button>
+                        <div className="absolute top-2 right-2 flex gap-2">
+                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo)} disabled={isAnalyzing}>
+                                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
+                            </Button>
+                            <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
+                                <Trash2 className="h-4 w-4"/>
+                            </Button>
+                        </div>
                     </div>
                 )}
                  <div>
-                    <Label className="text-muted-foreground">Où étiez-vous ?</Label>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Où étiez-vous ?
+                        {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </Label>
                     <div className="flex items-center gap-1 mt-2">
                         <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                         <Input 
@@ -237,9 +274,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             className="border-0 focus-visible:ring-0 flex-grow"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
+                            disabled={isLocating || isAnalyzing}
                         />
-                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating}>
-                            {isLocating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating || isAnalyzing}>
+                            <LocateFixed className="h-5 w-5" />
                         </Button>
                     </div>
                  </div>
@@ -286,7 +324,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <DialogClose asChild>
                         <Button type="button" variant="ghost">Fermer</Button>
                     </DialogClose>
-                    <Button type="submit">Publier</Button>
+                    <Button type="submit" disabled={isAnalyzing || isLocating}>
+                        {(isAnalyzing || isLocating) && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Publier
+                    </Button>
                 </div>
                 </>
                 )}
