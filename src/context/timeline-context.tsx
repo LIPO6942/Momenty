@@ -21,13 +21,15 @@ interface TimelineContextType {
     deleteInstant: (id: string) => void;
 }
 
+const baseDate = new Date('2024-07-22T10:00:00.000Z');
+
 const initialInstants: Instant[] = [
     {
       id: "1",
       type: 'note',
       title: "Arrivée à Tozeur",
       description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
-      date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
+      date: new Date(baseDate.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       icon: <BookText className="h-4 w-4 text-purple-700" />,
       color: "bg-purple-400",
       location: "Tozeur, Tunisie",
@@ -38,7 +40,7 @@ const initialInstants: Instant[] = [
       type: 'photo',
       title: "Oasis de Chébika",
       description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
-      date: new Date(new Date(new Date().setDate(new Date().getDate() - 2)).setHours(14, 30)).toISOString(),
+      date: new Date(baseDate.getTime() - (2 * 24 * 60 * 60 * 1000) + (4.5 * 60 * 60 * 1000)).toISOString(),
       icon: <ImageIcon className="h-4 w-4 text-blue-700" />,
       color: "bg-blue-400",
       location: "Chébika, Tunisie",
@@ -49,7 +51,7 @@ const initialInstants: Instant[] = [
       type: 'note',
       title: "Dîner sous les étoiles",
       description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
-      date: new Date(new Date(new Date().setDate(new Date().getDate() - 2)).setHours(20, 0)).toISOString(),
+      date: new Date(baseDate.getTime() - (2 * 24 * 60 * 60 * 1000) + (10 * 60 * 60 * 1000)).toISOString(),
       icon: <BookText className="h-4 w-4 text-purple-700" />,
       color: "bg-purple-400",
       location: "Campement près de Tozeur",
@@ -60,7 +62,7 @@ const initialInstants: Instant[] = [
       type: 'note',
       title: "Exploration de la médina",
       description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
-      date: new Date().toISOString(),
+      date: baseDate.toISOString(),
       icon: <BookText className="h-4 w-4 text-purple-700" />,
       color: "bg-purple-400",
       location: "Tunis, Tunisie",
@@ -71,7 +73,7 @@ const initialInstants: Instant[] = [
       type: 'mood',
       title: "Sentiment de la journée",
       description: "Journée de transition, un peu fatigué mais content.",
-      date: new Date(new Date().setHours(18, 0)).toISOString(),
+      date: new Date(baseDate.getTime() + (8 * 60 * 60 * 1000)).toISOString(),
       color: "bg-green-400",
       icon: <Smile className="h-4 w-4 text-green-700" />,
       location: "Tunis, Tunisie",
