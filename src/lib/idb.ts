@@ -6,9 +6,27 @@ const DB_NAME = "Momenty_DB";
 const IMAGE_STORE_NAME = "images";
 const STORY_STORE_NAME = "stories";
 const INSTANT_STORE_NAME = "instants";
-const DB_VERSION = 3; // Incremented version for schema change
+const PROFILE_STORE_NAME = "profile";
+const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
+const DB_VERSION = 4; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
+
+// Types used in this file
+export type ProfileData = {
+    id: number; // Use a fixed key for singleton stores
+    firstName: string;
+    lastName: string;
+    age: string;
+    gender: string;
+};
+
+export interface ManualLocation {
+    name: string;
+    startDate?: string;
+    endDate?: string;
+}
+
 
 const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -36,8 +54,14 @@ const initDB = (): Promise<IDBDatabase> => {
       if (!dbInstance.objectStoreNames.contains(STORY_STORE_NAME)) {
         dbInstance.createObjectStore(STORY_STORE_NAME, { keyPath: "id" });
       }
-       if (!dbInstance.objectStoreNames.contains(INSTANT_STORE_NAME)) {
+      if (!dbInstance.objectStoreNames.contains(INSTANT_STORE_NAME)) {
         dbInstance.createObjectStore(INSTANT_STORE_NAME, { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains(PROFILE_STORE_NAME)) {
+        dbInstance.createObjectStore(PROFILE_STORE_NAME, { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains(MANUAL_LOCATIONS_STORE_NAME)) {
+        dbInstance.createObjectStore(MANUAL_LOCATIONS_STORE_NAME, { keyPath: "id" });
       }
     };
   });
@@ -182,4 +206,74 @@ export const deleteInstantFromDB = async (id: string): Promise<void> => {
             reject(request.error);
         };
     });
-}
+};
+
+// Profile Functions
+export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([PROFILE_STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(PROFILE_STORE_NAME);
+      // Use a fixed ID for the profile, as there's only one
+      const request = store.put({ ...profile, id: 1 }); 
+  
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error('Save profile error:', request.error);
+        reject(request.error);
+      };
+    });
+  };
+  
+  export const getProfile = async (): Promise<Omit<ProfileData, 'id'> | null> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([PROFILE_STORE_NAME], 'readonly');
+      const store = transaction.objectStore(PROFILE_STORE_NAME);
+      const request = store.get(1); // Get the profile with the fixed ID
+  
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+  
+      request.onerror = () => {
+        console.error('Get profile error:', request.error);
+        reject(request.error);
+      };
+    });
+  };
+  
+  // Manual Locations Functions
+  export const saveManualLocations = async (locations: ManualLocation[]): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([MANUAL_LOCATIONS_STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
+      // Use a fixed ID for the locations array
+      const request = store.put({ id: 1, locations });
+  
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error('Save locations error:', request.error);
+        reject(request.error);
+      };
+    });
+  };
+  
+  export const getManualLocations = async (): Promise<ManualLocation[]> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([MANUAL_LOCATIONS_STORE_NAME], 'readonly');
+      const store = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
+      const request = store.get(1); // Get the locations with the fixed ID
+  
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.locations : []);
+      };
+  
+      request.onerror = () => {
+        console.error('Get locations error:', request.error);
+        reject(request.error);
+      };
+    });
+  };

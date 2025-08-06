@@ -20,14 +20,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getManualLocations, saveManualLocations, type ManualLocation } from "@/lib/idb";
 
-const MANUAL_LOCATIONS_KEY = 'manualLocations';
-
-interface ManualLocation {
-    name: string;
-    startDate?: string;
-    endDate?: string;
-}
 
 export default function MapPage() {
     const { instants } = useContext(TimelineContext);
@@ -39,14 +33,15 @@ export default function MapPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
-        try {
-            const savedManualLocations = localStorage.getItem(MANUAL_LOCATIONS_KEY);
-            if (savedManualLocations) {
-                setManualLocations(JSON.parse(savedManualLocations));
+        const loadLocations = async () => {
+            try {
+                const savedManualLocations = await getManualLocations();
+                setManualLocations(savedManualLocations);
+            } catch (error) {
+                console.error("Failed to load manual locations from IndexedDB", error);
             }
-        } catch (error) {
-            console.error("Failed to load manual locations from localStorage", error);
-        }
+        };
+        loadLocations();
     }, []);
 
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
@@ -74,7 +69,7 @@ export default function MapPage() {
         }).sort((a, b) => b.count - a.count);
     }, [instantLocations, manualLocations, instants]);
 
-    const handleAddLocation = () => {
+    const handleAddLocation = async () => {
         if (!newLocationName.trim()) {
             toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
             return;
@@ -91,8 +86,8 @@ export default function MapPage() {
         };
         const updatedManualLocations = [...manualLocations, newManualLocation];
 
+        await saveManualLocations(updatedManualLocations);
         setManualLocations(updatedManualLocations);
-        localStorage.setItem(MANUAL_LOCATIONS_KEY, JSON.stringify(updatedManualLocations));
         
         toast({ title: "Lieu ajouté !" });
         setNewLocationName("");
@@ -101,10 +96,10 @@ export default function MapPage() {
         setIsDialogOpen(false);
     }
     
-    const handleDeleteLocation = (locationName: string) => {
+    const handleDeleteLocation = async (locationName: string) => {
         const updatedManualLocations = manualLocations.filter(l => l.name !== locationName);
+        await saveManualLocations(updatedManualLocations);
         setManualLocations(updatedManualLocations);
-        localStorage.setItem(MANUAL_LOCATIONS_KEY, JSON.stringify(updatedManualLocations));
         toast({title: "Lieu supprimé."});
     }
 

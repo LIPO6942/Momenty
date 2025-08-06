@@ -21,19 +21,14 @@ import {
     SelectValue,
   } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getProfile, saveProfile } from "@/lib/idb";
+import type { ProfileData } from "@/lib/idb";
 
-const PROFILE_STORAGE_KEY = "userProfile";
-
-type ProfileData = {
-    firstName: string;
-    lastName: string;
-    age: string;
-    gender: string;
-};
+type ProfileState = Omit<ProfileData, 'id'>;
 
 export function ProfileForm() {
     const { toast } = useToast();
-    const [profile, setProfile] = useState<ProfileData>({
+    const [profile, setProfile] = useState<ProfileState>({
         firstName: "",
         lastName: "",
         age: "",
@@ -41,26 +36,29 @@ export function ProfileForm() {
     });
 
     useEffect(() => {
-        try {
-            const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-            if (savedProfile) {
-                setProfile(JSON.parse(savedProfile));
+        const loadProfile = async () => {
+            try {
+                const savedProfile = await getProfile();
+                if (savedProfile) {
+                    setProfile(savedProfile);
+                }
+            } catch (error) {
+                console.error("Failed to load profile from IndexedDB", error);
             }
-        } catch (error) {
-            console.error("Failed to load profile from localStorage", error);
-        }
+        };
+        loadProfile();
     }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+        await saveProfile(profile);
         toast({
             title: "Profil mis à jour !",
             description: "Vos informations ont été sauvegardées.",
         });
     } catch (error) {
-        console.error("Failed to save profile to localStorage", error);
+        console.error("Failed to save profile to IndexedDB", error);
         toast({
             variant: "destructive",
             title: "Erreur de sauvegarde",
@@ -70,8 +68,9 @@ export function ProfileForm() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setProfile(prev => ({...prev, [e.target.id.replace(/-/g, '')]: e.target.value}));
-  }
+      const { id, value } = e.target;
+      setProfile(prev => ({ ...prev, [id]: value }));
+  };
 
   const handleSelectChange = (value: string) => {
     setProfile(prev => ({...prev, gender: value}));
