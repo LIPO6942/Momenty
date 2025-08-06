@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
 
 // Fix for marker icon issue with webpack
 // This is a common workaround for react-leaflet
