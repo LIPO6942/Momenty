@@ -24,7 +24,7 @@ export default function Header() {
         <div className="flex items-center justify-end gap-2">
             <TripDialog>
               <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
-                <Plane className="h-5 w-5" />
+                <Plane className="h-5 w-5 text-blue-800" />
               </Button>
             </TripDialog>
 
