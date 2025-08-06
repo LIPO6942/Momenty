@@ -6,7 +6,6 @@ import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
-import { Skeleton } from '../ui/skeleton';
 
 // Fix for marker icons being broken in Next.js
 // This code needs to run once on the client
