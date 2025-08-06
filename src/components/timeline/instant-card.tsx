@@ -25,80 +25,75 @@ import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
-const InstantContent = ({ instant }: { instant: Instant }) => {
-  return (
-    <div className="pt-2">
-      {instant.photo && (
-        <Image
-          src={instant.photo}
-          alt={instant.title}
-          width={500}
-          height={300}
-          className="w-full rounded-lg object-cover aspect-video"
-          data-ai-hint="travel photo"
-        />
-      )}
-      <div className={cn("px-1 py-3", instant.photo && "pt-4")}>
-        <p className="font-bold text-lg text-foreground">{instant.title}</p>
-        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
-            <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
 
     return (
         <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-            <CardHeader className="flex flex-row items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                    <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg", instant.color)}>
+            <CardHeader className="flex flex-row items-start justify-between p-4">
+                <div className="flex items-start gap-4">
+                    <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0", instant.color)}>
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                     </div>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4 text-indigo-500" />
-                            <span className="font-bold text-base text-foreground">{instant.location}</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground mt-0.5">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                        <p className="font-bold text-lg text-foreground leading-tight">{instant.title}</p>
+                        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                            <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>
+                        )}
                     </div>
                 </div>
+
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
-                    <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <EditNoteDialog instantToEdit={instant}>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Modifier</span>
-                    </DropdownMenuItem>
-                    </EditNoteDialog>
-                    <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Supprimer</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <EditNoteDialog instantToEdit={instant}>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Modifier</span>
+                            </DropdownMenuItem>
+                        </EditNoteDialog>
+                        <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Supprimer</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>
             
-            <CardContent className="p-0 px-4">
-              <InstantContent instant={instant} />
+            <CardContent className="p-0 px-4 -mt-2">
+              <div className="ml-14 space-y-4">
+                {instant.photo && (
+                    <Image
+                    src={instant.photo}
+                    alt={instant.title}
+                    width={500}
+                    height={300}
+                    className="w-full rounded-lg object-cover aspect-video"
+                    data-ai-hint="travel photo"
+                    />
+                )}
+
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4 text-indigo-500" />
+                        <span className="font-bold text-sm text-foreground">{instant.location}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                </div>
+              </div>
             </CardContent>
 
-            <CardFooter className="p-4 pt-2">
+            <CardFooter className="p-4 pt-3 ml-14">
                 <div className="flex gap-2 flex-wrap">
                     {instant.category && (
                         <Badge variant="secondary" className="flex items-center gap-1.5">
                             <Tag className="h-3 w-3" />
                             {instant.category}
-                        </Badge>
+                        </badge>
                     )}
                     {instant.emotion && (
                         <Badge variant="outline">
@@ -108,5 +103,5 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                 </div>
             </CardFooter>
         </Card>
-    )
+    );
 }
