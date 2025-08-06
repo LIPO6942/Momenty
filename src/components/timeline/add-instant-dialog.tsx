@@ -115,7 +115,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         const result = reader.result as string;
         setPhoto(result);
         toast({ title: "Photo prête à être ajoutée." });
-        handleAnalyzePhoto(result);
       };
       reader.readAsDataURL(file);
     }
@@ -178,7 +177,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             setPhoto(dataUrl);
             setIsCameraMode(false); // Exit camera mode after taking photo
             toast({title: "Photo capturée !"});
-            handleAnalyzePhoto(dataUrl);
         }
     }
   }

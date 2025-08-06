@@ -126,7 +126,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
               let photoUrl = inst.photo;
-              if (inst.photo && inst.photo === 'local') {
+              if (inst.photo && inst.photo.startsWith('local_')) {
                   // It's a local photo stored by reference (ID)
                   const localPhoto = await getImage(inst.id);
                   photoUrl = localPhoto || 'https://placehold.co/500x300.png'; // Fallback
@@ -153,19 +153,23 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
+        const { icon, color } = getCategoryAttributes(category);
+
         let newInstantForDb = {
             ...instant,
             id: newInstantId,
             category,
+            icon: undefined, // ensure no react element is saved
+            color: undefined,
         };
         
         if (instant.photo) {
             await saveImage(newInstantId, instant.photo);
             // Don't store the large data URL in the main instant object, just a marker
-            newInstantForDb.photo = 'local';
+            newInstantForDb.photo = `local_${newInstantId}`;
         }
         
-        await saveInstant(newInstantForDb);
+        await saveInstant(newInstantForDb as unknown as Instant);
         
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
@@ -210,11 +214,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: updatedInstant.date,
             location: updatedInstant.location,
             emotion: updatedInstant.emotion,
-            photo: updatedInstant.photo ? 'local' : null,
+            photo: updatedInstant.photo ? `local_${id}` : null,
             category: updatedInstant.category
         };
 
-        await saveInstant(updatedInstantForDb);
+        await saveInstant(updatedInstantForDb as unknown as Instant);
         
         const updatedInstantForState = addRuntimeAttributes({
             ...updatedInstantForDb,
