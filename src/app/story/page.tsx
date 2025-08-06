@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useContext, useMemo, useEffect, useCallback } from 'react';
+import { useState, useContext, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TimelineContext } from '@/context/timeline-context';
 import { generateStory } from '@/ai/flows/generate-story-flow';
-import type { GeneratedStory } from '@/lib/types';
-import { Loader2, Wand2, Edit, Trash2 } from 'lucide-react';
+import type { GeneratedStory, Instant } from '@/lib/types';
+import { Loader2, Wand2, Edit, Trash2, BookText } from 'lucide-react';
 import Image from 'next/image';
 import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/idb';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,9 +32,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 const StoryPreview = ({ story }: { story: string }) => {
-    // A simple markdown-to-html renderer
     const html = story
       .split('\n')
       .map(line => {
@@ -44,12 +45,59 @@ const StoryPreview = ({ story }: { story: string }) => {
         if (line.trim() === '') {
             return '<br />';
         }
-        return `<p class="mb-2">${line}</p>`;
+        return `<p class="mb-2 leading-relaxed">${line}</p>`;
       })
       .join('');
   
     return <div dangerouslySetInnerHTML={{ __html: html }} className="prose dark:prose-invert max-w-none" />;
 };
+
+const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
+    const photos = story.instants.filter(i => i.photo);
+    const notes = story.instants.filter(i => i.type === 'note' && i.description);
+    
+    return (
+        <div className="space-y-4">
+            <StoryPreview story={story.story} />
+
+            {photos.length > 0 && (
+                 <ScrollArea className="w-full whitespace-nowrap rounded-lg">
+                    <div className="flex w-max space-x-4 p-1">
+                        {photos.map((instant) => (
+                            <div key={instant.id} className="flex-shrink-0">
+                                <Image
+                                    src={instant.photo!}
+                                    alt={instant.title}
+                                    width={250}
+                                    height={150}
+                                    className="aspect-[3/2] h-fit w-full rounded-md object-cover"
+                                />
+                             </div>
+                        ))}
+                    </div>
+                     <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+            )}
+
+            {notes.length > 0 && (
+                <>
+                <Separator/>
+                <div className='space-y-2'>
+                    <h4 className="font-semibold text-sm text-muted-foreground">Notes originales</h4>
+                    <div className="space-y-2 text-sm text-foreground/80">
+                        {notes.map(note => (
+                            <div key={note.id} className="flex gap-2 items-start">
+                                <BookText className="h-4 w-4 mt-1 flex-shrink-0" />
+                                <span>{note.description}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                </>
+            )}
+        </div>
+    )
+}
 
 export default function StoryPage() {
     const { groupedInstants } = useContext(TimelineContext);
@@ -98,7 +146,8 @@ export default function StoryPage() {
                 id: selectedDay,
                 date: selectedDay,
                 title: dayData.title,
-                story: result.story
+                story: result.story,
+                instants: dayData.instants,
             };
 
             await saveStory(newStory);
@@ -187,7 +236,7 @@ export default function StoryPage() {
                 {stories.length > 0 ? stories.map(story => (
                     <Card key={story.id}>
                         <CardContent className="p-6">
-                            <StoryPreview story={story.story} />
+                            <StoryDisplay story={story} />
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditStory(story)}>

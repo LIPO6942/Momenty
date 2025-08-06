@@ -4,8 +4,7 @@ export interface Instant {
     title: string;
     description: string;
     date: string; // ISO String
-    // icon and color will be added at runtime
-    icon?: React.ReactNode; 
+    icon: React.ReactNode; 
     color?: string;
     location: string;
     emotion: string;
@@ -35,4 +34,5 @@ export interface GeneratedStory {
   date: string; // The day string 'yyyy-MM-dd'
   title: string;
   story: string;
+  instants: Instant[]; // The instants used to generate the story
 }
