@@ -116,31 +116,25 @@ export function TripDialog({ children }: TripDialogProps) {
         </div>
 
         {isTripActive && (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="location" className="text-right">
-                Lieu
-              </Label>
-              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} className="col-span-3" placeholder="ex: Russie" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="location">Lieu</Label>
+              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} placeholder="ex: Russie" />
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right">
-                Début
-              </Label>
-              <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} className="col-span-3" />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endDate" className="text-right">
-                Fin
-              </Label>
-              <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} className="col-span-3" />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="companionType" className="text-right">
-                    Avec qui
-                </Label>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="startDate">Début</Label>
+                    <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="endDate">Fin</Label>
+                    <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} />
+                </div>
+             </div>
+             <div className="space-y-2">
+                <Label htmlFor="companionType">Avec qui</Label>
                 <Select value={trip.companionType} onValueChange={handleSelectChange}>
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger>
                         <SelectValue placeholder="Sélectionner..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -152,17 +146,15 @@ export function TripDialog({ children }: TripDialogProps) {
                 </Select>
             </div>
             {trip.companionType && trip.companionType !== 'Solo' && (
-                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="companionName" className="text-right">
-                        Nom
-                    </Label>
-                    <Input id="companionName" name="companionName" value={trip.companionName || ''} onChange={handleChange} className="col-span-3" placeholder="Prénom du compagnon"/>
+                 <div className="space-y-2">
+                    <Label htmlFor="companionName">Nom du compagnon</Label>
+                    <Input id="companionName" name="companionName" value={trip.companionName || ''} onChange={handleChange} placeholder="Prénom"/>
                 </div>
             )}
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className='pt-4'>
             <DialogClose asChild>
                 <Button type="button" variant="ghost">Fermer</Button>
             </DialogClose>

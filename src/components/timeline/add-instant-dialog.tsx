@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -244,7 +245,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 ) : (
                 <>
                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Ajouter un souvenir visuel</Label>
+                    <Label>Ajouter un souvenir visuel</Label>
                     <div className="grid grid-cols-2 gap-2">
                         <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
                             <ImageIcon className="h-6 w-6" />
@@ -274,28 +275,30 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                  
                  <Separator />
 
-                 <div>
-                    <Label className="text-muted-foreground flex items-center gap-2">
+                 <div className="space-y-2">
+                    <Label htmlFor="description" className="flex items-center gap-2">
                         Qu'avez-vous en tête ?
                         {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
                     </Label>
                     <Textarea 
+                        id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Décrivez votre moment... ou laissez l'IA le faire pour vous à partir d'une photo." 
-                        className="min-h-[100px] mt-2"
+                        className="min-h-[100px]"
                         disabled={isAnalyzing}
                     />
                  </div>
 
-                 <div>
-                    <Label className="text-muted-foreground flex items-center gap-2">
+                 <div className="space-y-2">
+                    <Label htmlFor="location" className="flex items-center gap-2">
                         Où étiez-vous ?
                         {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
                     </Label>
-                    <div className="flex items-center gap-1 mt-2">
-                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <div className="flex items-center gap-1 mt-2 border rounded-md">
+                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
                         <Input 
+                            id="location"
                             name="location" 
                             placeholder="Lieu (ex: Paris, France)" 
                             className="border-0 focus-visible:ring-0 flex-grow"
@@ -308,8 +311,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         </Button>
                     </div>
                  </div>
-                 <div className="pt-2">
-                    <Label className="text-muted-foreground">Quelle était votre humeur ?</Label>
+                 <div className="space-y-2">
+                    <Label>Quelle était votre humeur ?</Label>
                     <div className="flex flex-wrap gap-2 pt-2">
                         {moods.map(mood => (
                             <Button 
