@@ -256,7 +256,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/png, image/jpeg" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
 
                 {photo && (
