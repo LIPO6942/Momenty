@@ -36,11 +36,16 @@ export default function MapPage() {
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
+    const [isClient, setIsClient] = useState(false);
 
     const [newLocationName, setNewLocationName] = useState("");
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     useEffect(() => {
         const loadLocations = async () => {
@@ -168,7 +173,11 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                <InteractiveMap locations={locationsWithCoords} />
+                {isClient ? (
+                    <InteractiveMap locations={locationsWithCoords} />
+                ) : (
+                    <Skeleton className="h-[400px] w-full rounded-lg" />
+                )}
             </CardContent>
        </Card>
 

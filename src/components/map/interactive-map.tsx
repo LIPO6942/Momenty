@@ -1,33 +1,40 @@
 "use client";
 
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useEffect } from 'react';
 
-// Fix for marker icons
-if (typeof window !== 'undefined') {
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
+// Fix for marker icons being broken in Next.js
+// This code needs to run once on the client
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  });
-}
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
 
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
 }
 
+const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (locations.length > 0) {
+            const bounds = new L.LatLngBounds(locations.map(l => l.coords));
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+    }, [locations, map]);
+    return null;
+}
+
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
-  useEffect(() => {
-    const existingMap = document.querySelector('.leaflet-container');
-    if (existingMap && (existingMap as any)._leaflet_id) {
-      (existingMap as HTMLElement).remove();
-    }
-  }, []);
 
   if (locations.length === 0) {
     return (
@@ -37,18 +44,18 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     );
   }
 
+  // Use the first location as the initial center, the MapUpdater will adjust the view.
   const center: [number, number] = locations.length > 0 
         ? locations[0].coords 
         : [51.505, -0.09]; // Default to London if no locations
 
   return (
     <MapContainer
-      id="custom-map"
       center={center}
-      zoom={2}
+      zoom={locations.length > 1 ? undefined : 5}
       scrollWheelZoom={true}
       style={{ height: '400px', width: '100%' }}
-      className="rounded-lg z-0 leaflet-container"
+      className="rounded-lg z-0"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -56,9 +63,10 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
       />
       {locations.map((location) => (
         <Marker key={location.name} position={location.coords}>
-          <Popup>{location.name}</Popup>
+          <Popup>{location.name} ({location.count} instant(s))</Popup>
         </Marker>
       ))}
+      <MapUpdater locations={locations} />
     </MapContainer>
   );
 }
