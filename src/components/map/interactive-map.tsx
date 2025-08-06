@@ -5,7 +5,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '../ui/skeleton';
 
 // Fix for marker icons being broken in Next.js
 // This code needs to run once on the client
@@ -40,6 +41,15 @@ const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
 }
 
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
+  const [client, setClient] = useState(false)
+
+  useEffect(() => {
+    setClient(true)
+  }, [])
+  
+  if (!client) {
+    return <Skeleton className="h-[400px] w-full rounded-lg" />
+  }
 
   if (locations.length === 0) {
     return (
