@@ -20,7 +20,7 @@ export default function TimelinePage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
-       <div className="py-16 space-y-2">
+       <div className="py-16 space-y-2 text-center">
         <h1 className="text-4xl font-bold text-primary">Bienvenue sur Momenty</h1>
         <p className="text-muted-foreground">Voici le résumé de vos voyages.</p>
       </div>
