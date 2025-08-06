@@ -37,9 +37,6 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                     <div className="flex flex-col">
                         <p className="font-bold text-lg text-foreground leading-tight">{instant.title}</p>
-                        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
-                            <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>
-                        )}
                     </div>
                 </div>
 
@@ -64,30 +61,32 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                 </DropdownMenu>
             </CardHeader>
             
-            <CardContent className="p-0 px-4 -mt-2">
+            <CardContent className="p-0 px-4 -mt-4">
               <div className="ml-14 space-y-4">
+                {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                    <p className="text-sm text-muted-foreground">{instant.description}</p>
+                )}
                 {instant.photo && (
                     <Image
-                    src={instant.photo}
-                    alt={instant.title}
-                    width={500}
-                    height={300}
-                    className="w-full rounded-lg object-cover aspect-video"
-                    data-ai-hint="travel photo"
+                        src={instant.photo}
+                        alt={instant.title}
+                        width={500}
+                        height={300}
+                        className="w-full rounded-lg object-cover aspect-video"
+                        data-ai-hint="travel photo"
                     />
                 )}
-
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-indigo-500" />
-                        <span className="font-bold text-sm text-foreground">{instant.location}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
-                </div>
               </div>
             </CardContent>
 
-            <CardFooter className="p-4 pt-3 ml-14">
+            <CardFooter className="flex flex-col items-start gap-3 p-4 pt-3 ml-14">
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4 text-indigo-500" />
+                        <span className="font-semibold text-sm text-foreground">{instant.location}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                     {instant.category && (
                         <Badge variant="secondary" className="flex items-center gap-1.5">
