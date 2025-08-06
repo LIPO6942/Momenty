@@ -144,16 +144,23 @@ export default function StoryPage() {
                 instants: instantsForStory
             });
             
+             // Clean instants before saving to IndexedDB
+            const cleanInstants = dayData.instants.map(i => {
+                const { icon, color, ...rest } = i;
+                return rest;
+            });
+
             const newStory: GeneratedStory = {
                 id: selectedDay,
                 date: selectedDay,
                 title: dayData.title,
                 story: result.story,
-                instants: dayData.instants,
+                instants: cleanInstants,
             };
 
             await saveStory(newStory);
-            setStories(prev => [...prev.filter(s => s.id !== selectedDay), newStory].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            // For the state, we can use the original instants with all their properties
+            setStories(prev => [...prev.filter(s => s.id !== selectedDay), {...newStory, instants: dayData.instants}].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
             toast({ title: "Histoire générée et sauvegardée !" });
 
         } catch (error) {
