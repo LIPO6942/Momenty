@@ -27,14 +27,16 @@ import { Edit, Save } from "lucide-react";
 
 type ProfileState = Omit<ProfileData, 'id'>;
 
+const defaultProfile: ProfileState = {
+    firstName: "",
+    lastName: "",
+    age: "",
+    gender: "",
+};
+
 export function ProfileForm() {
     const { toast } = useToast();
-    const [profile, setProfile] = useState<ProfileState>({
-        firstName: "",
-        lastName: "",
-        age: "",
-        gender: "",
-    });
+    const [profile, setProfile] = useState<ProfileState>(defaultProfile);
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -49,12 +51,17 @@ export function ProfileForm() {
                 }
             } catch (error) {
                 console.error("Failed to load profile from IndexedDB", error);
+                toast({
+                    variant: "destructive",
+                    title: "Erreur de chargement",
+                    description: "Impossible de charger le profil.",
+                });
                 // Enter editing mode if there's an error loading
                 setIsEditing(true);
             }
         };
         loadProfile();
-    }, []);
+    }, [toast]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +89,11 @@ export function ProfileForm() {
 
   const handleSelectChange = (value: string) => {
     setProfile(prev => ({...prev, gender: value}));
+  }
+
+  const handleEditClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent form submission
+    setIsEditing(true);
   }
 
   return (
@@ -125,10 +137,10 @@ export function ProfileForm() {
             {isEditing ? (
                  <Button type="submit">
                     <Save className="mr-2 h-4 w-4" />
-                    Enregistrer les modifications
+                    Enregistrer
                 </Button>
             ) : (
-                <Button type="button" onClick={() => setIsEditing(true)}>
+                <Button type="button" onClick={handleEditClick}>
                     <Edit className="mr-2 h-4 w-4" />
                     Modifier le profil
                 </Button>
