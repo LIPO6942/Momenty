@@ -29,7 +29,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
 
     return (
-        <Card key={instant.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
+        <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4">
                 <div className="flex items-start gap-4">
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0", instant.color)}>
@@ -92,7 +92,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         <Badge variant="secondary" className="flex items-center gap-1.5">
                             <Tag className="h-3 w-3" />
                             {instant.category}
-                        </badge>
+                        </Badge>
                     )}
                     {instant.emotion && (
                         <Badge variant="outline">
