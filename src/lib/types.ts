@@ -14,10 +14,10 @@ export interface Instant {
 }
 
 export interface Trip {
-    title: string;
-    location: string;
-    startDate: string; // ISO String
-    endDate: string; // ISO String
+    title?: string;
+    location?: string;
+    startDate?: string; // ISO String
+    endDate?: string; // ISO String
 }
 
 export interface TimelineEvent {

@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import type { Trip } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
 
 interface TripDialogProps {
     children: ReactNode;
@@ -45,6 +46,7 @@ export function TripDialog({ children }: TripDialogProps) {
                 setTrip(JSON.parse(savedTrip));
                 setIsTripActive(true);
             } else {
+                setTrip({});
                 setIsTripActive(false);
             }
         }
@@ -67,17 +69,18 @@ export function TripDialog({ children }: TripDialogProps) {
         };
         localStorage.setItem('activeTrip', JSON.stringify(tripToSave));
         toast({ title: "Voyage enregistré !" });
-        window.dispatchEvent(new Event('storage')); // Notify other components
+        window.dispatchEvent(new Event('storage')); 
         setOpen(false);
     }
     
-    const handleEndTrip = () => {
-        localStorage.removeItem('activeTrip');
-        setTrip({});
-        setIsTripActive(false);
-        toast({ title: "Voyage terminé." });
-        window.dispatchEvent(new Event('storage')); // Notify other components
-        setOpen(false);
+    const handleToggleTrip = (isActive: boolean) => {
+        setIsTripActive(isActive);
+        if (!isActive) {
+            localStorage.removeItem('activeTrip');
+            setTrip({});
+            toast({ title: "Mode voyage terminé." });
+            window.dispatchEvent(new Event('storage'));
+        }
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,50 +94,51 @@ export function TripDialog({ children }: TripDialogProps) {
         <DialogHeader>
           <DialogTitle>Contexte du voyage</DialogTitle>
           <DialogDescription>
-            Définissez un voyage ou un séjour pour automatiquement lier vos souvenirs.
+            Activez ce mode pour automatiquement lier vos souvenirs à un voyage ou séjour.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Titre
-            </Label>
-            <Input id="title" name="title" value={trip.title || ''} onChange={handleChange} className="col-span-3" placeholder="Ex: Aventure en Tunisie" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="location" className="text-right">
-              Lieu
-            </Label>
-            <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} className="col-span-3" placeholder="Ex: Tunisie" />
-          </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startDate" className="text-right">
-              Début
-            </Label>
-            <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} className="col-span-3" />
-          </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="endDate" className="text-right">
-              Fin
-            </Label>
-            <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} className="col-span-3" />
-          </div>
+        
+        <div className="flex items-center space-x-2 py-4">
+          <Switch id="trip-mode" checked={isTripActive} onCheckedChange={handleToggleTrip} />
+          <Label htmlFor="trip-mode">Activer le mode voyage</Label>
         </div>
-        <DialogFooter className="sm:justify-between">
-            {isTripActive ? (
-                 <Button type="button" variant="destructive" onClick={handleEndTrip}>
-                    Terminer le voyage
-                </Button>
-            ) : <div />}
-          
-          <div className='flex gap-2'>
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                Annuler
-                </Button>
-            </DialogClose>
-            <Button type="button" onClick={handleSave}>Enregistrer</Button>
+
+        {isTripActive && (
+          <div className="grid gap-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Titre
+              </Label>
+              <Input id="title" name="title" value={trip.title || ''} onChange={handleChange} className="col-span-3" placeholder="Ex: Aventure en Tunisie" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="location" className="text-right">
+                Lieu
+              </Label>
+              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} className="col-span-3" placeholder="Ex: Tunisie" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startDate" className="text-right">
+                Début
+              </Label>
+              <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endDate" className="text-right">
+                Fin
+              </Label>
+              <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} className="col-span-3" />
+            </div>
           </div>
+        )}
+
+        <DialogFooter>
+            <DialogClose asChild>
+                <Button type="button" variant="ghost">Fermer</Button>
+            </DialogClose>
+            {isTripActive && (
+              <Button type="button" onClick={handleSave}>Enregistrer</Button>
+            )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
