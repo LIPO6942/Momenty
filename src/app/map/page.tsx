@@ -36,16 +36,11 @@ export default function MapPage() {
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
-    const [isClient, setIsClient] = useState(false);
 
     const [newLocationName, setNewLocationName] = useState("");
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
 
     useEffect(() => {
         const loadLocations = async () => {
@@ -115,6 +110,7 @@ export default function MapPage() {
         if (allLocations.length > 0) {
             fetchCoordinates();
         } else {
+            setLocationsWithCoords([]);
             setIsLoadingCoords(false);
         }
     }, [allLocations]);
@@ -173,11 +169,7 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                {isClient ? (
-                    <InteractiveMap locations={locationsWithCoords} />
-                ) : (
-                    <Skeleton className="h-[400px] w-full rounded-lg" />
-                )}
+                <InteractiveMap locations={locationsWithCoords} />
             </CardContent>
        </Card>
 
@@ -235,7 +227,11 @@ export default function MapPage() {
         </div>
       
        <div className="space-y-4">
-        {allLocations.map(location => (
+        {isLoadingCoords ? (
+             <div className="flex justify-center items-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+             </div>
+        ) : allLocations.map(location => (
             <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
