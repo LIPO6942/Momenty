@@ -43,7 +43,6 @@ export function ProfileForm() {
                 const savedProfile = await getProfile();
                 if (savedProfile) {
                     setProfile(savedProfile);
-                    setIsEditing(false); // Start in view mode if profile exists
                 } else {
                     // If no profile is saved, automatically enter editing mode
                     setIsEditing(true);
