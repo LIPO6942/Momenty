@@ -5,7 +5,7 @@ export interface Instant {
     title: string;
     description: string;
     date: string; // ISO String
-    icon: React.ReactNode; 
+    icon?: React.ReactNode; 
     color?: string;
     location: string;
     emotion: string;

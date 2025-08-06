@@ -19,7 +19,7 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => void;
+    addInstant: (instant: Omit<Instant, 'id'>) => void;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
     activeTrip: Trip | null;
@@ -154,7 +154,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         }
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => {
+    const addInstant = async (instant: Omit<Instant, 'id'>) => {
         let category = 'Note';
         try {
             const result = await categorizeInstant({
@@ -168,7 +168,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
-        const instantWithContext = { ...instant };
+        let instantWithContext = { ...instant };
         if (activeTrip && !instantWithContext.location) {
             instantWithContext.location = activeTrip.location;
         }
