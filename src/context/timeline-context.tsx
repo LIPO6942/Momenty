@@ -39,7 +39,7 @@ const getCategoryAttributes = (category?: string) => {
     }
 };
 
-const initialInstants: Omit<Instant, 'id'>[] = [
+const initialInstants: Omit<Instant, 'id' | 'icon' | 'color'>[] = [
     {
       type: 'note',
       title: "Arrivée à Tozeur",
@@ -130,9 +130,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             loadedInstants.map(async (inst) => {
               let photoUrl = inst.photo;
               if (inst.photo && inst.photo.startsWith('local_')) {
-                  // It's a local photo stored by reference (ID)
                   const localPhoto = await getImage(inst.id);
-                  photoUrl = localPhoto || 'https://placehold.co/500x300.png'; // Fallback
+                  photoUrl = localPhoto; 
               }
               return addRuntimeAttributes({...inst, photo: photoUrl});
             })
@@ -173,8 +172,6 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             instantWithContext.location = activeTrip.location;
         }
         
-        // This is the object that will be stored in IndexedDB.
-        // It must only contain serializable data.
         const newInstantForDb: Omit<Instant, 'icon'|'color'> = {
             id: newInstantId,
             type: instantWithContext.type,
@@ -183,22 +180,20 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: instantWithContext.date,
             location: instantWithContext.location,
             emotion: instantWithContext.emotion,
-            photo: null, // Default to null
-            category: category
+            photo: null,
+            category: category,
         };
         
         if (instantWithContext.photo) {
             await saveImage(newInstantId, instantWithContext.photo);
-            // Don't store the large data URL in the main instant object, just a marker
             newInstantForDb.photo = `local_${newInstantId}`;
         }
         
         await saveInstant(newInstantForDb as unknown as Instant);
         
-        // This is the object for the UI state, with runtime properties
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
-            photo: instant.photo // Keep the data URL for immediate display in the UI
+            photo: instant.photo 
         });
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -211,14 +206,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         let updatedInstant = { ...originalInstant, ...updatedInstantData };
         
-        // Handle photo saving and prevent storing data URL in DB
         if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo) {
             if (updatedInstant.photo.startsWith('data:')) {
                  await saveImage(id, updatedInstant.photo);
             }
         }
 
-        // Recategorize if title or description changed
         if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
             try {
                 const { category } = await categorizeInstant({
@@ -247,7 +240,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         
         const updatedInstantForState = addRuntimeAttributes({
             ...updatedInstantForDb,
-            photo: updatedInstant.photo // Keep the full data URL for the UI state
+            photo: updatedInstant.photo
         });
 
         setInstants(prevInstants => prevInstants.map(instant =>
@@ -257,8 +250,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const deleteInstant = async (id: string) => {
         await deleteInstantFromDB(id);
-        // Also delete the associated image if it exists
-        await saveImage(id, ''); // Overwrite with empty to "delete"
+        await saveImage(id, ''); 
         setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 

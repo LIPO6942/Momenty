@@ -64,15 +64,17 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
                  <ScrollArea className="w-full whitespace-nowrap rounded-lg">
                     <div className="flex w-max space-x-4 p-1">
                         {photos.map((instant) => (
+                           instant.photo && (
                             <div key={instant.id} className="flex-shrink-0">
                                 <Image
-                                    src={instant.photo!}
+                                    src={instant.photo}
                                     alt={instant.title}
                                     width={250}
                                     height={150}
                                     className="aspect-[3/2] h-fit w-full rounded-md object-cover"
                                 />
                              </div>
+                           )
                         ))}
                     </div>
                      <ScrollBar orientation="horizontal" />

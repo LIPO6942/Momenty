@@ -84,7 +84,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
             </CardHeader>
             
             <CardContent className="p-0 px-4">
-            <InstantContent instant={instant} />
+              {instant.photo ? <InstantContent instant={instant} /> : <InstantContent instant={instant} /> }
             </CardContent>
 
             <CardFooter className="p-4 pt-2">
