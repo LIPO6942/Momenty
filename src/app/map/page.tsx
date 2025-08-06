@@ -36,6 +36,7 @@ export default function MapPage() {
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
+    const [isMounted, setIsMounted] = useState(false); // New state to control client-side rendering
 
     const [newLocationName, setNewLocationName] = useState("");
     const [newStartDate, setNewStartDate] = useState("");
@@ -43,6 +44,7 @@ export default function MapPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true); // Set mounted to true only on the client
         const loadLocations = async () => {
             try {
                 const savedManualLocations = await getManualLocations();
@@ -169,12 +171,13 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                {!isLoadingCoords && (
+                {isMounted && !isLoadingCoords && (
                     <InteractiveMap 
                         key={JSON.stringify(locationsWithCoords)} 
                         locations={locationsWithCoords} 
                     />
                 )}
+                {(!isMounted || isLoadingCoords) && <Skeleton className="h-[400px] w-full rounded-lg" />}
             </CardContent>
        </Card>
 
