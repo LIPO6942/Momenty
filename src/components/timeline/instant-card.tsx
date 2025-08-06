@@ -61,7 +61,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <MapPin className="h-4 w-4 text-indigo-500" />
                             <span className="font-bold text-base text-foreground">{instant.location}</span>
                         </div>
                         <span className="text-sm text-muted-foreground mt-0.5">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
