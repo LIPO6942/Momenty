@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useId } from 'react';
+import { useEffect } from 'react';
 
 // Fix for marker icons being broken in Next.js
 // This code needs to run once on the client
@@ -40,7 +40,6 @@ const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
 }
 
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
-  const mapId = useId();
 
   if (locations.length === 0) {
     return (
@@ -57,7 +56,6 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
 
   return (
     <MapContainer
-      key={mapId} // This key is crucial to prevent re-initialization errors
       center={center}
       zoom={locations.length > 1 ? undefined : 5}
       scrollWheelZoom={true}

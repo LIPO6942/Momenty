@@ -169,7 +169,12 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                <InteractiveMap locations={locationsWithCoords} />
+                {!isLoadingCoords && (
+                    <InteractiveMap 
+                        key={JSON.stringify(locationsWithCoords)} 
+                        locations={locationsWithCoords} 
+                    />
+                )}
             </CardContent>
        </Card>
 
@@ -231,6 +236,10 @@ export default function MapPage() {
              <div className="flex justify-center items-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
              </div>
+        ) : allLocations.length === 0 ? (
+            <div className="text-center py-10">
+                <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
+            </div>
         ) : allLocations.map(location => (
             <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
                 <CardHeader className="flex flex-row items-center justify-between">
