@@ -37,7 +37,14 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
         : [51.505, -0.09]; // Default to London if no locations
 
     return (
-        <MapContainer center={center} zoom={2} scrollWheelZoom={true} style={{ height: '400px', width: '100%' }} className='rounded-lg z-0'>
+        <MapContainer 
+            key={locations.map(loc => loc.name).join(',')}
+            center={center} 
+            zoom={2} 
+            scrollWheelZoom={true} 
+            style={{ height: '400px', width: '100%' }} 
+            className='rounded-lg z-0'
+        >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
