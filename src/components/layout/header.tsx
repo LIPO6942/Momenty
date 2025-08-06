@@ -19,7 +19,7 @@ export default function Header() {
     <header className="fixed top-0 z-40 w-full p-4">
       <div className="container flex h-16 max-w-2xl items-center justify-between rounded-full bg-card/80 backdrop-blur-sm p-2 shadow-lg ring-1 ring-black/5 mx-auto">
         <div className="flex items-center gap-2 pl-4">
-            <Link href="/" className="text-2xl font-bold text-foreground">InsTXP</Link>
+            <Link href="/" className="text-2xl font-bold text-foreground">Momenty</Link>
         </div>
         <div className="flex items-center justify-end gap-2">
             <TripDialog>

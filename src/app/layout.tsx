@@ -7,7 +7,7 @@ import BottomNav from '@/components/layout/bottom-nav';
 import { TimelineProvider } from '@/context/timeline-context';
 
 export const metadata: Metadata = {
-  title: 'InsTXP - Votre journal de voyage',
+  title: 'Momenty - Votre journal de voyage',
   description: 'Mémorisez et organisez les instants de votre voyage.',
   manifest: '/manifest.json',
 };

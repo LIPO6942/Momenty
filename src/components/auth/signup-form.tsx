@@ -27,7 +27,7 @@ export function SignupForm() {
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold">Créer un compte</CardTitle>
         <CardDescription>
-          Rejoignez InsTXP et commencez votre aventure.
+          Rejoignez Momenty et commencez votre aventure.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSignup}>

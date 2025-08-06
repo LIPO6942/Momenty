@@ -2,7 +2,7 @@
 "use client";
 import type { GeneratedStory, Instant } from './types';
 
-const DB_NAME = "InsTXP_DB";
+const DB_NAME = "Momenty_DB";
 const IMAGE_STORE_NAME = "images";
 const STORY_STORE_NAME = "stories";
 const INSTANT_STORE_NAME = "instants";
