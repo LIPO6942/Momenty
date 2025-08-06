@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { getProfile, saveProfile } from "@/lib/idb";
 import type { ProfileData } from "@/lib/idb";
+import { Edit, Save } from "lucide-react";
 
 type ProfileState = Omit<ProfileData, 'id'>;
 
@@ -34,6 +35,7 @@ export function ProfileForm() {
         age: "",
         gender: "",
     });
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -41,6 +43,9 @@ export function ProfileForm() {
                 const savedProfile = await getProfile();
                 if (savedProfile) {
                     setProfile(savedProfile);
+                } else {
+                    // If no profile is saved, automatically enter editing mode
+                    setIsEditing(true);
                 }
             } catch (error) {
                 console.error("Failed to load profile from IndexedDB", error);
@@ -57,6 +62,7 @@ export function ProfileForm() {
             title: "Profil mis à jour !",
             description: "Vos informations ont été sauvegardées.",
         });
+        setIsEditing(false); // Exit editing mode after saving
     } catch (error) {
         console.error("Failed to save profile to IndexedDB", error);
         toast({
@@ -78,30 +84,30 @@ export function ProfileForm() {
 
   return (
     <Card>
+      <form onSubmit={handleSave}>
         <CardHeader>
             <CardTitle>Informations Personnelles</CardTitle>
             <CardDescription>Ces informations permettent de personnaliser votre expérience.</CardDescription>
         </CardHeader>
-      <form onSubmit={handleSave}>
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="firstName">Prénom</Label>
-              <Input id="firstName" placeholder="Max" value={profile.firstName} onChange={handleChange} required />
+              <Input id="firstName" placeholder="Max" value={profile.firstName} onChange={handleChange} required disabled={!isEditing} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="lastName">Nom</Label>
-              <Input id="lastName" placeholder="Robinson" value={profile.lastName} onChange={handleChange} required />
+              <Input id="lastName" placeholder="Robinson" value={profile.lastName} onChange={handleChange} required disabled={!isEditing} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                   <Label htmlFor="age">Âge</Label>
-                  <Input id="age" type="number" placeholder="30" value={profile.age} onChange={handleChange} />
+                  <Input id="age" type="number" placeholder="30" value={profile.age} onChange={handleChange} disabled={!isEditing} />
               </div>
               <div className="grid gap-2">
                   <Label htmlFor="gender">Sexe</Label>
-                   <Select value={profile.gender} onValueChange={handleSelectChange}>
+                   <Select value={profile.gender} onValueChange={handleSelectChange} disabled={!isEditing}>
                         <SelectTrigger id="gender">
                             <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
@@ -115,7 +121,17 @@ export function ProfileForm() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-            <Button type="submit">Enregistrer les modifications</Button>
+            {isEditing ? (
+                 <Button type="submit">
+                    <Save className="mr-2 h-4 w-4" />
+                    Enregistrer les modifications
+                </Button>
+            ) : (
+                <Button type="button" onClick={() => setIsEditing(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Modifier le profil
+                </Button>
+            )}
         </CardFooter>
       </form>
     </Card>
