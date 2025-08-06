@@ -18,6 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 
 // Dummy coordinates for locations
 const locationCoordinates: { [key: string]: [number, number] } = {
@@ -32,13 +34,17 @@ const MANUAL_LOCATIONS_KEY = 'manualLocations';
 
 interface ManualLocation {
     name: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 export default function MapPage() {
     const { instants } = useContext(TimelineContext);
     const { toast } = useToast();
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
-    const [newLocation, setNewLocation] = useState("");
+    const [newLocationName, setNewLocationName] = useState("");
+    const [newStartDate, setNewStartDate] = useState("");
+    const [newEndDate, setNewEndDate] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
@@ -55,33 +61,53 @@ export default function MapPage() {
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
     const allLocations = useMemo(() => {
-        const combined = new Set([...instantLocations, ...manualLocations.map(l => l.name)]);
-        return Array.from(combined).map(location => ({
-            name: location,
-            coords: locationCoordinates[location] || null,
-            count: instants.filter(i => i.location === location).length,
-            isManual: !instantLocations.includes(location)
-        })).sort((a, b) => b.count - a.count);
+        const combined = new Map<string, { name: string, startDate?: string, endDate?: string }>();
+
+        // Add manual locations first
+        manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
+
+        // Add instant locations, avoiding duplicates
+        instantLocations.forEach(location => {
+            if (!combined.has(location.toLowerCase())) {
+                combined.set(location.toLowerCase(), { name: location });
+            }
+        });
+
+        return Array.from(combined.values()).map(location => {
+            const isManual = manualLocations.some(ml => ml.name.toLowerCase() === location.name.toLowerCase());
+            return {
+                ...location,
+                coords: locationCoordinates[location.name] || null,
+                count: instants.filter(i => i.location === location.name).length,
+                isManual
+            }
+        }).sort((a, b) => b.count - a.count);
     }, [instantLocations, manualLocations, instants]);
 
     const handleAddLocation = () => {
-        if (!newLocation.trim()) {
+        if (!newLocationName.trim()) {
             toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
             return;
         }
-        if (allLocations.some(l => l.name.toLowerCase() === newLocation.trim().toLowerCase())) {
+        if (allLocations.some(l => l.name.toLowerCase() === newLocationName.trim().toLowerCase())) {
             toast({ variant: "destructive", title: "Ce lieu existe déjà." });
             return;
         }
 
-        const newManualLocation = { name: newLocation.trim() };
+        const newManualLocation: ManualLocation = { 
+            name: newLocationName.trim(),
+            startDate: newStartDate || undefined,
+            endDate: newEndDate || undefined,
+        };
         const updatedManualLocations = [...manualLocations, newManualLocation];
 
         setManualLocations(updatedManualLocations);
         localStorage.setItem(MANUAL_LOCATIONS_KEY, JSON.stringify(updatedManualLocations));
         
         toast({ title: "Lieu ajouté !" });
-        setNewLocation("");
+        setNewLocationName("");
+        setNewStartDate("");
+        setNewEndDate("");
         setIsDialogOpen(false);
     }
     
@@ -90,6 +116,14 @@ export default function MapPage() {
         setManualLocations(updatedManualLocations);
         localStorage.setItem(MANUAL_LOCATIONS_KEY, JSON.stringify(updatedManualLocations));
         toast({title: "Lieu supprimé."});
+    }
+
+    const formatDateRange = (startDate?: string, endDate?: string) => {
+        if (!startDate) return null;
+        const start = format(parseISO(startDate), "d MMM yyyy", { locale: fr });
+        if (!endDate) return `Depuis le ${start}`;
+        const end = format(parseISO(endDate), "d MMM yyyy", { locale: fr });
+        return `${start} - ${end}`;
     }
 
   return (
@@ -111,14 +145,36 @@ export default function MapPage() {
                     <DialogHeader>
                         <DialogTitle>Ajouter un nouveau lieu</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Label htmlFor="location-name">Nom du lieu (Ville, Pays)</Label>
-                        <Input 
-                            id="location-name" 
-                            value={newLocation} 
-                            onChange={(e) => setNewLocation(e.target.value)} 
-                            placeholder="ex: Tokyo, Japon"
-                        />
+                    <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="location-name">Nom du lieu (Ville, Pays)</Label>
+                            <Input 
+                                id="location-name" 
+                                value={newLocationName} 
+                                onChange={(e) => setNewLocationName(e.target.value)} 
+                                placeholder="ex: Tokyo, Japon"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="start-date">Date de début</Label>
+                                <Input 
+                                    id="start-date" 
+                                    type="date"
+                                    value={newStartDate}
+                                    onChange={(e) => setNewStartDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="end-date">Date de fin</Label>
+                                <Input 
+                                    id="end-date" 
+                                    type="date"
+                                    value={newEndDate}
+                                    onChange={(e) => setNewEndDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -137,6 +193,9 @@ export default function MapPage() {
                     <div>
                         <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
                         <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
+                        {location.isManual && location.startDate && (
+                             <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                          {location.coords && (
