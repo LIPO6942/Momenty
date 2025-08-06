@@ -3,6 +3,7 @@
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
+import 'leaflet/dist/leaflet.css';
 
 interface InteractiveMapProps {
     locations: LocationWithCoords[];
@@ -38,5 +39,3 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
         </MapContainer>
     );
 }
-
-    
