@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"
 import type { Trip } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
@@ -46,7 +53,7 @@ export function TripDialog({ children }: TripDialogProps) {
                 setTrip(JSON.parse(savedTrip));
                 setIsTripActive(true);
             } else {
-                setTrip({});
+                setTrip({ companionType: 'Solo' });
                 setIsTripActive(false);
             }
         }
@@ -65,6 +72,8 @@ export function TripDialog({ children }: TripDialogProps) {
             location: trip.location,
             startDate: new Date(trip.startDate).toISOString(),
             endDate: new Date(trip.endDate).toISOString(),
+            companionType: trip.companionType,
+            companionName: trip.companionName,
         };
         localStorage.setItem('activeTrip', JSON.stringify(tripToSave));
         toast({ title: "Voyage enregistré !" });
@@ -76,7 +85,7 @@ export function TripDialog({ children }: TripDialogProps) {
         setIsTripActive(isActive);
         if (!isActive) {
             localStorage.removeItem('activeTrip');
-            setTrip({});
+            setTrip({ companionType: 'Solo' });
             toast({ title: "Mode voyage terminé." });
             window.dispatchEvent(new Event('storage'));
         }
@@ -84,6 +93,10 @@ export function TripDialog({ children }: TripDialogProps) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTrip(prev => ({...prev, [e.target.name]: e.target.value}));
+    }
+
+    const handleSelectChange = (value: string) => {
+        setTrip(prev => ({...prev, companionType: value as Trip['companionType'], companionName: '' }));
     }
 
   return (
@@ -122,6 +135,30 @@ export function TripDialog({ children }: TripDialogProps) {
               </Label>
               <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} className="col-span-3" />
             </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="companionType" className="text-right">
+                    Avec qui
+                </Label>
+                <Select value={trip.companionType} onValueChange={handleSelectChange}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Solo">Solo</SelectItem>
+                        <SelectItem value="Ami(e)">Ami(e)</SelectItem>
+                        <SelectItem value="Conjoint(e)">Conjoint(e)</SelectItem>
+                        <SelectItem value="Parent">Parent</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {trip.companionType && trip.companionType !== 'Solo' && (
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="companionName" className="text-right">
+                        Nom
+                    </Label>
+                    <Input id="companionName" name="companionName" value={trip.companionName || ''} onChange={handleChange} className="col-span-3" placeholder="Prénom du compagnon"/>
+                </div>
+            )}
           </div>
         )}
 

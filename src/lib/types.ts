@@ -17,6 +17,8 @@ export interface Trip {
     location?: string;
     startDate?: string; // ISO String
     endDate?: string; // ISO String
+    companionType?: 'Ami(e)' | 'Conjoint(e)' | 'Parent' | 'Solo' | string;
+    companionName?: string;
 }
 
 export interface TimelineEvent {

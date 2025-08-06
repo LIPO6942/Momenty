@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"
 import type { Trip as Stay } from '@/lib/types'; // Re-using the Trip type as "Stay"
 import { format, parseISO } from 'date-fns';
@@ -46,7 +53,7 @@ export function StayDialog({ children }: StayDialogProps) {
                 setStay(JSON.parse(savedStay));
                 setIsStayActive(true);
             } else {
-                setStay({});
+                setStay({ companionType: 'Solo' });
                 setIsStayActive(false);
             }
         }
@@ -65,6 +72,8 @@ export function StayDialog({ children }: StayDialogProps) {
             location: stay.location,
             startDate: new Date(stay.startDate).toISOString(),
             endDate: new Date(stay.endDate).toISOString(),
+            companionType: stay.companionType,
+            companionName: stay.companionName,
         };
         localStorage.setItem('activeStay', JSON.stringify(stayToSave));
         toast({ title: "Séjour enregistré !" });
@@ -76,7 +85,7 @@ export function StayDialog({ children }: StayDialogProps) {
         setIsStayActive(isActive);
         if (!isActive) {
             localStorage.removeItem('activeStay');
-            setStay({});
+            setStay({ companionType: 'Solo' });
             toast({ title: "Mode séjour terminé." });
             window.dispatchEvent(new Event('storage'));
         }
@@ -84,6 +93,10 @@ export function StayDialog({ children }: StayDialogProps) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setStay(prev => ({...prev, [e.target.name]: e.target.value}));
+    }
+
+    const handleSelectChange = (value: string) => {
+        setStay(prev => ({...prev, companionType: value as Stay['companionType'], companionName: '' }));
     }
 
   return (
@@ -122,6 +135,30 @@ export function StayDialog({ children }: StayDialogProps) {
               </Label>
               <Input id="endDate" name="endDate" type="date" value={toInputDate(stay.endDate)} onChange={handleChange} className="col-span-3" />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="companionType" className="text-right">
+                    Avec qui
+                </Label>
+                <Select value={stay.companionType} onValueChange={handleSelectChange}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Solo">Solo</SelectItem>
+                        <SelectItem value="Ami(e)">Ami(e)</SelectItem>
+                        <SelectItem value="Conjoint(e)">Conjoint(e)</SelectItem>
+                        <SelectItem value="Parent">Parent</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {stay.companionType && stay.companionType !== 'Solo' && (
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="companionName" className="text-right">
+                        Nom
+                    </Label>
+                    <Input id="companionName" name="companionName" value={stay.companionName || ''} onChange={handleChange} className="col-span-3" placeholder="Prénom du compagnon"/>
+                </div>
+            )}
           </div>
         )}
 
