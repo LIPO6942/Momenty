@@ -144,7 +144,7 @@ export const getInstants = async (): Promise<Instant[]> => {
         const request = store.getAll();
 
         request.onsuccess = () => {
-            const sortedInstants = request.result.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const sortedInstants = request.result.sort((a: Instant, b: Instant) => new Date(b.date).getTime() - new Date(a.date).getTime());
             resolve(sortedInstants);
         };
         request.onerror = () => {
@@ -162,7 +162,7 @@ export const saveInstant = async (instant: Instant): Promise<void> => {
         const request = store.put(instant);
 
         request.onsuccess = () => resolve();
-        request.onerror = () => {
+        request.onerror = (event) => {
             console.error('Save instant error:', request.error);
             reject(request.error);
         };

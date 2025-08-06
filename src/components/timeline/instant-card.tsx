@@ -55,7 +55,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
             <CardHeader className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg", instant.color)}>
-                        {React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
+                        {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-bold text-base text-foreground">{instant.location}</span>
@@ -84,7 +84,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
             </CardHeader>
             
             <CardContent className="p-0 px-4">
-              {instant.photo ? <InstantContent instant={instant} /> : <InstantContent instant={instant} /> }
+              <InstantContent instant={instant} />
             </CardContent>
 
             <CardFooter className="p-4 pt-2">

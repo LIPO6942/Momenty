@@ -39,7 +39,7 @@ const getCategoryAttributes = (category?: string) => {
     }
 };
 
-const initialInstants: Omit<Instant, 'id' | 'icon' | 'color'>[] = [
+const initialInstants: Omit<Instant, 'id'>[] = [
     {
       type: 'note',
       title: "Arrivée à Tozeur",
@@ -88,7 +88,7 @@ const initialInstants: Omit<Instant, 'id' | 'icon' | 'color'>[] = [
     }
 ];
 
-const addRuntimeAttributes = (instant: Omit<Instant, 'icon' | 'color'>): Instant => {
+const addRuntimeAttributes = (instant: Instant): Instant => {
     const { icon, color } = getCategoryAttributes(instant.category);
     return { ...instant, icon, color };
 };
@@ -128,12 +128,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           // Add icons and colors, and resolve local images
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
-              let photoUrl = inst.photo;
+              let finalPhoto = inst.photo;
               if (inst.photo && inst.photo.startsWith('local_')) {
                   const localPhoto = await getImage(inst.id);
-                  photoUrl = localPhoto; 
+                  finalPhoto = localPhoto; 
               }
-              return addRuntimeAttributes({...inst, photo: photoUrl});
+              const { icon, color } = getCategoryAttributes(inst.category);
+              return { ...inst, photo: finalPhoto, icon, color };
             })
           );
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -153,12 +154,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         }
       }, []);
 
-    const addInstant = async (instant: Omit<Instant, 'id'>) => {
+    const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         let category = 'Note';
         try {
             const result = await categorizeInstant({
-                title: instant.title,
-                description: instant.description,
+                title: instantData.title,
+                description: instantData.description,
             });
             category = result.category;
         } catch (error) {
@@ -167,12 +168,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
-        let instantWithContext = { ...instant };
+        let instantWithContext = { ...instantData };
         if (activeTrip && !instantWithContext.location) {
             instantWithContext.location = activeTrip.location;
         }
-        
-        const newInstantForDb: Omit<Instant, 'icon'|'color'> = {
+
+        // Object to be saved in DB - must be clean of complex objects
+        const newInstantForDb: Instant = {
             id: newInstantId,
             type: instantWithContext.type,
             title: instantWithContext.title,
@@ -180,20 +182,21 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: instantWithContext.date,
             location: instantWithContext.location,
             emotion: instantWithContext.emotion,
-            photo: null,
+            photo: null, // Will be set to a reference string if photo exists
             category: category,
         };
         
         if (instantWithContext.photo) {
             await saveImage(newInstantId, instantWithContext.photo);
-            newInstantForDb.photo = `local_${newInstantId}`;
+            newInstantForDb.photo = `local_${newInstantId}`; // Set the reference
         }
         
-        await saveInstant(newInstantForDb as unknown as Instant);
+        await saveInstant(newInstantForDb);
         
+        // Object for the state - includes the actual photo data for immediate display
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
-            photo: instant.photo 
+            photo: instantData.photo // Use the full data URI for the state
         });
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -206,10 +209,9 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         let updatedInstant = { ...originalInstant, ...updatedInstantData };
         
-        if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo) {
-            if (updatedInstant.photo.startsWith('data:')) {
-                 await saveImage(id, updatedInstant.photo);
-            }
+        // Handle photo saving separately
+        if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo && updatedInstant.photo.startsWith('data:')) {
+            await saveImage(id, updatedInstant.photo);
         }
 
         if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
@@ -224,7 +226,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
         
-        const updatedInstantForDb: Omit<Instant, 'icon'|'color'> = {
+        const updatedInstantForDb: Instant = {
             id: updatedInstant.id,
             type: updatedInstant.type,
             title: updatedInstant.title,
@@ -236,7 +238,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             category: updatedInstant.category
         };
 
-        await saveInstant(updatedInstantForDb as unknown as Instant);
+        await saveInstant(updatedInstantForDb);
         
         const updatedInstantForState = addRuntimeAttributes({
             ...updatedInstantForDb,
