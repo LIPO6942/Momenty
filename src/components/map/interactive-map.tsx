@@ -85,3 +85,4 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     </MapContainer>
   );
 }
+
