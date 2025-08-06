@@ -24,22 +24,27 @@ import { useToast } from "@/hooks/use-toast";
 
 const PROFILE_STORAGE_KEY = "userProfile";
 
+type ProfileData = {
+    firstName: string;
+    lastName: string;
+    age: string;
+    gender: string;
+};
+
 export function ProfileForm() {
     const { toast } = useToast();
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [age, setAge] = useState("");
-    const [gender, setGender] = useState("");
+    const [profile, setProfile] = useState<ProfileData>({
+        firstName: "",
+        lastName: "",
+        age: "",
+        gender: "",
+    });
 
     useEffect(() => {
         try {
             const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
             if (savedProfile) {
-                const { firstName, lastName, age, gender } = JSON.parse(savedProfile);
-                setFirstName(firstName || "");
-                setLastName(lastName || "");
-                setAge(age || "");
-                setGender(gender || "");
+                setProfile(JSON.parse(savedProfile));
             }
         } catch (error) {
             console.error("Failed to load profile from localStorage", error);
@@ -48,9 +53,8 @@ export function ProfileForm() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const profileData = { firstName, lastName, age, gender };
     try {
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
         toast({
             title: "Profil mis à jour !",
             description: "Vos informations ont été sauvegardées.",
@@ -65,6 +69,14 @@ export function ProfileForm() {
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setProfile(prev => ({...prev, [e.target.id.replace(/-/g, '')]: e.target.value}));
+  }
+
+  const handleSelectChange = (value: string) => {
+    setProfile(prev => ({...prev, gender: value}));
+  }
+
   return (
     <Card>
         <CardHeader>
@@ -75,22 +87,22 @@ export function ProfileForm() {
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="first-name">Prénom</Label>
-              <Input id="first-name" placeholder="Max" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              <Label htmlFor="firstName">Prénom</Label>
+              <Input id="firstName" placeholder="Max" value={profile.firstName} onChange={handleChange} required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="last-name">Nom</Label>
-              <Input id="last-name" placeholder="Robinson" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              <Label htmlFor="lastName">Nom</Label>
+              <Input id="lastName" placeholder="Robinson" value={profile.lastName} onChange={handleChange} required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                   <Label htmlFor="age">Âge</Label>
-                  <Input id="age" type="number" placeholder="30" value={age} onChange={(e) => setAge(e.target.value)} />
+                  <Input id="age" type="number" placeholder="30" value={profile.age} onChange={handleChange} />
               </div>
               <div className="grid gap-2">
                   <Label htmlFor="gender">Sexe</Label>
-                   <Select value={gender} onValueChange={setGender}>
+                   <Select value={profile.gender} onValueChange={handleSelectChange}>
                         <SelectTrigger id="gender">
                             <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
