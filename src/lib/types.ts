@@ -14,7 +14,6 @@ export interface Instant {
 }
 
 export interface Trip {
-    title?: string;
     location?: string;
     startDate?: string; // ISO String
     endDate?: string; // ISO String
@@ -42,5 +41,5 @@ export interface GeneratedStory {
   date: string; // The day string 'yyyy-MM-dd'
   title: string;
   story: string;
-  instants: Instant[]; // The instants used to generate the story
+  instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
 }

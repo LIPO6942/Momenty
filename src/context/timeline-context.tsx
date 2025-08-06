@@ -23,6 +23,7 @@ interface TimelineContextType {
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
     activeTrip: Trip | null;
+    activeStay: Trip | null; // Using Trip type for Stay as well
 }
 
 const getCategoryAttributes = (category?: string) => {
@@ -100,6 +101,7 @@ export const TimelineContext = createContext<TimelineContextType>({
     updateInstant: () => {},
     deleteInstant: () => {},
     activeTrip: null,
+    activeStay: null,
 });
 
 interface TimelineProviderProps {
@@ -109,6 +111,7 @@ interface TimelineProviderProps {
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+    const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -144,6 +147,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const handleStorageChange = () => {
             const savedTrip = localStorage.getItem('activeTrip');
             setActiveTrip(savedTrip ? JSON.parse(savedTrip) : null);
+            const savedStay = localStorage.getItem('activeStay');
+            setActiveStay(savedStay ? JSON.parse(savedStay) : null);
         };
         
         handleStorageChange(); // Initial load
@@ -169,12 +174,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const newInstantId = new Date().toISOString() + Math.random();
         
         let instantWithContext = { ...instantData };
-        if (activeTrip && !instantWithContext.location) {
-            instantWithContext.location = activeTrip.location;
+        const activeContext = activeTrip || activeStay;
+        if (activeContext && !instantWithContext.location) {
+            instantWithContext.location = activeContext.location || "Lieu inconnu";
         }
 
         // Object to be saved in DB - must be clean of complex objects
-        const newInstantForDb: Instant = {
+        const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
             id: newInstantId,
             type: instantWithContext.type,
             title: instantWithContext.title,
@@ -191,13 +197,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             newInstantForDb.photo = `local_${newInstantId}`; // Set the reference
         }
         
-        await saveInstant(newInstantForDb);
+        await saveInstant(newInstantForDb as Instant);
         
         // Object for the state - includes the actual photo data for immediate display
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
             photo: instantData.photo // Use the full data URI for the state
-        });
+        } as Instant);
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
@@ -288,7 +294,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, activeTrip }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, activeTrip, activeStay }}>
             {children}
         </TimelineContext.Provider>
     )

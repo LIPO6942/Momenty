@@ -40,7 +40,7 @@ const moods = [
 export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addInstant, activeTrip } = useContext(TimelineContext);
+  const { addInstant, activeTrip, activeStay } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,10 +55,11 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (activeTrip && !location) {
-        setLocation(activeTrip.location);
+    const activeContext = activeTrip || activeStay;
+    if (activeContext && !location) {
+        setLocation(activeContext.location || "");
     }
-  }, [activeTrip, location]);
+  }, [activeTrip, activeStay, location]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -127,8 +128,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   };
 
   const cleanup = () => {
+    const activeContext = activeTrip || activeStay;
     setDescription("");
-    setLocation(activeTrip ? activeTrip.location : "");
+    setLocation(activeContext?.location || "");
     setPhoto(null);
     setEmotion(null);
     setIsCameraMode(false);
