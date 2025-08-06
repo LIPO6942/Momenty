@@ -1,9 +1,9 @@
 
 "use client"
 
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2 } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { useContext, useState, useMemo, useEffect } from "react";
 import { TimelineContext } from "@/context/timeline-context";
 import {
@@ -21,12 +21,22 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getManualLocations, saveManualLocations, type ManualLocation } from "@/lib/idb";
+import dynamic from 'next/dynamic';
+import type { LocationWithCoords } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
+const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-[400px] w-full rounded-lg" />
+});
 
 export default function MapPage() {
     const { instants } = useContext(TimelineContext);
     const { toast } = useToast();
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
+    const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
+    const [isLoadingCoords, setIsLoadingCoords] = useState(true);
+
     const [newLocationName, setNewLocationName] = useState("");
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
@@ -49,10 +59,7 @@ export default function MapPage() {
     const allLocations = useMemo(() => {
         const combined = new Map<string, { name: string, startDate?: string, endDate?: string }>();
 
-        // Add manual locations first
         manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
-
-        // Add instant locations, avoiding duplicates
         instantLocations.forEach(location => {
             if (!combined.has(location.toLowerCase())) {
                 combined.set(location.toLowerCase(), { name: location });
@@ -68,6 +75,44 @@ export default function MapPage() {
             }
         }).sort((a, b) => b.count - a.count);
     }, [instantLocations, manualLocations, instants]);
+
+    useEffect(() => {
+        const fetchCoordinates = async () => {
+            setIsLoadingCoords(true);
+            const coordsCache: {[key: string]: [number, number]} = JSON.parse(localStorage.getItem('coordsCache') || '{}');
+            const newCoords: LocationWithCoords[] = [];
+
+            for (const location of allLocations) {
+                const locationKey = location.name.toLowerCase();
+                if (coordsCache[locationKey]) {
+                    newCoords.push({ ...location, coords: coordsCache[locationKey] });
+                } else {
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location.name)}&format=json&limit=1`);
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            const { lat, lon } = data[0];
+                            const coords: [number, number] = [parseFloat(lat), parseFloat(lon)];
+                            coordsCache[locationKey] = coords;
+                            newCoords.push({ ...location, coords });
+                        }
+                    } catch (error) {
+                        console.error(`Failed to geocode ${location.name}:`, error);
+                    }
+                }
+            }
+            
+            localStorage.setItem('coordsCache', JSON.stringify(coordsCache));
+            setLocationsWithCoords(newCoords);
+            setIsLoadingCoords(false);
+        };
+
+        if (allLocations.length > 0) {
+            fetchCoordinates();
+        } else {
+            setIsLoadingCoords(false);
+        }
+    }, [allLocations]);
 
     const handleAddLocation = async () => {
         if (!newLocationName.trim()) {
@@ -117,6 +162,15 @@ export default function MapPage() {
         <h1 className="text-3xl font-bold text-foreground">Ma Carte de Voyage</h1>
         <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
       </div>
+
+       <Card className="mb-8 overflow-hidden">
+            <CardHeader>
+                <CardTitle>Carte du monde</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <InteractiveMap locations={locationsWithCoords} />
+            </CardContent>
+       </Card>
 
        <div className="mb-8">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -202,3 +256,5 @@ export default function MapPage() {
     </div>
   );
 }
+
+    

@@ -1,4 +1,6 @@
 
+import { type ManualLocation } from "./idb";
+
 export interface Instant {
     id: string;
     type: 'note' | 'photo' | 'video' | 'audio' | 'mood';
@@ -45,3 +47,9 @@ export interface GeneratedStory {
   story: string;
   instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
 }
+
+export interface LocationWithCoords extends ManualLocation {
+    coords: [number, number];
+}
+
+    
