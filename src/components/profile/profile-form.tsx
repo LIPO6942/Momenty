@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,21 +22,47 @@ import {
   } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
+const PROFILE_STORAGE_KEY = "userProfile";
+
 export function ProfileForm() {
     const { toast } = useToast();
-    const [firstName, setFirstName] = useState("Max");
-    const [lastName, setLastName] = useState("Robinson");
-    const [age, setAge] = useState("30");
-    const [gender, setGender] = useState("male");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [age, setAge] = useState("");
+    const [gender, setGender] = useState("");
+
+    useEffect(() => {
+        try {
+            const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
+            if (savedProfile) {
+                const { firstName, lastName, age, gender } = JSON.parse(savedProfile);
+                setFirstName(firstName || "");
+                setLastName(lastName || "");
+                setAge(age || "");
+                setGender(gender || "");
+            }
+        } catch (error) {
+            console.error("Failed to load profile from localStorage", error);
+        }
+    }, []);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would save this data.
-    console.log({ firstName, lastName, age, gender });
-    toast({
-        title: "Profil mis à jour !",
-        description: "Vos informations ont été sauvegardées.",
-    });
+    const profileData = { firstName, lastName, age, gender };
+    try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+        toast({
+            title: "Profil mis à jour !",
+            description: "Vos informations ont été sauvegardées.",
+        });
+    } catch (error) {
+        console.error("Failed to save profile to localStorage", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur de sauvegarde",
+            description: "Impossible de sauvegarder vos informations.",
+        });
+    }
   };
 
   return (
