@@ -16,7 +16,9 @@ const InstantForStorySchema = z.object({
   description: z.string(),
   location: z.string(),
   emotion: z.string(),
-  photo: z.string().optional(),
+  photo: z.string().optional().describe(
+      "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
 
 const GenerateStoryInputSchema = z.object({
@@ -51,11 +53,11 @@ Voici les éléments de la journée du {{day}}:
   - Lieu: {{{location}}}
   - Émotion ressentie: {{{emotion}}}
   {{#if photo}}
-  - (Il y a une photo associée à ce moment)
+  - Photo: {{media url=photo}}
   {{/if}}
 {{/each}}
 
-Rédige une histoire fluide et captivante qui relie ces moments. Commence par une introduction qui plante le décor. Ensuite, décris les moments forts en t'inspirant des notes et des émotions. Termine par une conclusion qui résume le sentiment général de la journée.
+Rédige une histoire fluide et captivante qui relie ces moments. Base-toi sur les photos pour décrire les scènes. Commence par une introduction qui plante le décor. Ensuite, décris les moments forts en t'inspirant des notes et des émotions. Termine par une conclusion qui résume le sentiment général de la journée.
 
 Sois bref mais poétique. Le résultat doit être un texte unique et personnel.
 

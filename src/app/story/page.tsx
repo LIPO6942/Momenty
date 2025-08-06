@@ -34,6 +34,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+  } from "@/components/ui/accordion";
 
 const StoryPreview = ({ story }: { story: string }) => {
     const html = story
@@ -102,21 +108,33 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
 }
 
 export default function StoryPage() {
-    const { groupedInstants } = useContext(TimelineContext);
+    const { groupedInstants, instants } = useContext(TimelineContext);
     const { toast } = useToast();
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
     const [stories, setStories] = useState<GeneratedStory[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState<GeneratedStory | null>(null);
     const [editText, setEditText] = useState("");
+    const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>();
 
     useEffect(() => {
         const loadStories = async () => {
             const loadedStories = await getStories();
-            setStories(loadedStories);
+            // Hydrate stories with full instant data for display
+            const hydratedStories = loadedStories.map(story => {
+                const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Omit<Instant, 'icon' | 'color'>[];
+                return {...story, instants: storyInstants};
+            })
+            setStories(hydratedStories);
+            // Open the most recent story by default
+            if (hydratedStories.length > 0) {
+                setOpenAccordionItem(hydratedStories[0].id);
+            }
         };
-        loadStories();
-    }, []);
+        if(instants.length > 0) { // ensure instants are loaded first
+            loadStories();
+        }
+    }, [instants]);
 
     const dayOptions = useMemo(() => {
         return Object.keys(groupedInstants).map(dayKey => ({
@@ -136,7 +154,7 @@ export default function StoryPage() {
                 description: i.description,
                 location: i.location,
                 emotion: i.emotion,
-                photo: i.photo ? 'yes' : undefined
+                photo: i.photo || undefined
             }));
 
             const result = await generateStory({
@@ -159,8 +177,11 @@ export default function StoryPage() {
             };
 
             await saveStory(newStory);
-            // For the state, we can use the original instants with all their properties
-            setStories(prev => [...prev.filter(s => s.id !== selectedDay), {...newStory, instants: dayData.instants}].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            
+            const fullNewStory = {...newStory, instants: dayData.instants };
+
+            setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== selectedDay)]);
+            setOpenAccordionItem(newStory.id);
             toast({ title: "Histoire générée et sauvegardée !" });
 
         } catch (error) {
@@ -178,9 +199,23 @@ export default function StoryPage() {
 
     const handleSaveEdit = async () => {
         if (!isEditing) return;
-        const updatedStory = { ...isEditing, story: editText };
-        await saveStory(updatedStory);
-        setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        
+        // Use hydrated instants for the state update
+        const storyWithHydratedInstants = stories.find(s => s.id === isEditing.id);
+        if (!storyWithHydratedInstants) return;
+
+        const updatedStoryForState = { ...storyWithHydratedInstants, story: editText };
+        
+        // Clean instants for DB save
+        const cleanInstants = storyWithHydratedInstants.instants.map(i => {
+            const { icon, color, ...rest } = i;
+            return rest;
+        });
+        const updatedStoryForDb = { ...isEditing, story: editText, instants: cleanInstants };
+        
+        await saveStory(updatedStoryForDb);
+
+        setStories(prev => prev.map(s => s.id === updatedStoryForDb.id ? updatedStoryForState : s));
         setIsEditing(null);
         toast({ title: "Histoire mise à jour." });
     };
@@ -240,41 +275,52 @@ export default function StoryPage() {
                 </CardContent>
             </Card>
 
-            <div className="space-y-6">
-                 <h2 className="text-2xl font-bold text-foreground">Mes Histoires</h2>
-                {stories.length > 0 ? stories.map(story => (
-                    <Card key={story.id}>
-                        <CardContent className="p-6">
-                            <StoryDisplay story={story} />
-                        </CardContent>
-                        <CardFooter className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditStory(story)}>
-                                <Edit className="mr-2 h-4 w-4" /> Modifier
-                            </Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Supprimer
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Cette action est irréversible. L'histoire sera définitivement supprimée.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteStory(story.id)}>
-                                        Supprimer
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardFooter>
-                    </Card>
-                )) : (
+            <div className="space-y-4">
+                 <h2 className="text-2xl font-bold text-foreground mb-4">Mes Histoires</h2>
+                {stories.length > 0 ? (
+                    <Accordion type="single" collapsible value={openAccordionItem} onValueChange={setOpenAccordionItem} className="w-full space-y-4">
+                        {stories.map(story => (
+                             <AccordionItem key={story.id} value={story.id} className="border-none">
+                                <Card className='overflow-hidden'>
+                                    <AccordionTrigger className="text-lg font-bold text-foreground p-4 hover:no-underline w-full text-left">
+                                        {story.title}
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <CardContent className="p-4 pt-0">
+                                            <StoryDisplay story={story} />
+                                        </CardContent>
+                                        <CardFooter className="flex justify-end gap-2 p-4 pt-0">
+                                            <Button variant="outline" size="sm" onClick={() => handleEditStory(story)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Modifier
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="sm">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Cette action est irréversible. L'histoire sera définitivement supprimée.
+                                                    </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteStory(story.id)}>
+                                                        Supprimer
+                                                    </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </CardFooter>
+                                    </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                ) : (
                     <p className="text-muted-foreground text-center py-8">Aucune histoire générée pour le moment.</p>
                 )}
             </div>
@@ -301,5 +347,3 @@ export default function StoryPage() {
         </div>
     );
 }
-
-    
