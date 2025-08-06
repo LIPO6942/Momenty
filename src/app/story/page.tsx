@@ -71,7 +71,7 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
                                     alt={instant.title}
                                     width={80}
                                     height={80}
-                                    className="aspect-square h-fit w-full rounded-md object-cover"
+                                    className="aspect-square rounded-md object-cover"
                                 />
                              </div>
                            )
@@ -301,3 +301,5 @@ export default function StoryPage() {
         </div>
     );
 }
+
+    
