@@ -49,7 +49,8 @@ export interface GeneratedStory {
 }
 
 export interface LocationWithCoords extends ManualLocation {
+    name: string;
+    count: number;
+    isManual: boolean;
     coords: [number, number];
 }
-
-    
