@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useState, useMemo, useEffect } from 'react';
-import type { Instant } from '@/lib/types';
+import type { Instant, Trip } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -22,6 +22,7 @@ interface TimelineContextType {
     addInstant: (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => void;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
+    activeTrip: Trip | null;
 }
 
 const getCategoryAttributes = (category?: string) => {
@@ -98,6 +99,7 @@ export const TimelineContext = createContext<TimelineContextType>({
     addInstant: () => {},
     updateInstant: () => {},
     deleteInstant: () => {},
+    activeTrip: null,
 });
 
 interface TimelineProviderProps {
@@ -106,6 +108,7 @@ interface TimelineProviderProps {
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
+    const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -137,6 +140,18 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         };
         loadData();
+
+        const handleStorageChange = () => {
+            const savedTrip = localStorage.getItem('activeTrip');
+            setActiveTrip(savedTrip ? JSON.parse(savedTrip) : null);
+        };
+        
+        handleStorageChange(); // Initial load
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        }
       }, []);
 
     const addInstant = async (instant: Omit<Instant, 'id' | 'color' | 'icon'>) => {
@@ -153,24 +168,34 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
-        const { icon, color } = getCategoryAttributes(category);
-
-        let newInstantForDb = {
-            ...instant,
+        const instantWithContext = { ...instant };
+        if (activeTrip && !instantWithContext.location) {
+            instantWithContext.location = activeTrip.location;
+        }
+        
+        // This is the object that will be stored in IndexedDB.
+        // It must only contain serializable data.
+        const newInstantForDb: Omit<Instant, 'icon'|'color'> = {
             id: newInstantId,
-            category,
-            icon: undefined, // ensure no react element is saved
-            color: undefined,
+            type: instantWithContext.type,
+            title: instantWithContext.title,
+            description: instantWithContext.description,
+            date: instantWithContext.date,
+            location: instantWithContext.location,
+            emotion: instantWithContext.emotion,
+            photo: null, // Handled separately
+            category: category
         };
         
-        if (instant.photo) {
-            await saveImage(newInstantId, instant.photo);
+        if (instantWithContext.photo) {
+            await saveImage(newInstantId, instantWithContext.photo);
             // Don't store the large data URL in the main instant object, just a marker
             newInstantForDb.photo = `local_${newInstantId}`;
         }
         
         await saveInstant(newInstantForDb as unknown as Instant);
         
+        // This is the object for the UI state, with runtime properties
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
             photo: instant.photo // Keep the data URL for immediate display in the UI
@@ -269,7 +294,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, activeTrip }}>
             {children}
         </TimelineContext.Provider>
     )

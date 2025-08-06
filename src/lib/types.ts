@@ -1,3 +1,4 @@
+
 export interface Instant {
     id: string;
     type: 'note' | 'photo' | 'video' | 'audio' | 'mood';
@@ -10,6 +11,13 @@ export interface Instant {
     emotion: string;
     photo?: string | null; // Data URL for the image
     category?: string; // AI-generated category
+}
+
+export interface Trip {
+    title: string;
+    location: string;
+    startDate: string; // ISO String
+    endDate: string; // ISO String
 }
 
 export interface TimelineEvent {

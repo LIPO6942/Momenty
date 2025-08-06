@@ -3,13 +3,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, Settings, PlusSquare, Search } from "lucide-react";
+import { User, Settings, PlusSquare, Search, Plane } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TripDialog } from "../timeline/trip-dialog";
 
 
 export default function Header() {
@@ -20,6 +21,12 @@ export default function Header() {
             <Link href="/" className="text-2xl font-bold text-foreground">InsTXP</Link>
         </div>
         <div className="flex items-center justify-end gap-2">
+            <TripDialog>
+              <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
+                <Plane className="h-5 w-5" />
+              </Button>
+            </TripDialog>
+
             <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
               <Search className="h-6 w-6" />
             </Button>
