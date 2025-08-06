@@ -69,9 +69,9 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
                                 <Image
                                     src={instant.photo}
                                     alt={instant.title}
-                                    width={250}
-                                    height={150}
-                                    className="aspect-[3/2] h-fit w-full rounded-md object-cover"
+                                    width={80}
+                                    height={80}
+                                    className="aspect-square h-fit w-full rounded-md object-cover"
                                 />
                              </div>
                            )
