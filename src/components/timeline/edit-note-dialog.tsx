@@ -137,7 +137,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             <span>Importer une nouvelle photo</span>
                         </Button>
                     )}
-                    <Input type="file" accept="image/png, image/jpeg" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
                  
                  <Separator />
