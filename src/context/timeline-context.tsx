@@ -183,7 +183,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: instantWithContext.date,
             location: instantWithContext.location,
             emotion: instantWithContext.emotion,
-            photo: null, // Handled separately
+            photo: null, // Default to null
             category: category
         };
         
