@@ -5,17 +5,21 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import type { LocationWithCoords } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 
 // Fix for marker icons being broken in Next.js
 // This code needs to run once on the client
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+try {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    });
+} catch (e) {
+    console.error('Could not apply Leaflet icon fix', e);
+}
 
 
 interface InteractiveMapProps {
@@ -36,6 +40,7 @@ const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
 }
 
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
+  const mapId = useId();
 
   if (locations.length === 0) {
     return (
@@ -52,6 +57,7 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
 
   return (
     <MapContainer
+      key={mapId} // This key is crucial to prevent re-initialization errors
       center={center}
       zoom={locations.length > 1 ? undefined : 5}
       scrollWheelZoom={true}
