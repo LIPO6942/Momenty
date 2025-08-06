@@ -42,7 +42,7 @@ export default function Header() {
 
             <Button variant="ghost" size="icon" className="rounded-full w-12 h-12" asChild>
                 <Link href="/profile">
-                  <User className="h-7 w-7" />
+                  <User className="h-7 w-7 text-yellow-400" />
                 </Link>
             </Button>
         </div>
