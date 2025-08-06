@@ -108,7 +108,7 @@ export function TripDialog({ children }: TripDialogProps) {
               <Label htmlFor="location" className="text-right">
                 Lieu
               </Label>
-              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} className="col-span-3" placeholder="Ex: Tunisie" />
+              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} className="col-span-3" placeholder="ex: Russie" />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startDate" className="text-right">
