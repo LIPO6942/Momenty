@@ -108,7 +108,7 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
 }
 
 export default function StoryPage() {
-    const { groupedInstants, instants } = useContext(TimelineContext);
+    const { groupedInstants, instants, activeTrip, activeStay } = useContext(TimelineContext);
     const { toast } = useToast();
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
     const [stories, setStories] = useState<GeneratedStory[]>([]);
@@ -122,7 +122,7 @@ export default function StoryPage() {
             const loadedStories = await getStories();
             // Hydrate stories with full instant data for display
             const hydratedStories = loadedStories.map(story => {
-                const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Omit<Instant, 'icon' | 'color'>[];
+                const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Instant[];
                 return {...story, instants: storyInstants};
             })
             setStories(hydratedStories);
@@ -157,23 +157,27 @@ export default function StoryPage() {
                 photo: i.photo || undefined
             }));
 
+            const activeContext = activeTrip || activeStay;
+
             const result = await generateStory({
                 day: dayData.title,
-                instants: instantsForStory
+                instants: instantsForStory,
+                companionType: activeContext?.companionType,
+                companionName: activeContext?.companionName,
             });
             
-             // Clean instants before saving to IndexedDB
-            const cleanInstants = dayData.instants.map(i => {
+            const cleanInstantsForDb = dayData.instants.map(i => {
                 const { icon, color, ...rest } = i;
-                return rest;
+                // Important: Ensure photo is a reference string if it exists for DB
+                return { ...rest, photo: rest.photo ? `local_${rest.id}` : null };
             });
-
+            
             const newStory: GeneratedStory = {
                 id: selectedDay,
                 date: selectedDay,
                 title: dayData.title,
                 story: result.story,
-                instants: cleanInstants,
+                instants: cleanInstantsForDb,
             };
 
             await saveStory(newStory);
@@ -200,18 +204,21 @@ export default function StoryPage() {
     const handleSaveEdit = async () => {
         if (!isEditing) return;
         
-        // Use hydrated instants for the state update
         const storyWithHydratedInstants = stories.find(s => s.id === isEditing.id);
         if (!storyWithHydratedInstants) return;
 
         const updatedStoryForState = { ...storyWithHydratedInstants, story: editText };
         
-        // Clean instants for DB save
-        const cleanInstants = storyWithHydratedInstants.instants.map(i => {
+        const cleanInstantsForDb = storyWithHydratedInstants.instants.map(i => {
             const { icon, color, ...rest } = i;
-            return rest;
+            return { ...rest, photo: rest.photo ? `local_${rest.id}` : null };
         });
-        const updatedStoryForDb = { ...isEditing, story: editText, instants: cleanInstants };
+
+        const updatedStoryForDb: GeneratedStory = {
+             ...isEditing, 
+             story: editText, 
+             instants: cleanInstantsForDb
+        };
         
         await saveStory(updatedStoryForDb);
 

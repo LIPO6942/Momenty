@@ -24,6 +24,8 @@ const InstantForStorySchema = z.object({
 const GenerateStoryInputSchema = z.object({
   day: z.string().describe("La date du jour pour l'histoire, ex: '20 juillet 2024'."),
   instants: z.array(InstantForStorySchema).describe("Une liste des moments (notes, photos) de la journée."),
+  companionType: z.string().optional().describe("Le type de compagnon de voyage (ex: 'Ami(e)', 'Solo')."),
+  companionName: z.string().optional().describe("Le nom du compagnon de voyage."),
 });
 export type GenerateStoryInput = z.infer<typeof GenerateStoryInputSchema>;
 
@@ -44,10 +46,17 @@ const prompt = ai.definePrompt({
 
 Le récit doit être en français, ne doit pas dépasser 4 ou 5 paragraphes.
 
-Voici les éléments de la journée du {{day}}:
+**Contexte du voyage pour la journée du {{day}} :**
+{{#if companionName}}
+- Je voyage avec {{companionType}}, qui s'appelle {{companionName}}. Le ton doit être à la première personne du pluriel ("nous", "notre journée", etc.).
+{{else}}
+- Je voyage en solo. Le ton doit être à la première personne du singulier ("je", "mon exploration", etc.).
+{{/if}}
+
+**Voici les moments de la journée :**
 
 {{#each instants}}
-- Moment:
+- Moment :
   - Titre: {{{title}}}
   - Description: {{{description}}}
   - Lieu: {{{location}}}
@@ -57,7 +66,9 @@ Voici les éléments de la journée du {{day}}:
   {{/if}}
 {{/each}}
 
-Rédige une histoire fluide et captivante qui relie ces moments. Base-toi sur les photos pour décrire les scènes. Commence par une introduction qui plante le décor. Ensuite, décris les moments forts en t'inspirant des notes et des émotions. Termine par une conclusion qui résume le sentiment général de la journée.
+**Instructions :**
+Rédige une histoire fluide et captivante qui relie ces moments. Base-toi sur le contenu visuel des photos pour décrire les scènes et l'atmosphère. Utilise les notes et les émotions pour donner vie au récit.
+Commence par une introduction qui plante le décor (le lieu principal de la journée). Ensuite, décris les moments forts de manière chronologique. Termine par une conclusion qui résume le sentiment général de la journée.
 
 Sois bref mais poétique. Le résultat doit être un texte unique et personnel.
 
@@ -65,7 +76,11 @@ Structure la réponse en Markdown, avec un titre principal pour l'histoire. Par 
 
 # Une journée à Tozeur
 
-Le soleil se levait à peine, et déjà la chaleur promettait une journée intense...
+{{#if companionName}}
+Le soleil se levait à peine, et déjà la chaleur promettait une journée intense pour {{companionName}} et moi...
+{{else}}
+Le soleil se levait à peine, et déjà la chaleur promettait une journée intense pour mon aventure en solitaire...
+{{/if}}
 
 ...puis tu continues le récit...
 `,
