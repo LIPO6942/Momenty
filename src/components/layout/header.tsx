@@ -30,7 +30,7 @@ export default function Header() {
 
             <StayDialog>
                <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
-                <Anchor className="h-5 w-5" />
+                <Anchor className="h-5 w-5 text-blue-800" />
               </Button>
             </StayDialog>
 
