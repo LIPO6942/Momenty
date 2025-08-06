@@ -3,7 +3,7 @@
 
 import React, { useContext } from "react";
 import Image from "next/image";
-import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import { MoreVertical, Edit, Trash2, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,7 +40,9 @@ const InstantContent = ({ instant }: { instant: Instant }) => {
       )}
       <div className={cn("px-1 py-3", instant.photo && "pt-4")}>
         <p className="font-bold text-lg text-foreground">{instant.title}</p>
-        {instant.description && <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>}
+        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+            <p className="text-sm text-muted-foreground mt-1">{instant.description}</p>
+        )}
       </div>
     </div>
   );
@@ -58,8 +60,11 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                     </div>
                     <div className="flex flex-col">
-                        <span className="font-bold text-base text-foreground">{instant.location}</span>
-                        <span className="text-sm text-muted-foreground">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-bold text-base text-foreground">{instant.location}</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground mt-0.5">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
                     </div>
                 </div>
                 <DropdownMenu>
@@ -89,8 +94,17 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
             <CardFooter className="p-4 pt-2">
                 <div className="flex gap-2 flex-wrap">
-                    {instant.category && <Badge variant="secondary">{instant.category}</Badge>}
-                    {instant.emotion && <Badge variant="outline">{instant.emotion}</Badge>}
+                    {instant.category && (
+                        <Badge variant="secondary" className="flex items-center gap-1.5">
+                            <Tag className="h-3 w-3" />
+                            {instant.category}
+                        </Badge>
+                    )}
+                    {instant.emotion && (
+                        <Badge variant="outline">
+                            {instant.emotion}
+                        </Badge>
+                    )}
                 </div>
             </CardFooter>
         </Card>
