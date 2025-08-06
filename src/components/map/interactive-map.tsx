@@ -59,7 +59,6 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     );
   }
 
-  // Use the first location as the initial center, the MapUpdater will adjust the view.
   const center: [number, number] = locations.length > 0 
         ? locations[0].coords 
         : [51.505, -0.09]; // Default to London if no locations
@@ -85,4 +84,3 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     </MapContainer>
   );
 }
-
