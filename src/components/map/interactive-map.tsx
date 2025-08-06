@@ -21,7 +21,6 @@ try {
     console.error('Could not apply Leaflet icon fix', e);
 }
 
-
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
 }
@@ -40,7 +39,6 @@ const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
 }
 
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
-
   if (locations.length === 0) {
     return (
       <div className="h-[400px] w-full rounded-lg bg-muted flex items-center justify-center">
