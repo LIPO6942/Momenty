@@ -21,15 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
-// Dummy coordinates for locations
-const locationCoordinates: { [key: string]: [number, number] } = {
-    "Tozeur, Tunisie": [33.918, 8.134],
-    "Chébika, Tunisie": [34.321, 8.021],
-    "Campement près de Tozeur": [33.918, 8.134],
-    "Tunis, Tunisie": [36.806, 10.181],
-    "Paris, France": [48.8566, 2.3522],
-};
-
 const MANUAL_LOCATIONS_KEY = 'manualLocations';
 
 interface ManualLocation {
@@ -77,7 +68,6 @@ export default function MapPage() {
             const isManual = manualLocations.some(ml => ml.name.toLowerCase() === location.name.toLowerCase());
             return {
                 ...location,
-                coords: locationCoordinates[location.name] || null,
                 count: instants.filter(i => i.location === location.name).length,
                 isManual
             }
@@ -198,14 +188,12 @@ export default function MapPage() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                         {location.coords && (
-                            <Button asChild variant="outline" size="sm">
-                                <a href={`https://www.google.com/maps/search/?api=1&query=${location.coords[0]},${location.coords[1]}`} target="_blank" rel="noopener noreferrer">
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    Voir
-                                </a>
-                            </Button>
-                        )}
+                        <Button asChild variant="outline" size="sm">
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`} target="_blank" rel="noopener noreferrer">
+                                <MapPin className="mr-2 h-4 w-4" />
+                                Voir
+                            </a>
+                        </Button>
                         {location.isManual && (
                              <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDeleteLocation(location.name)}>
                                 <Trash2 className="h-4 w-4" />
