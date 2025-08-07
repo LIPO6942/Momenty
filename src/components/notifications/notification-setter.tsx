@@ -30,7 +30,18 @@ export function NotificationSetter() {
       // Get token
       const messagingInstance = messaging();
       try {
-        const currentToken = await getToken(messagingInstance, { vapidKey: 'YOUR_VAPID_KEY_HERE' });
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.error("VAPID key is not configured in environment variables.");
+            toast({
+              variant: "destructive",
+              title: "Configuration manquante",
+              description: "La clé VAPID pour les notifications n'est pas configurée.",
+           });
+           return;
+        }
+
+        const currentToken = await getToken(messagingInstance, { vapidKey: vapidKey });
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           // In a real app, you would send this token to your server.
