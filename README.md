@@ -72,3 +72,40 @@ git push -u origin main
 ```
 
 Et voilà ! Votre code est maintenant sauvegardé sur GitHub. Vous pouvez rafraîchir la page de votre dépôt pour voir vos fichiers apparaître.
+
+---
+
+## Comment déployer sur Vercel
+
+Vercel est la plateforme idéale pour héberger des applications Next.js. Le déploiement est simple et rapide.
+
+### Prérequis
+- Votre code doit être sur un dépôt GitHub.
+- Vous devez avoir un compte [Vercel](https://vercel.com/signup). Vous pouvez vous inscrire gratuitement avec votre compte GitHub.
+
+### Étapes
+
+**1. Connectez-vous à Vercel**
+
+- Rendez-vous sur [vercel.com](https://vercel.com) et connectez-vous.
+
+**2. Importez votre projet**
+
+- Une fois sur votre tableau de bord, cliquez sur "Add New..." > "Project".
+- Vercel vous proposera d'importer vos dépôts GitHub. Trouvez votre projet `momenty-app` (ou le nom que vous lui avez donné) et cliquez sur "Import".
+
+**3. Configurez le projet**
+
+- **Framework Preset** : Vercel détectera automatiquement qu'il s'agit d'un projet Next.js. Vous n'avez rien à changer.
+- **Root Directory** : Laissez la valeur par défaut.
+- **Build and Output Settings** : Laissez les valeurs par défaut. Vercel sait comment construire une application Next.js.
+- **Environment Variables** : Si votre projet avait besoin de clés d'API (ce qui n'est pas le cas pour l'instant), c'est ici qu'il faudrait les ajouter.
+
+**4. Déployez !**
+
+- Cliquez sur le bouton "Deploy".
+- Vercel va maintenant récupérer votre code, installer les dépendances, construire l'application et la mettre en ligne. Cela peut prendre une ou deux minutes.
+
+Une fois le déploiement terminé, vous recevrez une URL publique pour votre application (par exemple, `momenty-app.vercel.app`). Félicitations, votre journal de voyage est en ligne !
+
+Chaque fois que vous pousserez (push) de nouvelles modifications sur la branche `main` de votre dépôt GitHub, Vercel redéploiera automatiquement votre site avec les dernières mises à jour.
