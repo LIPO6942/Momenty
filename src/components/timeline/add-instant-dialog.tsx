@@ -23,6 +23,7 @@ import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
+import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
 
 interface AddInstantDialogProps {
@@ -54,6 +55,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [emotions, setEmotions] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isImprovingText, setIsImprovingText] = useState(false);
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
@@ -127,6 +129,26 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     }
   }
 
+  const handleImproveDescription = async () => {
+    if (!description) {
+        toast({variant: "destructive", title: "Veuillez d'abord écrire une description."});
+        return;
+    }
+    setIsImprovingText(true);
+    try {
+        const result = await improveTextDescription({ description });
+        if (result.improvedDescription) {
+            setDescription(result.improvedDescription);
+        }
+        toast({ title: "Description améliorée par l'IA." });
+    } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "L'amélioration par IA a échoué."});
+    } finally {
+        setIsImprovingText(false);
+    }
+  }
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -150,6 +172,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setIsCameraMode(false);
     setHasCameraPermission(null);
     setIsAnalyzing(false);
+    setIsImprovingText(false);
   }
 
   const handleGetLocation = () => {
@@ -243,6 +266,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   };
   
   const activeContext = activeTrip || activeStay;
+  const isLoading = isLocating || isAnalyzing || isImprovingText;
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -293,7 +317,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <div className="relative group">
                         <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
                         <div className="absolute top-2 right-2 flex gap-2">
-                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo)} disabled={isAnalyzing}>
+                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo)} disabled={isLoading}>
                                 {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
                             </Button>
                             <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
@@ -306,9 +330,12 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                  <Separator />
 
                  <div className="space-y-2">
-                    <Label htmlFor="description" className="flex items-center gap-2">
-                        Qu'avez-vous en tête ?
-                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <Label htmlFor="description" className="flex items-center justify-between">
+                       <span>Qu'avez-vous en tête ?</span>
+                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
+                            {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                            <span className="sr-only">Améliorer la description</span>
+                        </Button>
                     </Label>
                     <Textarea 
                         id="description"
@@ -316,7 +343,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Décrivez votre moment... ou laissez l'IA le faire pour vous à partir d'une photo." 
                         className="min-h-[100px]"
-                        disabled={isAnalyzing}
+                        disabled={isLoading}
                     />
                  </div>
 
@@ -336,7 +363,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                     className="border-0 focus-visible:ring-0 flex-grow"
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
-                                    disabled={isLocating || isAnalyzing}
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div className="flex items-center gap-1 border rounded-md">
@@ -348,11 +375,11 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                     className="border-0 focus-visible:ring-0 flex-grow"
                                     value={country}
                                     onChange={(e) => setCountry(e.target.value)}
-                                    disabled={isLocating || isAnalyzing || !!activeContext}
+                                    disabled={isLoading || !!activeContext}
                                 />
                             </div>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating || isAnalyzing} className="self-center">
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center">
                             <LocateFixed className="h-5 w-5" />
                         </Button>
                     </div>
@@ -390,8 +417,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <DialogClose asChild>
                         <Button type="button" variant="ghost">Fermer</Button>
                     </DialogClose>
-                    <Button type="submit" disabled={isAnalyzing || isLocating}>
-                        {(isAnalyzing || isLocating) && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                         Publier
                     </Button>
                 </div>
