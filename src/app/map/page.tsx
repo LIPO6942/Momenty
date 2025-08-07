@@ -41,6 +41,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { countries } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -159,6 +165,22 @@ export default function MapPage() {
             setIsLoadingCoords(false);
         }
     }, [allLocations]);
+
+    const locationsByCountry = useMemo(() => {
+        const grouped: { [country: string]: LocationWithCoords[] } = {};
+        locationsWithCoords.forEach(location => {
+            const parts = location.name.split(',').map(p => p.trim());
+            const country = parts.length > 1 ? parts[parts.length - 1] : 'Lieux non classés';
+            if (!grouped[country]) {
+                grouped[country] = [];
+            }
+            grouped[country].push(location);
+        });
+        return grouped;
+    }, [locationsWithCoords]);
+
+    const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
+
 
     const handleCityChange = (index: number, value: string) => {
         const updatedCities = [...newCities];
@@ -514,147 +536,164 @@ export default function MapPage() {
             <div className="text-center py-10">
                 <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
             </div>
-        ) : locationsWithCoords.map(location => (
-            <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
-                <CardHeader className="flex flex-col items-start gap-4 p-4">
-                    <div className="flex flex-row items-start justify-between w-full">
-                        <div className="flex-grow">
-                            <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
-                            {location.isManual && location.startDate && (
-                                <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)}>
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    Voir
-                            </Button>
-                            {location.isManual && (
-                                <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Modifier le lieu</DialogTitle>
-                                        </DialogHeader>
-                                        <div className="py-4 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-location-name">Nom du lieu</Label>
-                                                <Input 
-                                                    id="edit-location-name" 
-                                                    value={editedName} 
-                                                    onChange={(e) => setEditedName(e.target.value)} 
-                                                />
+        ) : (
+            <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full space-y-4">
+                {Object.entries(locationsByCountry).map(([country, locations]) => (
+                    <AccordionItem key={country} value={country} className="border-none">
+                        <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+                           {country}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                           <div className="space-y-4 pt-2">
+                           {locations.map(location => (
+                                <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
+                                    <CardHeader className="flex flex-col items-start gap-4 p-4">
+                                        <div className="flex flex-row items-start justify-between w-full">
+                                            <div className="flex-grow">
+                                                <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
+                                                <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
+                                                {location.isManual && location.startDate && (
+                                                    <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
+                                                )}
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="edit-start-date">Date de début</Label>
-                                                    <Input 
-                                                        id="edit-start-date" 
-                                                        type="date"
-                                                        value={editedStartDate}
-                                                        onChange={(e) => setEditedStartDate(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="edit-end-date">Date de fin</Label>
-                                                    <Input 
-                                                        id="edit-end-date" 
-                                                        type="date"
-                                                        value={editedEndDate}
-                                                        onChange={(e) => setEditedEndDate(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Photos souvenirs</Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {editedPhotos.map((photo, index) => (
-                                                        <div key={index} className="relative group">
-                                                            <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
-                                                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2">
-                                                    <ImageIcon className="mr-2 h-4 w-4"/>
-                                                    Ajouter des photos
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)}>
+                                                        <MapPin className="mr-2 h-4 w-4" />
+                                                        Voir
                                                 </Button>
-                                                <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handleEditedPhotoUpload}/>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
-                                                <Textarea
-                                                    id="edit-souvenir"
-                                                    value={editedSouvenir}
-                                                    onChange={(e) => setEditedSouvenir(e.target.value)}
-                                                    placeholder="Écrivez un court souvenir associé à ce lieu..."
-                                                />
+                                                {location.isManual && (
+                                                    <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
+                                                        <DialogTrigger asChild>
+                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent>
+                                                            <DialogHeader>
+                                                                <DialogTitle>Modifier le lieu</DialogTitle>
+                                                            </DialogHeader>
+                                                            <div className="py-4 space-y-4">
+                                                                <div className="space-y-2">
+                                                                    <Label htmlFor="edit-location-name">Nom du lieu</Label>
+                                                                    <Input 
+                                                                        id="edit-location-name" 
+                                                                        value={editedName} 
+                                                                        onChange={(e) => setEditedName(e.target.value)} 
+                                                                    />
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="edit-start-date">Date de début</Label>
+                                                                        <Input 
+                                                                            id="edit-start-date" 
+                                                                            type="date"
+                                                                            value={editedStartDate}
+                                                                            onChange={(e) => setEditedStartDate(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="edit-end-date">Date de fin</Label>
+                                                                        <Input 
+                                                                            id="edit-end-date" 
+                                                                            type="date"
+                                                                            value={editedEndDate}
+                                                                            onChange={(e) => setEditedEndDate(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label>Photos souvenirs</Label>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {editedPhotos.map((photo, index) => (
+                                                                            <div key={index} className="relative group">
+                                                                                <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
+                                                                                <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
+                                                                                    <Trash2 className="h-3 w-3" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2">
+                                                                        <ImageIcon className="mr-2 h-4 w-4"/>
+                                                                        Ajouter des photos
+                                                                    </Button>
+                                                                    <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handleEditedPhotoUpload}/>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
+                                                                    <Textarea
+                                                                        id="edit-souvenir"
+                                                                        value={editedSouvenir}
+                                                                        onChange={(e) => setEditedSouvenir(e.target.value)}
+                                                                        placeholder="Écrivez un court souvenir associé à ce lieu..."
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <DialogFooter>
+                                                                <DialogClose asChild>
+                                                                    <Button variant="ghost">Annuler</Button>
+                                                                </DialogClose>
+                                                                <Button onClick={handleEditLocation}>Enregistrer</Button>
+                                                            </DialogFooter>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                )}
+                                                {location.isManual && (
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="destructive" size="icon" className="h-9 w-9">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                            <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Cette action est irréversible. Elle supprimera le lieu ainsi que tous les souvenirs (instants) qui y sont associés.
+                                                            </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteLocation(location.name)}>
+                                                                Supprimer définitivement
+                                                            </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                )}
                                             </div>
                                         </div>
-                                        <DialogFooter>
-                                            <DialogClose asChild>
-                                                <Button variant="ghost">Annuler</Button>
-                                            </DialogClose>
-                                            <Button onClick={handleEditLocation}>Enregistrer</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            )}
-                            {location.isManual && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" size="icon" className="h-9 w-9">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Cette action est irréversible. Elle supprimera le lieu ainsi que tous les souvenirs (instants) qui y sont associés.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteLocation(location.name)}>
-                                            Supprimer définitivement
-                                        </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {location.souvenir && (
-                        <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
-                    )}
-                    
-                    {location.photos && location.photos.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-2">
-                            {location.photos.map((photo, index) => (
-                                <Image
-                                    key={index}
-                                    src={photo}
-                                    alt={`Miniature du lieu ${index + 1}`}
-                                    width={100}
-                                    height={100}
-                                    className="rounded-md object-cover h-24 w-24"
-                                />
+                                        
+                                        {location.souvenir && (
+                                            <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
+                                        )}
+                                        
+                                        {location.photos && location.photos.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pt-2">
+                                                {location.photos.map((photo, index) => (
+                                                    <Image
+                                                        key={index}
+                                                        src={photo}
+                                                        alt={`Miniature du lieu ${index + 1}`}
+                                                        width={100}
+                                                        height={100}
+                                                        className="rounded-md object-cover h-24 w-24"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardHeader>
+                                </Card>
                             ))}
-                        </div>
-                    )}
-                </CardHeader>
-            </Card>
-        ))}
+                           </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        )}
         </div>
     </div>
   );
 }
+
+    
