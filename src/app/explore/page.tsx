@@ -6,16 +6,18 @@ import { TimelineContext } from "@/context/timeline-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { InstantCard } from "@/components/timeline/instant-card";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
 export default function ExplorePage() {
   const { instants } = useContext(TimelineContext);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeEmotion, setActiveEmotion] = useState<string | null>(null);
+  const [activeEmotions, setActiveEmotions] = useState<string[]>([]);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
 
   const categories = useMemo(() => Array.from(new Set(instants.map(i => i.category).filter(Boolean))), [instants]) as string[];
-  const emotions = useMemo(() => Array.from(new Set(instants.map(i => i.emotion).filter(Boolean))), [instants]);
+  const allEmotions = useMemo(() => Array.from(new Set(instants.flatMap(i => Array.isArray(i.emotion) ? i.emotion : [i.emotion]).filter(Boolean))), [instants]);
   const locations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
   const filteredInstants = useMemo(() => {
@@ -26,35 +28,48 @@ export default function ExplorePage() {
         instant.description.toLowerCase().includes(searchTerm.toLowerCase());
       
       const categoryMatch = !activeCategory || instant.category === activeCategory;
-      const emotionMatch = !activeEmotion || instant.emotion === activeEmotion;
+      
+      const instantEmotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
+      const emotionMatch = activeEmotions.length === 0 || activeEmotions.every(e => instantEmotions.includes(e));
+      
       const locationMatch = !activeLocation || instant.location === activeLocation;
 
       return searchMatch && categoryMatch && emotionMatch && locationMatch;
     });
-  }, [instants, searchTerm, activeCategory, activeEmotion, activeLocation]);
+  }, [instants, searchTerm, activeCategory, activeEmotions, activeLocation]);
 
   const toggleFilter = (setter: React.Dispatch<React.SetStateAction<string | null>>, value: string) => {
     setter(prev => (prev === value ? null : value));
   }
 
-  const FilterSection = ({ title, items, activeItem, onToggle }: { title: string, items: string[], activeItem: string | null, onToggle: (item: string) => void}) => {
-    if (items.length === 0) return null;
+  const toggleEmotionFilter = (emotion: string) => {
+    setActiveEmotions(prev => 
+        prev.includes(emotion) 
+            ? prev.filter(e => e !== emotion)
+            : [...prev, emotion]
+    )
+  }
+
+  const FilterSection = ({ title, items, activeItem, onToggle, children }: { title: string, items: string[], activeItem?: string | null, onToggle: (item: string) => void, children?: React.ReactNode}) => {
+    if (items.length === 0 && !children) return null;
     return (
         <div className="space-y-3">
             <h3 className="font-bold text-lg text-foreground">{title}</h3>
-            <div className="flex flex-wrap gap-2">
-                {items.map(item => (
-                    <Button 
-                        key={item}
-                        variant={activeItem === item ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onToggle(item)}
-                        className="rounded-full"
-                    >
-                        {item}
-                    </Button>
-                ))}
-            </div>
+            {children || (
+                 <div className="flex flex-wrap gap-2">
+                    {items.map(item => (
+                        <Button 
+                            key={item}
+                            variant={activeItem === item ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onToggle(item)}
+                            className="rounded-full"
+                        >
+                            {item}
+                        </Button>
+                    ))}
+                </div>
+            )}
         </div>
     );
   }
@@ -74,9 +89,34 @@ export default function ExplorePage() {
           className="w-full text-base py-6 rounded-full px-6"
         />
 
-        <div className="flex flex-row flex-wrap gap-8">
+        <div className="flex flex-col md:flex-row flex-wrap gap-8">
             <FilterSection title="Catégories" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
-            <FilterSection title="Émotions" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
+            
+            <FilterSection title="Émotions" items={allEmotions} onToggle={toggleEmotionFilter}>
+                {activeEmotions.length > 0 ? (
+                    <Badge variant="secondary" className="text-base py-1 px-3 rounded-full">
+                       {activeEmotions.join(' / ')}
+                       <Button variant="ghost" size="icon" className="h-5 w-5 ml-1" onClick={() => setActiveEmotions([])}>
+                            <X className="h-3 w-3" />
+                       </Button>
+                    </Badge>
+                ) : (
+                    <div className="flex flex-wrap gap-2">
+                         {allEmotions.map(item => (
+                            <Button 
+                                key={item}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleEmotionFilter(item)}
+                                className="rounded-full"
+                            >
+                                {item}
+                            </Button>
+                        ))}
+                    </div>
+                )}
+            </FilterSection>
+
             <FilterSection title="Lieux" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
         </div>
       </div>
