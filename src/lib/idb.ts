@@ -8,7 +8,7 @@ const STORY_STORE_NAME = "stories";
 const INSTANT_STORE_NAME = "instants";
 const PROFILE_STORE_NAME = "profile";
 const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
-const DB_VERSION = 4; // Incremented version for schema change
+const DB_VERSION = 5; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
@@ -26,6 +26,7 @@ export interface ManualLocation {
     startDate?: string;
     endDate?: string;
     photos?: string[];
+    souvenir?: string;
 }
 
 

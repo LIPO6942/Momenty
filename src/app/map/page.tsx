@@ -40,6 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { countries } from "@/lib/countries";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -72,6 +73,7 @@ export default function MapPage() {
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
     const [newPhotos, setNewPhotos] = useState<string[]>([]);
+    const [newSouvenir, setNewSouvenir] = useState("");
     const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
     
@@ -81,6 +83,7 @@ export default function MapPage() {
     const [editedStartDate, setEditedStartDate] = useState("");
     const [editedEndDate, setEditedEndDate] = useState("");
     const [editedPhotos, setEditedPhotos] = useState<string[]>([]);
+    const [editedSouvenir, setEditedSouvenir] = useState("");
     const editPhotoInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -99,7 +102,7 @@ export default function MapPage() {
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
     const allLocations = useMemo(() => {
-        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[] }>();
+        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string }>();
 
         manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
         instantLocations.forEach(location => {
@@ -201,6 +204,7 @@ export default function MapPage() {
                     startDate: newStartDate || undefined,
                     endDate: newEndDate || undefined,
                     photos: newPhotos,
+                    souvenir: newSouvenir || undefined,
                 });
             }
         });
@@ -219,6 +223,7 @@ export default function MapPage() {
         setNewStartDate("");
         setNewEndDate("");
         setNewPhotos([]);
+        setNewSouvenir("");
         setIsAddDialogOpen(false);
     };
 
@@ -229,6 +234,7 @@ export default function MapPage() {
         setEditedStartDate(toInputDate(location.startDate));
         setEditedEndDate(toInputDate(location.endDate));
         setEditedPhotos(location.photos || []);
+        setEditedSouvenir(location.souvenir || "");
     }
 
     const handleEditLocation = async () => {
@@ -249,6 +255,7 @@ export default function MapPage() {
                 startDate: editedStartDate || undefined,
                 endDate: editedEndDate || undefined,
                 photos: editedPhotos,
+                souvenir: editedSouvenir || undefined,
             } : loc
         );
 
@@ -477,6 +484,16 @@ export default function MapPage() {
                             <Input type="file" multiple accept="image/*" className="hidden" ref={addPhotoInputRef} onChange={handleNewPhotoUpload}/>
                         </div>
 
+                         <div className="space-y-2">
+                            <Label htmlFor="souvenir">Un souvenir à raconter ?</Label>
+                            <Textarea
+                                id="souvenir"
+                                value={newSouvenir}
+                                onChange={(e) => setNewSouvenir(e.target.value)}
+                                placeholder="Écrivez un court souvenir associé à ce lieu..."
+                            />
+                        </div>
+
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -514,14 +531,13 @@ export default function MapPage() {
                                     Voir
                             </Button>
                             {location.isManual && (
-                                <>
                                 <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
                                         <DialogHeader>
                                             <DialogTitle>Modifier le lieu</DialogTitle>
                                         </DialogHeader>
@@ -572,6 +588,15 @@ export default function MapPage() {
                                                 </Button>
                                                 <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handleEditedPhotoUpload}/>
                                             </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
+                                                <Textarea
+                                                    id="edit-souvenir"
+                                                    value={editedSouvenir}
+                                                    onChange={(e) => setEditedSouvenir(e.target.value)}
+                                                    placeholder="Écrivez un court souvenir associé à ce lieu..."
+                                                />
+                                            </div>
                                         </div>
                                         <DialogFooter>
                                             <DialogClose asChild>
@@ -581,6 +606,8 @@ export default function MapPage() {
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
+                            )}
+                            {location.isManual && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" size="icon" className="h-9 w-9">
@@ -602,12 +629,16 @@ export default function MapPage() {
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            </>
                             )}
                         </div>
                     </div>
+                    
+                    {location.souvenir && (
+                        <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
+                    )}
+                    
                     {location.photos && location.photos.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
+                        <div className="flex flex-wrap gap-2 pt-2">
                             {location.photos.map((photo, index) => (
                                 <Image
                                     key={index}
