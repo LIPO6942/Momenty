@@ -40,54 +40,7 @@ const getCategoryAttributes = (category?: string) => {
     }
 };
 
-const initialInstants: Omit<Instant, 'id'>[] = [
-    {
-      type: 'note',
-      title: "Arrivée à Tozeur",
-      description: "Le début de l'aventure dans le désert. La chaleur est intense mais l'ambiance est magique.",
-      date: "2024-07-20T10:00:00.000Z",
-      location: "Tozeur, Tunisie",
-      emotion: "Excité",
-      category: "Voyage",
-    },
-    {
-      type: 'photo',
-      title: "Oasis de Chébika",
-      description: "Une source d'eau fraîche au milieu de nulle part. Contraste saisissant.",
-      date: "2024-07-20T14:30:00.000Z",
-      location: "Chébika, Tunisie",
-      emotion: "Émerveillé",
-      photo: "https://placehold.co/500x300.png",
-      category: "Nature",
-    },
-    {
-      type: 'note',
-      title: "Dîner sous les étoiles",
-      description: "Un couscous local délicieux, partagé avec des nomades. Le ciel est incroyablement pur.",
-      date: "2024-07-20T20:00:00.000Z",
-      location: "Campement près de Tozeur",
-      emotion: "Heureux",
-      category: "Gastronomie",
-    },
-    {
-      type: 'note',
-      title: "Exploration de la médina",
-      description: "Perdu dans les ruelles de Tunis. Chaque coin de rue est une découverte.",
-      date: "2024-07-22T11:00:00.000Z",
-      location: "Tunis, Tunisie",
-      emotion: "Curieux",
-      category: "Culture",
-    },
-    {
-      type: 'mood',
-      title: "Sentiment de la journée",
-      description: "Journée de transition, un peu fatigué mais content.",
-      date: "2024-07-22T18:00:00.000Z",
-      location: "Tunis, Tunisie",
-      emotion: "Bien",
-      category: "Détente"
-    }
-];
+const initialInstants: Omit<Instant, 'id'>[] = [];
 
 const addRuntimeAttributes = (instant: Instant): Instant => {
     const { icon, color } = getCategoryAttributes(instant.category);
@@ -116,7 +69,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     useEffect(() => {
         const loadData = async () => {
           let loadedInstants = await getInstants();
-          if (loadedInstants.length === 0) {
+          if (loadedInstants.length === 0 && initialInstants.length > 0) {
             // First time load, populate with initial data and save
             const instantsToSave = initialInstants.map((inst, index) => ({
               ...inst,
