@@ -74,7 +74,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     try {
         const result = await describePhoto({ photoDataUri });
         if (result.description) {
-            setDescription(prev => prev ? `${prev}\\n\\n${result.description}` : result.description);
+            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
         }
         if (result.location && !location) { // Only set location if it was empty
             setLocation(result.location);
