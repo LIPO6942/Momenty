@@ -4,10 +4,8 @@
 import { useState, useMemo, useContext } from "react";
 import { TimelineContext } from "@/context/timeline-context";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { InstantCard } from "@/components/timeline/instant-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
 
 export default function ExplorePage() {
   const { instants } = useContext(TimelineContext);
@@ -39,23 +37,27 @@ export default function ExplorePage() {
     setter(prev => (prev === value ? null : value));
   }
 
-  const FilterSection = ({ title, items, activeItem, onToggle }: { title: string, items: string[], activeItem: string | null, onToggle: (item: string) => void}) => (
-    <div className="space-y-3">
-        <h3 className="font-semibold text-sm text-muted-foreground">{title}</h3>
-        <div className="flex flex-wrap gap-2">
-            {items.map(item => (
-                <Badge 
-                    key={item}
-                    variant={activeItem === item ? "default" : "secondary"}
-                    onClick={() => onToggle(item)}
-                    className="cursor-pointer"
-                >
-                    {item}
-                </Badge>
-            ))}
+  const FilterSection = ({ title, items, activeItem, onToggle }: { title: string, items: string[], activeItem: string | null, onToggle: (item: string) => void}) => {
+    if (items.length === 0) return null;
+    return (
+        <div className="space-y-3">
+            <h3 className="font-bold text-lg text-foreground">{title}</h3>
+            <div className="flex flex-wrap gap-2">
+                {items.map(item => (
+                    <Button 
+                        key={item}
+                        variant={activeItem === item ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => onToggle(item)}
+                        className="rounded-full"
+                    >
+                        {item}
+                    </Button>
+                ))}
+            </div>
         </div>
-    </div>
-  )
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 min-h-screen">
@@ -64,24 +66,19 @@ export default function ExplorePage() {
         <p className="text-muted-foreground">Recherchez et filtrez à travers votre journal de voyage.</p>
       </div>
 
-      <div className="space-y-8 mb-8">
+      <div className="space-y-6 mb-12">
         <Input
-          placeholder="Rechercher par mot-clé..."
+          placeholder="Rechercher par mot-clé dans vos souvenirs..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full"
+          className="w-full text-base py-6 rounded-full px-6"
         />
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-xl">Filtres</CardTitle>
-            </CardHeader>
-            <CardContent className="grid md:grid-cols-3 gap-8">
-                <FilterSection title="Par Catégorie" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
-                <FilterSection title="Par Émotion" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
-                <FilterSection title="Par Lieu" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
-            </CardContent>
-        </Card>
+        <div className="space-y-6">
+            <FilterSection title="Catégories" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
+            <FilterSection title="Émotions" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
+            <FilterSection title="Lieux" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
+        </div>
       </div>
 
       <div>
@@ -95,6 +92,7 @@ export default function ExplorePage() {
         ) : (
             <div className="text-center py-16">
                  <p className="text-muted-foreground">Aucun souvenir ne correspond à votre recherche.</p>
+                 <p className="text-sm text-muted-foreground/80 mt-2">Essayez d'ajuster vos filtres.</p>
             </div>
         )}
       </div>
