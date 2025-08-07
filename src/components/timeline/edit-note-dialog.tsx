@@ -21,9 +21,10 @@ import {
 import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
 import { ScrollArea } from "../ui/scroll-area";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO } from "date-fns";
+import { describePhoto } from "@/ai/flows/describe-photo-flow";
 
 interface EditNoteDialogProps {
   children: ReactNode;
@@ -64,6 +65,26 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [photo, setPhoto] = useState<string | null | undefined>(instantToEdit.photo);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleAnalyzePhoto = async (photoDataUri: string) => {
+    setIsAnalyzing(true);
+    try {
+        const result = await describePhoto({ photoDataUri });
+        if (result.description) {
+            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
+        }
+        if (result.location && !location) { // Only set location if it was empty
+            setLocation(result.location);
+        }
+        toast({ title: "Analyse IA terminée." });
+    } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "L'analyse par IA a échoué."});
+    } finally {
+        setIsAnalyzing(false);
+    }
+  }
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -103,6 +124,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setPhoto(instantToEdit.photo);
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
+    setIsAnalyzing(false);
   }
 
   const handleToggleEmotion = (moodName: string) => {
@@ -134,6 +156,9 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                         <div className="relative group">
                             <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
                             <div className="absolute top-2 right-2 flex gap-2">
+                                <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo as string)} disabled={isAnalyzing}>
+                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
+                                </Button>
                                 <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
                                     <Trash2 className="h-4 w-4"/>
                                 </Button>
@@ -153,12 +178,14 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                  <div>
                     <Label className="text-muted-foreground flex items-center gap-2">
                         Qu'avez-vous en tête ?
+                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
                     </Label>
                     <Textarea 
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Décrivez votre moment..." 
                         className="min-h-[100px] mt-2"
+                        disabled={isAnalyzing}
                     />
                  </div>
 
@@ -173,6 +200,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             value={toDateTimeLocal(date)}
                             onChange={(e) => setDate(e.target.value)}
                             className="border-0 focus-visible:ring-0 flex-grow"
+                            disabled={isAnalyzing}
                         />
                     </div>
                  </div>
@@ -189,6 +217,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             className="border-0 focus-visible:ring-0 flex-grow"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
+                             disabled={isAnalyzing}
                         />
                     </div>
                  </div>
@@ -203,6 +232,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                                 size="sm"
                                 onClick={() => handleToggleEmotion(mood.name)}
                                 className="rounded-full"
+                                disabled={isAnalyzing}
                             >
                                 {mood.icon} {mood.name}
                             </Button>
@@ -215,7 +245,10 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Fermer</Button>
                 </DialogClose>
-                <Button type="submit">Enregistrer</Button>
+                <Button type="submit" disabled={isAnalyzing}>
+                  {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Enregistrer
+                </Button>
             </DialogFooter>
           </form>
         </DialogContent>
