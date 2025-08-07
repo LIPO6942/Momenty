@@ -368,7 +368,7 @@ export default function MapPage() {
         <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
       </div>
 
-       <Card className="mb-8 overflow-hidden">
+       <Card className="mb-8 overflow-hidden rounded-xl">
             <CardHeader>
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
@@ -539,14 +539,14 @@ export default function MapPage() {
         ) : (
             <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full space-y-4">
                 {Object.entries(locationsByCountry).map(([country, locations]) => (
-                    <AccordionItem key={country} value={country} className="border-none">
-                        <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+                    <AccordionItem key={country} value={country} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
+                        <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
                            {country}
                         </AccordionTrigger>
-                        <AccordionContent>
+                        <AccordionContent className="p-4 pt-0">
                            <div className="space-y-4 pt-2">
                            {locations.map(location => (
-                                <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
+                                <Card key={location.name} className="border shadow-none">
                                     <CardHeader className="flex flex-col items-start gap-4 p-4">
                                         <div className="flex flex-row items-start justify-between w-full">
                                             <div className="flex-grow">
@@ -695,5 +695,3 @@ export default function MapPage() {
     </div>
   );
 }
-
-    
