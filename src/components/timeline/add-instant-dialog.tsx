@@ -49,6 +49,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
@@ -59,14 +60,14 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   useEffect(() => {
     const activeContext = activeTrip || activeStay;
     if (activeContext) {
-        const country = activeContext.location || "";
-        const finalLocation = city ? `${city}, ${country}` : country;
-        setLocation(finalLocation);
+        setCountry(activeContext.location || "");
+        const finalLocation = city ? `${city}, ${activeContext.location}` : activeContext.location;
+        setLocation(finalLocation || "");
     } else {
-        // If no context, reset city as well
-        if (city) setCity("");
+        const finalLocation = city && country ? `${city}, ${country}` : (city || country);
+        setLocation(finalLocation);
     }
-  }, [activeTrip, activeStay, city]);
+  }, [activeTrip, activeStay, city, country]);
 
 
   useEffect(() => {
@@ -111,12 +112,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
         }
         if (result.location) {
-            if (activeTrip) {
-                // If in trip mode, just set the city if possible
-                const [resultCity] = result.location.split(',');
-                setCity(resultCity);
-            } else {
-                setLocation(result.location);
+            const [resultCity, resultCountry] = result.location.split(',').map(s => s.trim());
+            setCity(resultCity || '');
+            if (!(activeTrip || activeStay)) {
+                setCountry(resultCountry || '');
             }
         }
         toast({ title: "Analyse IA terminée." });
@@ -142,10 +141,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   };
 
   const cleanup = () => {
-    const activeContext = activeTrip || activeStay;
     setDescription("");
-    setLocation(activeContext?.location || "");
+    setLocation("");
     setCity("");
+    setCountry("");
     setPhoto(null);
     setEmotions([]);
     setIsCameraMode(false);
@@ -168,10 +167,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 if (data.address) {
                     const foundCity = data.address.city || data.address.town || data.address.village || '';
                     const foundCountry = data.address.country || '';
-                    if (activeTrip) {
-                        setCity(foundCity);
-                    } else {
-                        setLocation(`${foundCity}, ${foundCountry}`);
+                    setCity(foundCity);
+                    if (!(activeTrip || activeStay)) {
+                        setCountry(foundCountry);
                     }
                     toast({ title: "Lieu trouvé !" });
                 } else {
@@ -222,6 +220,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
         return;
     }
+    if (!location) {
+        toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
+        return;
+    }
     const finalDescription = description || (photo ? "Photo souvenir" : "Note");
 
     const newInstant = {
@@ -240,6 +242,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     toast({ title: "Nouvel instant ajouté !" });
   };
   
+  const activeContext = activeTrip || activeStay;
+
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen);
@@ -321,46 +325,34 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         Où étiez-vous ?
                         {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
                     </Label>
-                    <div className="flex items-center gap-1 mt-2">
-                        {activeTrip ? (
-                            <div className="flex items-center gap-2 w-full">
-                                <div className="flex items-center gap-1 border rounded-md flex-grow bg-muted/50">
-                                    <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                    <Input 
-                                        placeholder="Pays" 
-                                        className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
-                                        value={activeTrip.location || ""}
-                                        disabled
-                                    />
-                                </div>
-                                <div className="flex items-center gap-1 border rounded-md flex-grow">
-                                    <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                     <Input 
-                                        id="city"
-                                        name="city" 
-                                        placeholder="Ville" 
-                                        className="border-0 focus-visible:ring-0 flex-grow"
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        disabled={isLocating || isAnalyzing}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1 mt-2 border rounded-md w-full">
-                                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                <Input 
-                                    id="location"
-                                    name="location" 
-                                    placeholder="Lieu (ex: Paris, France)" 
+                    <div className="flex items-center gap-2">
+                        <div className="flex-grow space-y-2">
+                            <div className="flex items-center gap-1 border rounded-md">
+                                <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                 <Input 
+                                    id="city"
+                                    name="city" 
+                                    placeholder="Ville" 
                                     className="border-0 focus-visible:ring-0 flex-grow"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
                                     disabled={isLocating || isAnalyzing}
                                 />
                             </div>
-                        )}
-                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating || isAnalyzing}>
+                            <div className="flex items-center gap-1 border rounded-md">
+                                <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                <Input 
+                                    id="country"
+                                    name="country"
+                                    placeholder="Pays" 
+                                    className="border-0 focus-visible:ring-0 flex-grow"
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    disabled={isLocating || isAnalyzing || !!activeContext}
+                                />
+                            </div>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating || isAnalyzing} className="self-center">
                             <LocateFixed className="h-5 w-5" />
                         </Button>
                     </div>
