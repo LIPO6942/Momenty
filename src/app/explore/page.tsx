@@ -74,7 +74,7 @@ export default function ExplorePage() {
           className="w-full text-base py-6 rounded-full px-6"
         />
 
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-row flex-wrap gap-8">
             <FilterSection title="Catégories" items={categories} activeItem={activeCategory} onToggle={(item) => toggleFilter(setActiveCategory, item)} />
             <FilterSection title="Émotions" items={emotions} activeItem={activeEmotion} onToggle={(item) => toggleFilter(setActiveEmotion, item)} />
             <FilterSection title="Lieux" items={locations} activeItem={activeLocation} onToggle={(item) => toggleFilter(setActiveLocation, item)} />
