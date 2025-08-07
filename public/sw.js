@@ -1,40 +1,9 @@
-// This file must be in the public folder.
-
-// Give the service worker access to Firebase Messaging.
-// Note that you can only use Firebase Messaging here, other Firebase libraries
-// are not available in the service worker.
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
-
-
-// Initialize the Firebase app in the service worker by passing in
-// your app's Firebase config object.
-// https://firebase.google.com/docs/web/setup#config-object
-// TODO: Add your Firebase configuration object here
-firebase.initializeApp({
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-});
-
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  console.log(
-    '[firebase-messaging-sw.js] Received background message ',
-    payload
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      // Pour l'instant, nous ne faisons rien en cas d'échec de la récupération.
+      // Une stratégie de cache plus complexe serait nécessaire pour un vrai support hors ligne.
+      // Cela dépasse la portée de cette simple configuration PWA.
+    })
   );
-  // Customize notification here
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/icon-192x192.png'
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
 });

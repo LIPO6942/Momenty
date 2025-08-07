@@ -1,11 +1,12 @@
+
 {
-  "name": "Fi9 - Suivi d'habitudes",
-  "short_name": "Fi9",
-  "description": "Prenez soin de vous avec Fi9, l'application de suivi d'habitudes.",
+  "name": "Momenty",
+  "short_name": "Momenty",
+  "description": "Votre journal de voyage pour mémoriser et organiser vos plus beaux souvenirs.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#E5F0F7",
-  "theme_color": "#B5D9F0",
+  "background_color": "#E8F4F8",
+  "theme_color": "#A0D2EB",
   "icons": [
     {
       "src": "/icon-192x192.png",
