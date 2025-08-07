@@ -22,6 +22,7 @@ interface TimelineContextType {
     addInstant: (instant: Omit<Instant, 'id'>) => void;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
+    deleteInstantsByLocation: (locationName: string) => void;
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
 }
@@ -53,6 +54,7 @@ export const TimelineContext = createContext<TimelineContextType>({
     addInstant: () => {},
     updateInstant: () => {},
     deleteInstant: () => {},
+    deleteInstantsByLocation: () => {},
     activeTrip: null,
     activeStay: null,
 });
@@ -215,6 +217,15 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 
+    const deleteInstantsByLocation = async (locationName: string) => {
+        const instantsToDelete = instants.filter(i => i.location === locationName);
+        for (const instant of instantsToDelete) {
+            await deleteInstantFromDB(instant.id);
+            await saveImage(instant.id, '');
+        }
+        setInstants(prev => prev.filter(i => i.location !== locationName));
+    };
+
     const groupedInstants = useMemo(() => {
       if (instants.length === 0) return {};
       
@@ -247,7 +258,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, activeTrip, activeStay }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay }}>
             {children}
         </TimelineContext.Provider>
     )

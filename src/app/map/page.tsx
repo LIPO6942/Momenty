@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit } from "lucide-react";
 import { useContext, useState, useMemo, useEffect } from "react";
 import { TimelineContext } from "@/context/timeline-context";
 import {
@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -24,24 +23,52 @@ import { getManualLocations, saveManualLocations, type ManualLocation } from "@/
 import dynamic from 'next/dynamic';
 import type { LocationWithCoords } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
     loading: () => <Skeleton className="h-[400px] w-full rounded-lg" />
 });
 
+// Helper to format ISO string to yyyy-MM-dd for date inputs
+const toInputDate = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+        return format(parseISO(isoString), 'yyyy-MM-dd');
+    } catch {
+        return '';
+    }
+}
+
 export default function MapPage() {
-    const { instants } = useContext(TimelineContext);
+    const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
     const { toast } = useToast();
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
+    // State for Add Dialog
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [newLocationName, setNewLocationName] = useState("");
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // State for Edit Dialog
+    const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
+    const [editedName, setEditedName] = useState("");
+    const [editedStartDate, setEditedStartDate] = useState("");
+    const [editedEndDate, setEditedEndDate] = useState("");
 
     useEffect(() => {
         setIsMounted(true);
@@ -141,20 +168,55 @@ export default function MapPage() {
         setNewLocationName("");
         setNewStartDate("");
         setNewEndDate("");
-        setIsDialogOpen(false);
+        setIsAddDialogOpen(false);
+    }
+
+    const openEditDialog = (location: ManualLocation) => {
+        setEditingLocation(location);
+        setEditedName(location.name);
+        setEditedStartDate(toInputDate(location.startDate));
+        setEditedEndDate(toInputDate(location.endDate));
+    }
+
+    const handleEditLocation = async () => {
+        if (!editingLocation || !editedName.trim()) {
+            toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
+            return;
+        }
+
+        // Check if new name conflicts with an existing name (other than the original)
+        if (allLocations.some(l => l.name.toLowerCase() === editedName.trim().toLowerCase() && l.name.toLowerCase() !== editingLocation.name.toLowerCase())) {
+            toast({ variant: "destructive", title: "Un autre lieu avec ce nom existe déjà." });
+            return;
+        }
+        
+        const updatedManualLocations = manualLocations.map(loc => 
+            loc.name === editingLocation.name ? {
+                name: editedName.trim(),
+                startDate: editedStartDate || undefined,
+                endDate: editedEndDate || undefined,
+            } : loc
+        );
+
+        await saveManualLocations(updatedManualLocations);
+        setManualLocations(updatedManualLocations);
+        
+        toast({ title: "Lieu mis à jour." });
+        setEditingLocation(null);
     }
     
     const handleDeleteLocation = async (locationName: string) => {
         const updatedManualLocations = manualLocations.filter(l => l.name !== locationName);
         await saveManualLocations(updatedManualLocations);
         setManualLocations(updatedManualLocations);
-        toast({title: "Lieu supprimé."});
+        deleteInstantsByLocation(locationName); // Also delete associated instants
+        toast({title: "Lieu et souvenirs associés supprimés."});
     }
 
     const formatDateRange = (startDate?: string, endDate?: string) => {
         if (!startDate) return null;
         const start = format(parseISO(startDate), "d MMM yyyy", { locale: fr });
-        if (!endDate) return `Depuis le ${start}`;
+        if (!endDate || startDate === endDate) return `Le ${start}`;
         const end = format(parseISO(endDate), "d MMM yyyy", { locale: fr });
         return `${start} - ${end}`;
     }
@@ -171,17 +233,13 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                {isMounted && !isLoadingCoords && (
-                    <InteractiveMap 
-                        locations={locationsWithCoords} 
-                    />
-                )}
-                {(!isMounted || isLoadingCoords) && <Skeleton className="h-[400px] w-full rounded-lg" />}
+                {isMounted && <InteractiveMap locations={locationsWithCoords} />}
+                {!isMounted && <Skeleton className="h-[400px] w-full rounded-lg" />}
             </CardContent>
        </Card>
 
        <div className="mb-8">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                     <Button>
                         <PlusCircle className="mr-2 h-4 w-4" />
@@ -260,15 +318,83 @@ export default function MapPage() {
                             </a>
                         </Button>
                         {location.isManual && (
-                             <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDeleteLocation(location.name)}>
-                                <Trash2 className="h-4 w-4" />
+                            <>
+                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location)}>
+                                <Edit className="h-4 w-4" />
                             </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="destructive" size="icon" className="h-9 w-9">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible. Elle supprimera le lieu ainsi que tous les souvenirs (instants) qui y sont associés.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteLocation(location.name)}>
+                                        Supprimer définitivement
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                           </>
                         )}
                     </div>
                 </CardHeader>
             </Card>
         ))}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={editingLocation !== null} onOpenChange={() => setEditingLocation(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Modifier le lieu</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-location-name">Nom du lieu</Label>
+                        <Input 
+                            id="edit-location-name" 
+                            value={editedName} 
+                            onChange={(e) => setEditedName(e.target.value)} 
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-start-date">Date de début</Label>
+                            <Input 
+                                id="edit-start-date" 
+                                type="date"
+                                value={editedStartDate}
+                                onChange={(e) => setEditedStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-end-date">Date de fin</Label>
+                            <Input 
+                                id="edit-end-date" 
+                                type="date"
+                                value={editedEndDate}
+                                onChange={(e) => setEditedEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="ghost">Annuler</Button>
+                    </DialogClose>
+                    <Button onClick={handleEditLocation}>Enregistrer</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
