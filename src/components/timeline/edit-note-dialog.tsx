@@ -25,6 +25,7 @@ import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from
 import { Separator } from "../ui/separator";
 import { format, parseISO } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
+import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 
 interface EditNoteDialogProps {
   children: ReactNode;
@@ -66,13 +67,14 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isImprovingText, setIsImprovingText] = useState(false);
 
   const handleAnalyzePhoto = async (photoDataUri: string) => {
     setIsAnalyzing(true);
     try {
         const result = await describePhoto({ photoDataUri });
         if (result.description) {
-            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
+            setDescription(prev => prev ? `${prev}\\n\\n${result.description}` : result.description);
         }
         if (result.location && !location) { // Only set location if it was empty
             setLocation(result.location);
@@ -85,6 +87,27 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
         setIsAnalyzing(false);
     }
   }
+
+  const handleImproveDescription = async () => {
+    if (!description) {
+        toast({variant: "destructive", title: "Veuillez d'abord écrire une description."});
+        return;
+    }
+    setIsImprovingText(true);
+    try {
+        const result = await improveTextDescription({ description });
+        if (result.improvedDescription) {
+            setDescription(result.improvedDescription);
+        }
+        toast({ title: "Description améliorée par l'IA." });
+    } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "L'amélioration par IA a échoué."});
+    } finally {
+        setIsImprovingText(false);
+    }
+  }
+
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -125,6 +148,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
     setIsAnalyzing(false);
+    setIsImprovingText(false);
   }
 
   const handleToggleEmotion = (moodName: string) => {
@@ -134,6 +158,8 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
             : [...prev, moodName]
     );
   };
+
+  const isLoading = isAnalyzing || isImprovingText;
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -156,7 +182,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                         <div className="relative group">
                             <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
                             <div className="absolute top-2 right-2 flex gap-2">
-                                <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo as string)} disabled={isAnalyzing}>
+                                <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo as string)} disabled={isLoading}>
                                     {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
                                 </Button>
                                 <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
@@ -165,7 +191,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             </div>
                         </div>
                     ) : (
-                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
+                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
                             <ImageIcon className="h-6 w-6" />
                             <span>Importer une nouvelle photo</span>
                         </Button>
@@ -176,16 +202,20 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                  <Separator />
 
                  <div>
-                    <Label className="text-muted-foreground flex items-center gap-2">
-                        Qu'avez-vous en tête ?
-                        {isAnalyzing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <Label htmlFor="description" className="text-muted-foreground flex items-center justify-between">
+                        <span>Qu'avez-vous en tête ?</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading}>
+                            {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                            <span className="sr-only">Améliorer la description</span>
+                        </Button>
                     </Label>
                     <Textarea 
+                        id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Décrivez votre moment..." 
-                        className="min-h-[100px] mt-2"
-                        disabled={isAnalyzing}
+                        className="min-h-[100px] mt-1"
+                        disabled={isLoading}
                     />
                  </div>
 
@@ -200,7 +230,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             value={toDateTimeLocal(date)}
                             onChange={(e) => setDate(e.target.value)}
                             className="border-0 focus-visible:ring-0 flex-grow"
-                            disabled={isAnalyzing}
+                            disabled={isLoading}
                         />
                     </div>
                  </div>
@@ -217,7 +247,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             className="border-0 focus-visible:ring-0 flex-grow"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                             disabled={isAnalyzing}
+                             disabled={isLoading}
                         />
                     </div>
                  </div>
@@ -232,7 +262,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                                 size="sm"
                                 onClick={() => handleToggleEmotion(mood.name)}
                                 className="rounded-full"
-                                disabled={isAnalyzing}
+                                disabled={isLoading}
                             >
                                 {mood.icon} {mood.name}
                             </Button>
@@ -245,8 +275,8 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Fermer</Button>
                 </DialogClose>
-                <Button type="submit" disabled={isAnalyzing}>
-                  {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enregistrer
                 </Button>
             </DialogFooter>
