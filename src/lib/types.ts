@@ -54,3 +54,5 @@ export interface LocationWithCoords extends ManualLocation {
     isManual: boolean;
     coords: [number, number];
 }
+
+    

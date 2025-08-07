@@ -62,6 +62,7 @@ export default function MapPage() {
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
+    const [focusedLocation, setFocusedLocation] = useState<[number, number] | null>(null);
 
     // State for Add Dialog
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -277,7 +278,7 @@ export default function MapPage() {
                 <CardTitle>Carte du monde</CardTitle>
             </CardHeader>
             <CardContent>
-                {isMounted && <InteractiveMap locations={locationsWithCoords} />}
+                {isMounted && <InteractiveMap locations={locationsWithCoords} focusedLocation={focusedLocation} />}
                 {!isMounted && <Skeleton className="h-[400px] w-full rounded-lg" />}
             </CardContent>
        </Card>
@@ -410,7 +411,7 @@ export default function MapPage() {
             <div className="text-center py-10">
                 <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
             </div>
-        ) : allLocations.map(location => (
+        ) : locationsWithCoords.map(location => (
             <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -421,11 +422,9 @@ export default function MapPage() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm">
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)}>
                                 <MapPin className="mr-2 h-4 w-4" />
                                 Voir
-                            </a>
                         </Button>
                         {location.isManual && (
                             <>
@@ -508,3 +507,5 @@ export default function MapPage() {
     </div>
   );
 }
+
+    

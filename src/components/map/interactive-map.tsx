@@ -22,9 +22,10 @@ try {
 
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
+  focusedLocation: [number, number] | null;
 }
 
-export default function InteractiveMap({ locations }: InteractiveMapProps) {
+export default function InteractiveMap({ locations, focusedLocation }: InteractiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.LayerGroup | null>(null);
@@ -75,13 +76,26 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
       }
     });
 
-    // Adjust map view to fit all markers
-    const bounds = new L.LatLngBounds(locations.map(l => l.coords));
-    if (bounds.isValid()) {
-        leafletMap.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    // Adjust map view to fit all markers only if not focusing on a specific one
+    if(!focusedLocation) {
+        const bounds = new L.LatLngBounds(locations.map(l => l.coords));
+        if (bounds.isValid()) {
+            leafletMap.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
     }
 
-  }, [locations]);
+  }, [locations, focusedLocation]);
+
+
+  // Focus on a location when it's selected
+  useEffect(() => {
+    if (focusedLocation && leafletMap.current) {
+        leafletMap.current.flyTo(focusedLocation, 13, {
+            animate: true,
+            duration: 1.5
+        });
+    }
+  }, [focusedLocation]);
 
 
   return (
@@ -91,3 +105,5 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     />
   );
 }
+
+    
