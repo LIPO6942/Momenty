@@ -71,7 +71,9 @@ export default function MapPage() {
     const [newCities, setNewCities] = useState<string[]>([""]);
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
+    const [newPhotos, setNewPhotos] = useState<string[]>([]);
     const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
+    const addPhotoInputRef = useRef<HTMLInputElement>(null);
     
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
@@ -198,7 +200,7 @@ export default function MapPage() {
                     name: locationName,
                     startDate: newStartDate || undefined,
                     endDate: newEndDate || undefined,
-                    photos: [],
+                    photos: newPhotos,
                 });
             }
         });
@@ -216,6 +218,7 @@ export default function MapPage() {
         setNewCities([""]);
         setNewStartDate("");
         setNewEndDate("");
+        setNewPhotos([]);
         setIsAddDialogOpen(false);
     };
 
@@ -264,7 +267,36 @@ export default function MapPage() {
         toast({title: "Lieu et souvenirs associés supprimés."});
     }
 
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleNewPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+    
+        const newPhotoDataUrls: string[] = [];
+        let filesProcessed = 0;
+    
+        if(files.length === 0) return;
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            newPhotoDataUrls.push(reader.result as string);
+            filesProcessed++;
+            if (filesProcessed === files.length) {
+              setNewPhotos(prev => [...prev, ...newPhotoDataUrls]);
+              toast({ title: `${files.length} photo(s) ajoutée(s).`});
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+    const removeNewPhoto = (index: number) => {
+        setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    }
+
+
+    const handleEditedPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
     
@@ -425,6 +457,26 @@ export default function MapPage() {
                                 />
                             </div>
                         </div>
+
+                         <div className="space-y-2">
+                            <Label>Photos souvenirs</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {newPhotos.map((photo, index) => (
+                                    <div key={index} className="relative group">
+                                        <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
+                                        <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeNewPhoto(index)}>
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2">
+                                <ImageIcon className="mr-2 h-4 w-4"/>
+                                Ajouter des photos
+                            </Button>
+                            <Input type="file" multiple accept="image/*" className="hidden" ref={addPhotoInputRef} onChange={handleNewPhotoUpload}/>
+                        </div>
+
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -447,7 +499,7 @@ export default function MapPage() {
             </div>
         ) : locationsWithCoords.map(location => (
             <Card key={location.name} className="border-none shadow-md shadow-slate-200/80">
-                <CardHeader className="flex flex-col items-start gap-4">
+                <CardHeader className="flex flex-col items-start gap-4 p-4">
                     <div className="flex flex-row items-start justify-between w-full">
                         <div className="flex-grow">
                             <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
@@ -518,7 +570,7 @@ export default function MapPage() {
                                                     <ImageIcon className="mr-2 h-4 w-4"/>
                                                     Ajouter des photos
                                                 </Button>
-                                                <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handlePhotoUpload}/>
+                                                <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handleEditedPhotoUpload}/>
                                             </div>
                                         </div>
                                         <DialogFooter>
@@ -555,7 +607,7 @@ export default function MapPage() {
                         </div>
                     </div>
                     {location.photos && location.photos.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-4">
                             {location.photos.map((photo, index) => (
                                 <Image
                                     key={index}
