@@ -128,11 +128,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newInstantId = new Date().toISOString() + Math.random();
         
-        let instantWithContext = { ...instantData };
-        const activeContext = activeTrip || activeStay;
-        if (activeContext && !instantWithContext.location) {
-            instantWithContext.location = activeContext.location || "Lieu inconnu";
-        }
+        const instantWithContext = { ...instantData };
 
         // Object to be saved in DB - must be clean of complex objects
         const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {

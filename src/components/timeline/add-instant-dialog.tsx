@@ -19,7 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2 } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
@@ -48,6 +48,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [city, setCity] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
@@ -57,10 +58,16 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   useEffect(() => {
     const activeContext = activeTrip || activeStay;
-    if (activeContext && !location) {
-        setLocation(activeContext.location || "");
+    if (activeContext) {
+        const country = activeContext.location || "";
+        const finalLocation = city ? `${city}, ${country}` : country;
+        setLocation(finalLocation);
+    } else {
+        // If no context, reset city as well
+        if (city) setCity("");
     }
-  }, [activeTrip, activeStay, location]);
+  }, [activeTrip, activeStay, city]);
+
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -104,7 +111,13 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
         }
         if (result.location) {
-            setLocation(result.location);
+            if (activeTrip) {
+                // If in trip mode, just set the city if possible
+                const [resultCity] = result.location.split(',');
+                setCity(resultCity);
+            } else {
+                setLocation(result.location);
+            }
         }
         toast({ title: "Analyse IA terminée." });
     } catch(e) {
@@ -132,6 +145,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     const activeContext = activeTrip || activeStay;
     setDescription("");
     setLocation(activeContext?.location || "");
+    setCity("");
     setPhoto(null);
     setEmotions([]);
     setIsCameraMode(false);
@@ -152,9 +166,13 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                 const data = await response.json();
                 if (data.address) {
-                    const city = data.address.city || data.address.town || data.address.village || '';
-                    const country = data.address.country || '';
-                    setLocation(`${city}, ${country}`);
+                    const foundCity = data.address.city || data.address.town || data.address.village || '';
+                    const foundCountry = data.address.country || '';
+                    if (activeTrip) {
+                        setCity(foundCity);
+                    } else {
+                        setLocation(`${foundCity}, ${foundCountry}`);
+                    }
                     toast({ title: "Lieu trouvé !" });
                 } else {
                     toast({ variant: "destructive", title: "Impossible de déterminer le lieu." });
@@ -303,17 +321,45 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         Où étiez-vous ?
                         {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
                     </Label>
-                    <div className="flex items-center gap-1 mt-2 border rounded-md">
-                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                        <Input 
-                            id="location"
-                            name="location" 
-                            placeholder="Lieu (ex: Paris, France)" 
-                            className="border-0 focus-visible:ring-0 flex-grow"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            disabled={isLocating || isAnalyzing}
-                        />
+                    <div className="flex items-center gap-1 mt-2">
+                        {activeTrip ? (
+                            <div className="flex items-center gap-2 w-full">
+                                <div className="flex items-center gap-1 border rounded-md flex-grow bg-muted/50">
+                                    <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                    <Input 
+                                        placeholder="Pays" 
+                                        className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
+                                        value={activeTrip.location || ""}
+                                        disabled
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1 border rounded-md flex-grow">
+                                    <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                     <Input 
+                                        id="city"
+                                        name="city" 
+                                        placeholder="Ville" 
+                                        className="border-0 focus-visible:ring-0 flex-grow"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        disabled={isLocating || isAnalyzing}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 mt-2 border rounded-md w-full">
+                                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                <Input 
+                                    id="location"
+                                    name="location" 
+                                    placeholder="Lieu (ex: Paris, France)" 
+                                    className="border-0 focus-visible:ring-0 flex-grow"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    disabled={isLocating || isAnalyzing}
+                                />
+                            </div>
+                        )}
                         <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLocating || isAnalyzing}>
                             <LocateFixed className="h-5 w-5" />
                         </Button>
