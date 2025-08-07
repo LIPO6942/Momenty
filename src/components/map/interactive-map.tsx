@@ -39,6 +39,15 @@ const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
 }
 
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
+
+  // Patch to fix "Map container already initialized" error in development
+  useEffect(() => {
+    const container = document.querySelector('.leaflet-container');
+    if (container && (container as any)._leaflet_id != null) {
+      container.remove();
+    }
+  }, []);
+  
   if (locations.length === 0) {
     return (
       <div className="h-[400px] w-full rounded-lg bg-muted flex items-center justify-center">
