@@ -387,11 +387,54 @@ export default function MapPage() {
                         </Button>
                         {location.isManual && (
                             <>
-                            <DialogTrigger asChild>
-                               <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
-                                  <Edit className="h-4 w-4" />
-                               </Button>
-                            </DialogTrigger>
+                            <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
+                               <DialogTrigger asChild>
+                                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                    <Edit className="h-4 w-4" />
+                                 </Button>
+                               </DialogTrigger>
+                               <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Modifier le lieu</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="py-4 space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-location-name">Nom du lieu</Label>
+                                            <Input 
+                                                id="edit-location-name" 
+                                                value={editedName} 
+                                                onChange={(e) => setEditedName(e.target.value)} 
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="edit-start-date">Date de début</Label>
+                                                <Input 
+                                                    id="edit-start-date" 
+                                                    type="date"
+                                                    value={editedStartDate}
+                                                    onChange={(e) => setEditedStartDate(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="edit-end-date">Date de fin</Label>
+                                                <Input 
+                                                    id="edit-end-date" 
+                                                    type="date"
+                                                    value={editedEndDate}
+                                                    onChange={(e) => setEditedEndDate(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="ghost">Annuler</Button>
+                                        </DialogClose>
+                                        <Button onClick={handleEditLocation}>Enregistrer</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                      <Button variant="destructive" size="icon" className="h-9 w-9">
@@ -420,53 +463,6 @@ export default function MapPage() {
             </Card>
         ))}
         </div>
-
-        {/* Edit Dialog */}
-        <Dialog open={editingLocation !== null} onOpenChange={() => setEditingLocation(null)}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Modifier le lieu</DialogTitle>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-location-name">Nom du lieu</Label>
-                        <Input 
-                            id="edit-location-name" 
-                            value={editedName} 
-                            onChange={(e) => setEditedName(e.target.value)} 
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-start-date">Date de début</Label>
-                            <Input 
-                                id="edit-start-date" 
-                                type="date"
-                                value={editedStartDate}
-                                onChange={(e) => setEditedStartDate(e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-end-date">Date de fin</Label>
-                            <Input 
-                                id="edit-end-date" 
-                                type="date"
-                                value={editedEndDate}
-                                onChange={(e) => setEditedEndDate(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="ghost">Annuler</Button>
-                    </DialogClose>
-                    <Button onClick={handleEditLocation}>Enregistrer</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </div>
   );
 }
-
-    
