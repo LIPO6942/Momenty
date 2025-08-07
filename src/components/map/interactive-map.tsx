@@ -1,14 +1,13 @@
 
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import type { LocationWithCoords } from '@/lib/types';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import type { LocationWithCoords } from "@/lib/types";
 
-// Fix for marker icons being broken in Next.js
-// This code needs to run once on the client
+// Fix pour les icônes de marqueur cassées dans Next.js
+// Ce code doit s'exécuter une fois côté client
 try {
     delete (L.Icon.Default.prototype as any)._getIconUrl;
 
@@ -21,33 +20,71 @@ try {
     console.error('Could not apply Leaflet icon fix', e);
 }
 
+
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
 }
 
-const MapUpdater = ({ locations }: { locations: LocationWithCoords[] }) => {
-    const map = useMap();
-    useEffect(() => {
-        if (locations.length > 0) {
-            const bounds = new L.LatLngBounds(locations.map(l => l.coords));
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
-        }
-    }, [locations, map]);
-    return null;
-}
-
 export default function InteractiveMap({ locations }: InteractiveMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<L.Map | null>(null);
 
-  // Patch to fix "Map container already initialized" error in development
   useEffect(() => {
-    const container = document.querySelector('.leaflet-container');
-    if (container && (container as any)._leaflet_id != null) {
-      container.remove();
+    // Ne rien faire si le conteneur n'est pas prêt ou s'il n'y a pas de lieux
+    if (!mapRef.current || locations.length === 0) return;
+
+    // Si une instance de carte existe déjà, on la met à jour au lieu de la recréer
+    if (leafletMap.current) {
+        // Mise à jour de la vue pour s'adapter aux nouveaux marqueurs
+        const bounds = new L.LatLngBounds(locations.map(l => l.coords));
+        if (bounds.isValid()) {
+            leafletMap.current.fitBounds(bounds, { padding: [50, 50] });
+        }
+        
+        // Supprimer les anciens marqueurs
+        leafletMap.current.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+                layer.remove();
+            }
+        });
+
+    } else {
+        // --- Initialisation de la carte ---
+        const center = locations[0].coords;
+        leafletMap.current = L.map(mapRef.current).setView(center, 5);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(leafletMap.current);
+
+        const bounds = new L.LatLngBounds(locations.map(l => l.coords));
+        if (bounds.isValid()) {
+            leafletMap.current.fitBounds(bounds, { padding: [50, 50] });
+        }
     }
-  }, []);
-  
+
+    // --- Ajout/Mise à jour des marqueurs ---
+    locations.forEach((location) => {
+      const marker = L.marker(location.coords, {
+          title: location.name
+      });
+      marker.bindPopup(`${location.name} (${location.count} instant(s))`);
+      if(leafletMap.current) {
+        marker.addTo(leafletMap.current);
+      }
+    });
+
+
+    // --- Fonction de nettoyage ---
+    // Cette fonction est cruciale pour le HMR (Hot Module Replacement)
+    return () => {
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+      }
+    };
+  }, [locations]); // Se ré-exécute uniquement si les `locations` changent
+
   if (locations.length === 0) {
     return (
       <div className="h-[400px] w-full rounded-lg bg-muted flex items-center justify-center">
@@ -56,28 +93,11 @@ export default function InteractiveMap({ locations }: InteractiveMapProps) {
     );
   }
 
-  const center: [number, number] = locations.length > 0 
-        ? locations[0].coords 
-        : [51.505, -0.09]; // Default to London if no locations
-
   return (
-    <MapContainer
-      center={center}
-      zoom={locations.length > 1 ? undefined : 5}
-      scrollWheelZoom={true}
-      style={{ height: '400px', width: '100%' }}
-      className="rounded-lg z-0"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {locations.map((location) => (
-        <Marker key={location.name} position={location.coords}>
-          <Popup>{location.name} ({location.count} instant(s))</Popup>
-        </Marker>
-      ))}
-      <MapUpdater locations={locations} />
-    </MapContainer>
+    <div
+      ref={mapRef}
+      className="w-full h-[400px] rounded-lg z-0"
+    />
   );
 }
+
