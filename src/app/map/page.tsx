@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check } from "lucide-react";
 import { useContext, useState, useMemo, useEffect } from "react";
 import { TimelineContext } from "@/context/timeline-context";
 import {
@@ -35,6 +35,10 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { countries } from "@/lib/countries";
+import { cn } from "@/lib/utils";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -65,6 +69,7 @@ export default function MapPage() {
     const [newCities, setNewCities] = useState<string[]>([""]);
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
+    const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
     
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
@@ -166,7 +171,7 @@ export default function MapPage() {
     const handleAddLocations = async () => {
         const country = newCountry.trim();
         if (!country) {
-            toast({ variant: "destructive", title: "Le nom du pays ne peut pas être vide." });
+            toast({ variant: "destructive", title: "Veuillez sélectionner un pays." });
             return;
         }
 
@@ -291,13 +296,50 @@ export default function MapPage() {
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="country-name">Pays</Label>
-                            <Input 
-                                id="country-name" 
-                                value={newCountry} 
-                                onChange={(e) => setNewCountry(e.target.value)} 
-                                placeholder="ex: Japon"
-                            />
+                            <Label>Pays</Label>
+                             <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={isCountryPopoverOpen}
+                                    className="w-full justify-between"
+                                    >
+                                    {newCountry
+                                        ? countries.find((country) => country.label.toLowerCase() === newCountry.toLowerCase())?.label
+                                        : "Sélectionner un pays..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Rechercher un pays..." />
+                                        <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
+                                        <CommandList>
+                                            <CommandGroup>
+                                                {countries.map((country) => (
+                                                <CommandItem
+                                                    key={country.value}
+                                                    value={country.label}
+                                                    onSelect={(currentValue) => {
+                                                        setNewCountry(currentValue === newCountry ? "" : currentValue);
+                                                        setIsCountryPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            newCountry.toLowerCase() === country.label.toLowerCase() ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {country.label}
+                                                </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                         <div className="space-y-2">
