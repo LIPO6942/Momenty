@@ -1,21 +1,21 @@
 {
-    "name": "Momenty",
-    "short_name": "Momenty",
-    "description": "Mémorisez et organisez les instants de votre voyage.",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#E8F4F8",
-    "theme_color": "#A0D2EB",
-    "icons": [
-        {
-            "src": "/icons/android-chrome-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "/icons/android-chrome-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ]
+  "name": "Momenty",
+  "short_name": "Momenty",
+  "description": "Mémorisez et organisez les instants de votre voyage.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#A0D2EB",
+  "icons": [
+    {
+      "src": "/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
