@@ -25,6 +25,7 @@ export interface ManualLocation {
     name: string;
     startDate?: string;
     endDate?: string;
+    photos?: string[];
 }
 
 
