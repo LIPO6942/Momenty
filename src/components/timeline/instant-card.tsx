@@ -32,7 +32,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
     return (
         <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
-            <CardHeader className="flex flex-row items-start justify-between p-4">
+            <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
                 <div className="flex items-start gap-4">
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0", instant.color)}>
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
@@ -63,8 +63,8 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                 </DropdownMenu>
             </CardHeader>
             
-            <CardContent className="p-0 px-4 -mt-4">
-              <div className="ml-14 space-y-4">
+            <CardContent className="p-4">
+              <div className={cn("space-y-4", !instant.photo && "ml-14 -mt-2")}>
                 {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
                     <p className="text-sm text-muted-foreground">{instant.description}</p>
                 )}
@@ -74,33 +74,35 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         alt={instant.title}
                         width={500}
                         height={300}
-                        className="w-full rounded-lg object-cover aspect-video"
+                        className="w-full rounded-lg object-cover aspect-video mt-4"
                         data-ai-hint="travel photo"
                     />
                 )}
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col items-start gap-3 p-4 pt-3 ml-14">
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-indigo-500" />
-                        <span className="font-semibold text-sm text-foreground">{instant.location}</span>
+            <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
+                <div className={cn("w-full", !instant.photo && "ml-14")}>
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4 text-indigo-500" />
+                            <span className="font-semibold text-sm text-foreground">{instant.location}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                    {instant.category && (
-                        <Badge variant="secondary" className="flex items-center gap-1.5">
-                            <Tag className="h-3 w-3" />
-                            {instant.category}
-                        </Badge>
-                    )}
-                    {emotions.map(emotion => (
-                        <Badge key={emotion} variant="outline">
-                            {emotion}
-                        </Badge>
-                    ))}
+                    <div className="flex gap-2 flex-wrap mt-3">
+                        {instant.category && (
+                            <Badge variant="secondary" className="flex items-center gap-1.5">
+                                <Tag className="h-3 w-3" />
+                                {instant.category}
+                            </Badge>
+                        )}
+                        {emotions.map(emotion => (
+                            <Badge key={emotion} variant="outline">
+                                {emotion}
+                            </Badge>
+                        ))}
+                    </div>
                 </div>
             </CardFooter>
         </Card>
