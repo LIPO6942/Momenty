@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2, Edit } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle } from "lucide-react";
 import { useContext, useState, useMemo, useEffect } from "react";
 import { TimelineContext } from "@/context/timeline-context";
 import {
@@ -33,7 +33,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -61,7 +60,8 @@ export default function MapPage() {
 
     // State for Add Dialog
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [newLocationName, setNewLocationName] = useState("");
+    const [newCountry, setNewCountry] = useState("");
+    const [newCities, setNewCities] = useState<string[]>([""]);
     const [newStartDate, setNewStartDate] = useState("");
     const [newEndDate, setNewEndDate] = useState("");
     
@@ -145,32 +145,69 @@ export default function MapPage() {
         }
     }, [allLocations]);
 
-    const handleAddLocation = async () => {
-        if (!newLocationName.trim()) {
-            toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
-            return;
+    const handleCityChange = (index: number, value: string) => {
+        const updatedCities = [...newCities];
+        updatedCities[index] = value;
+        setNewCities(updatedCities);
+    };
+
+    const handleAddCity = () => {
+        setNewCities([...newCities, ""]);
+    };
+
+    const handleRemoveCity = (index: number) => {
+        if (newCities.length > 1) {
+            const updatedCities = newCities.filter((_, i) => i !== index);
+            setNewCities(updatedCities);
         }
-        if (allLocations.some(l => l.name.toLowerCase() === newLocationName.trim().toLowerCase())) {
-            toast({ variant: "destructive", title: "Ce lieu existe déjà." });
+    };
+
+    const handleAddLocations = async () => {
+        const country = newCountry.trim();
+        if (!country) {
+            toast({ variant: "destructive", title: "Le nom du pays ne peut pas être vide." });
             return;
         }
 
-        const newManualLocation: ManualLocation = { 
-            name: newLocationName.trim(),
-            startDate: newStartDate || undefined,
-            endDate: newEndDate || undefined,
-        };
-        const updatedManualLocations = [...manualLocations, newManualLocation];
+        const citiesToAdd = newCities.map(city => city.trim()).filter(Boolean);
+        if (citiesToAdd.length === 0) {
+            toast({ variant: "destructive", title: "Veuillez ajouter au moins une ville." });
+            return;
+        }
 
+        const newManualLocations: ManualLocation[] = [];
+        let hasError = false;
+
+        citiesToAdd.forEach(city => {
+            const locationName = `${city}, ${country}`;
+            if (allLocations.some(l => l.name.toLowerCase() === locationName.toLowerCase())) {
+                toast({ variant: "destructive", title: "Erreur", description: `Le lieu "${locationName}" existe déjà.` });
+                hasError = true;
+            } else {
+                newManualLocations.push({
+                    name: locationName,
+                    startDate: newStartDate || undefined,
+                    endDate: newEndDate || undefined,
+                });
+            }
+        });
+
+        if (hasError) return;
+
+        const updatedManualLocations = [...manualLocations, ...newManualLocations];
         await saveManualLocations(updatedManualLocations);
         setManualLocations(updatedManualLocations);
+
+        toast({ title: "Lieu(x) ajouté(s) !" });
         
-        toast({ title: "Lieu ajouté !" });
-        setNewLocationName("");
+        // Reset form
+        setNewCountry("");
+        setNewCities([""]);
         setNewStartDate("");
         setNewEndDate("");
         setIsAddDialogOpen(false);
-    }
+    };
+
 
     const openEditDialog = (location: ManualLocation) => {
         setEditingLocation(location);
@@ -249,18 +286,47 @@ export default function MapPage() {
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Ajouter un nouveau lieu</DialogTitle>
+                        <DialogTitle>Ajouter un ou plusieurs lieux</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="location-name">Nom du lieu (Ville, Pays)</Label>
+                            <Label htmlFor="country-name">Pays</Label>
                             <Input 
-                                id="location-name" 
-                                value={newLocationName} 
-                                onChange={(e) => setNewLocationName(e.target.value)} 
-                                placeholder="ex: Tokyo, Japon"
+                                id="country-name" 
+                                value={newCountry} 
+                                onChange={(e) => setNewCountry(e.target.value)} 
+                                placeholder="ex: Japon"
                             />
                         </div>
+
+                        <div className="space-y-2">
+                          <Label>Villes</Label>
+                            {newCities.map((city, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        value={city}
+                                        onChange={(e) => handleCityChange(index, e.target.value)}
+                                        placeholder={`ex: Ville ${index + 1}`}
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => handleRemoveCity(index)}
+                                        disabled={newCities.length <= 1}
+                                        className="text-destructive hover:text-destructive"
+                                    >
+                                        <MinusCircle className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={handleAddCity} className="mt-2">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Ajouter une autre ville
+                            </Button>
+                        </div>
+
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="start-date">Date de début</Label>
@@ -286,7 +352,7 @@ export default function MapPage() {
                         <DialogClose asChild>
                             <Button variant="ghost">Annuler</Button>
                         </DialogClose>
-                        <Button onClick={handleAddLocation}>Ajouter</Button>
+                        <Button onClick={handleAddLocations}>Ajouter</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -320,9 +386,11 @@ export default function MapPage() {
                         </Button>
                         {location.isManual && (
                             <>
-                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
+                            <DialogTrigger asChild>
+                               <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                  <Edit className="h-4 w-4" />
+                               </Button>
+                            </DialogTrigger>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                      <Button variant="destructive" size="icon" className="h-9 w-9">
@@ -399,3 +467,5 @@ export default function MapPage() {
     </div>
   );
 }
+
+    
