@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import Image from "next/image";
 import { MoreVertical, Edit, Trash2, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
+    const [isTextVisible, setIsTextVisible] = useState(true);
 
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
 
@@ -65,28 +66,38 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </DropdownMenu>
                 </div>
                 
-                <div className="absolute bottom-0 left-0 p-4 w-full">
-                    <h3 className="font-bold text-lg">{instant.title}</h3>
-                    {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
-                        <p className="text-sm text-white/80 mt-1">{instant.description}</p>
-                    )}
-                    <div className="flex items-center gap-1.5 mt-3">
-                        <MapPin className="h-4 w-4 text-white/90" />
-                        <span className="font-semibold text-sm">{instant.location}</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap mt-3">
-                        {instant.category && (
-                             <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
-                                <Tag className="h-3 w-3" />
-                                {instant.category}
-                            </Badge>
+                <div 
+                    className="absolute bottom-0 left-0 w-full cursor-pointer transition-opacity duration-300"
+                    onClick={() => setIsTextVisible(!isTextVisible)}
+                >
+                     <div 
+                        className={cn(
+                            "p-4 transition-transform duration-300 ease-in-out",
+                            isTextVisible ? "translate-y-0" : "translate-y-full"
                         )}
-                        {emotions.map(emotion => (
-                            <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
-                                {emotion}
-                            </Badge>
-                        ))}
-                    </div>
+                     >
+                        <h3 className="font-bold text-lg">{instant.title}</h3>
+                        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                            <p className="text-sm text-white/80 mt-1">{instant.description}</p>
+                        )}
+                        <div className="flex items-center gap-1.5 mt-3">
+                            <MapPin className="h-4 w-4 text-white/90" />
+                            <span className="font-semibold text-sm">{instant.location}</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap mt-3">
+                            {instant.category && (
+                                 <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
+                                    <Tag className="h-3 w-3" />
+                                    {instant.category}
+                                </Badge>
+                            )}
+                            {emotions.map(emotion => (
+                                <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
+                                    {emotion}
+                                </Badge>
+                            ))}
+                        </div>
+                     </div>
                 </div>
             </Card>
         )
