@@ -49,7 +49,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
-  const [emotion, setEmotion] = useState<string | null>(null);
+  const [emotions, setEmotions] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCameraMode, setIsCameraMode] = useState(false);
@@ -133,7 +133,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setDescription("");
     setLocation(activeContext?.location || "");
     setPhoto(null);
-    setEmotion(null);
+    setEmotions([]);
     setIsCameraMode(false);
     setHasCameraPermission(null);
     setIsAnalyzing(false);
@@ -190,6 +190,14 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     }
   }
 
+  const handleToggleEmotion = (moodName: string) => {
+    setEmotions(prev => 
+        prev.includes(moodName) 
+            ? prev.filter(m => m !== moodName) 
+            : [...prev, moodName]
+    );
+  };
+
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!description && !photo) {
@@ -204,7 +212,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
       description: finalDescription,
       date: new Date().toISOString(),
       location: location || "Lieu inconnu",
-      emotion: emotion || "Neutre",
+      emotion: emotions.length > 0 ? emotions : ["Neutre"],
       photo: photo,
       category: 'Note' // Default category, will be updated by context
     };
@@ -318,9 +326,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <Button 
                                 key={mood.name} 
                                 type="button" 
-                                variant={emotion === mood.name ? "default" : "outline"}
+                                variant={emotions.includes(mood.name) ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => setEmotion(mood.name)}
+                                onClick={() => handleToggleEmotion(mood.name)}
                                 className="rounded-full"
                             >
                                 {mood.icon} {mood.name}

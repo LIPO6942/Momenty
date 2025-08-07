@@ -62,7 +62,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [description, setDescription] = useState(instantToEdit.description);
   const [location, setLocation] = useState(instantToEdit.location);
   const [photo, setPhoto] = useState<string | null | undefined>(instantToEdit.photo);
-  const [emotion, setEmotion] = useState<string | null>(instantToEdit.emotion);
+  const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -76,7 +76,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       description,
       photo,
       location,
-      emotion: emotion || "Neutre",
+      emotion: emotions.length > 0 ? emotions : ["Neutre"],
       date: new Date(date).toISOString(), // Ensure date is in ISO format
     });
 
@@ -101,9 +101,17 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setDescription(instantToEdit.description);
     setLocation(instantToEdit.location);
     setPhoto(instantToEdit.photo);
-    setEmotion(instantToEdit.emotion);
+    setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
   }
+
+  const handleToggleEmotion = (moodName: string) => {
+    setEmotions(prev => 
+        prev.includes(moodName) 
+            ? prev.filter(m => m !== moodName) 
+            : [...prev, moodName]
+    );
+  };
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -191,9 +199,9 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                             <Button 
                                 key={mood.name} 
                                 type="button" 
-                                variant={emotion === mood.name ? "default" : "outline"}
+                                variant={emotions.includes(mood.name) ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => setEmotion(mood.name)}
+                                onClick={() => handleToggleEmotion(mood.name)}
                                 className="rounded-full"
                             >
                                 {mood.icon} {mood.name}

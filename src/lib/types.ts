@@ -10,7 +10,7 @@ export interface Instant {
     icon?: React.ReactNode; 
     color?: string;
     location: string;
-    emotion: string;
+    emotion: string | string[];
     photo?: string | null; // Data URL for the image or a reference string like "local_..."
     category?: string; // AI-generated category
 }

@@ -15,7 +15,7 @@ const InstantForStorySchema = z.object({
   title: z.string(),
   description: z.string(),
   location: z.string(),
-  emotion: z.string(),
+  emotion: z.union([z.string(), z.array(z.string())]),
   photo: z.string().optional().describe(
       "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
@@ -60,7 +60,7 @@ Le récit doit être en français, ne doit pas dépasser 4 ou 5 paragraphes.
   - Titre: {{{title}}}
   - Description: {{{description}}}
   - Lieu: {{{location}}}
-  - Émotion ressentie: {{{emotion}}}
+  - Émotion(s) ressentie(s): {{#if (Array.isArray emotion)}}{{emotion.join ', '}}{{else}}{{{emotion}}}{{/if}}
   {{#if photo}}
   - Photo: {{media url=photo}}
   {{/if}}

@@ -28,6 +28,8 @@ import { Badge } from "@/components/ui/badge";
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
 
+    const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
+
     return (
         <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4">
@@ -94,11 +96,11 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             {instant.category}
                         </Badge>
                     )}
-                    {instant.emotion && (
-                        <Badge variant="outline">
-                            {instant.emotion}
+                    {emotions.map(emotion => (
+                        <Badge key={emotion} variant="outline">
+                            {emotion}
                         </Badge>
-                    )}
+                    ))}
                 </div>
             </CardFooter>
         </Card>
