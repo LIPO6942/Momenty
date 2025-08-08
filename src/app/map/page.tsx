@@ -246,7 +246,7 @@ export default function MapPage() {
                     name: locationName,
                     startDate: newStartDate || undefined,
                     endDate: newEndDate || undefined,
-                    photos: newPhotos,
+                    photos: newPhotos, // Pass data URLs to be processed by saveManualLocations
                     souvenir: newSouvenir || undefined,
                 });
             }
@@ -752,3 +752,4 @@ export default function MapPage() {
   );
 }
 
+    
