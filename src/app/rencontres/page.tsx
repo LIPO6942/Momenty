@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { getEncounters, type Encounter } from "@/lib/idb";
+import { getEncounters, type Encounter, getImage } from "@/lib/idb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO } from "date-fns";
@@ -17,7 +17,18 @@ export default function EncountersPage() {
   useEffect(() => {
     const loadEncounters = async () => {
       const savedEncounters = await getEncounters();
-      setEncounters(savedEncounters);
+      // Hydrate encounters with full photo data
+      const hydratedEncounters = await Promise.all(
+        savedEncounters.map(async (encounter) => {
+          let finalPhoto = encounter.photo;
+          if (encounter.photo && encounter.photo.startsWith('local_')) {
+            const localPhoto = await getImage(encounter.photo);
+            finalPhoto = localPhoto;
+          }
+          return { ...encounter, photo: finalPhoto };
+        })
+      );
+      setEncounters(hydratedEncounters);
     };
     loadEncounters();
   }, []);

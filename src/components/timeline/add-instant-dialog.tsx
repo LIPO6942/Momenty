@@ -284,8 +284,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         };
         
         if (photo) {
-          await saveImage(`encounter_${encounterId}`, photo);
-          newEncounter.photo = `local_encounter_${encounterId}`;
+          const photoId = `encounter_${encounterId}`;
+          await saveImage(photoId, photo);
+          newEncounter.photo = photoId; // Store reference
         }
         await saveEncounter(newEncounter);
         toast({ title: "Nouvelle rencontre ajoutée !" });

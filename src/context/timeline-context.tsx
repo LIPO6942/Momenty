@@ -88,7 +88,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             loadedInstants.map(async (inst) => {
               let finalPhoto = inst.photo;
               if (inst.photo && inst.photo.startsWith('local_')) {
-                  const localPhoto = await getImage(inst.id);
+                  const localPhoto = await getImage(inst.photo);
                   finalPhoto = localPhoto; 
               }
               const { icon, color } = getCategoryAttributes(inst.category);
