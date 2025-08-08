@@ -6,7 +6,7 @@ import type { Instant, Trip, Encounter } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -42,8 +42,6 @@ const getCategoryAttributes = (category?: string) => {
     }
 };
 
-const initialInstants: Omit<Instant, 'id'>[] = [];
-
 const addRuntimeAttributes = (instant: Instant): Instant => {
     const { icon, color } = getCategoryAttributes(instant.category);
     return { ...instant, icon, color };
@@ -72,7 +70,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const getFullPhotoData = useCallback(async <T extends { photo?: string | null }>(item: T): Promise<T> => {
         let finalPhoto = item.photo;
-        if (item.photo && item.photo.startsWith('local_')) {
+        if (item.photo && (item.photo.startsWith('local_') || item.photo.startsWith('encounter_'))) {
             const localPhoto = await getImage(item.photo);
             finalPhoto = localPhoto; 
         }
@@ -86,18 +84,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     useEffect(() => {
         const loadData = async () => {
           let loadedInstants = await getInstants();
-          if (loadedInstants.length === 0 && initialInstants.length > 0) {
-            // First time load, populate with initial data and save
-            const instantsToSave = initialInstants.map((inst, index) => ({
-              ...inst,
-              id: `initial-${index}-${new Date(inst.date).getTime()}`
-            }));
-            for (const inst of instantsToSave) {
-              await saveInstant(inst as Instant);
-            }
-            loadedInstants = await getInstants();
-          }
-    
+          
           // Add icons and colors, and resolve local images
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {

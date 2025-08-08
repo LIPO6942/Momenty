@@ -116,7 +116,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     try {
         const result = await describePhoto({ photoDataUri });
         if (result.description) {
-            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
+            setDescription(prev => prev ? `${prev}\\n\\n${result.description}` : result.description);
         }
         if (result.location) {
             const [resultCity, resultCountry] = result.location.split(',').map(s => s.trim());
@@ -283,11 +283,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             photo: photo,
         };
         
-        if (photo) {
-          const photoId = `encounter_${encounterId}`;
-          await saveImage(photoId, photo);
-          newEncounter.photo = photoId; // Store reference
-        }
         await saveEncounter(newEncounter);
         toast({ title: "Nouvelle rencontre ajoutée !" });
 

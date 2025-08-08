@@ -19,7 +19,7 @@ export default function EncountersPage() {
   useEffect(() => {
     const loadEncounters = async () => {
       const savedEncounters = await getEncounters();
-       const encountersWithPhotos = await getEncounterPhotos(savedEncounters);
+      const encountersWithPhotos = await getEncounterPhotos(savedEncounters);
       setEncounters(encountersWithPhotos);
     };
     loadEncounters();

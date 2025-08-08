@@ -223,9 +223,11 @@ export const saveEncounter = async (encounter: Encounter): Promise<void> => {
         
         const encounterToSave = {...encounter};
         if (encounterToSave.photo && encounterToSave.photo.startsWith('data:')) {
-            const photoId = `local_encounter_${encounterToSave.id}`;
+            const photoId = `encounter_${encounterToSave.id}`;
             saveImage(photoId, encounterToSave.photo);
             encounterToSave.photo = photoId;
+        } else {
+             encounterToSave.photo = null;
         }
 
         const request = store.put(encounterToSave);
