@@ -176,7 +176,18 @@ export default function MapPage() {
             }
             grouped[country].push(location);
         });
-        return grouped;
+        
+        // Ensure "Lieux non classés" is last if it exists
+        const orderedGrouped: { [country: string]: LocationWithCoords[] } = {};
+        Object.keys(grouped).sort((a, b) => {
+            if (a === 'Lieux non classés') return 1;
+            if (b === 'Lieux non classés') return -1;
+            return a.localeCompare(b);
+        }).forEach(country => {
+            orderedGrouped[country] = grouped[country];
+        });
+
+        return orderedGrouped;
     }, [locationsWithCoords]);
 
     const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
@@ -296,58 +307,56 @@ export default function MapPage() {
         toast({title: "Lieu et souvenirs associés supprimés."});
     }
 
-    const handleNewPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, setPhotosCallback: React.Dispatch<React.SetStateAction<string[]>>) => {
         const files = e.target.files;
         if (!files) return;
-    
-        const newPhotoDataUrls: string[] = [];
+
         let filesProcessed = 0;
-    
-        if(files.length === 0) return;
+        const newPhotoDataUrls: string[] = [];
+
+        if (files.length === 0) return;
 
         for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            newPhotoDataUrls.push(reader.result as string);
-            filesProcessed++;
-            if (filesProcessed === files.length) {
-              setNewPhotos(prev => [...prev, ...newPhotoDataUrls]);
-              toast({ title: `${files.length} photo(s) ajoutée(s).`});
-            }
-          };
-          reader.readAsDataURL(file);
+            const file = files[i];
+            const reader = new FileReader();
+
+            reader.onloadend = () => {
+                newPhotoDataUrls.push(reader.result as string);
+                filesProcessed++;
+                if (filesProcessed === files.length) {
+                    setPhotosCallback(prev => [...prev, ...newPhotoDataUrls]);
+                    toast({ title: `${newPhotoDataUrls.length} photo(s) ajoutée(s).` });
+                }
+            };
+
+            reader.onerror = () => {
+                console.error(`Erreur de lecture du fichier: ${file.name}`);
+                toast({
+                    variant: "destructive",
+                    title: "Erreur d'importation",
+                    description: `Impossible de lire le fichier "${file.name}".`
+                });
+                filesProcessed++;
+                // Check if all files (including errors) have been processed
+                 if (filesProcessed === files.length) {
+                    setPhotosCallback(prev => [...prev, ...newPhotoDataUrls]);
+                    if (newPhotoDataUrls.length > 0) {
+                        toast({ title: `${newPhotoDataUrls.length} photo(s) ajoutée(s).` });
+                    }
+                }
+            };
+
+            reader.readAsDataURL(file);
         }
-      };
+         // Reset file input to allow selecting the same file again
+        if (e.target) {
+            e.target.value = '';
+        }
+    };
 
     const removeNewPhoto = (index: number) => {
         setNewPhotos(prev => prev.filter((_, i) => i !== index));
     }
-
-
-    const handleEditedPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-    
-        const newPhotos: string[] = [];
-        let filesProcessed = 0;
-    
-        if(files.length === 0) return;
-
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            newPhotos.push(reader.result as string);
-            filesProcessed++;
-            if (filesProcessed === files.length) {
-              setEditedPhotos(prev => [...prev, ...newPhotos]);
-              toast({ title: `${files.length} photo(s) ajoutée(s).`});
-            }
-          };
-          reader.readAsDataURL(file);
-        }
-      };
 
     const removeEditedPhoto = (index: number) => {
         setEditedPhotos(prev => prev.filter((_, i) => i !== index));
@@ -503,7 +512,7 @@ export default function MapPage() {
                                 <ImageIcon className="mr-2 h-4 w-4"/>
                                 Ajouter des photos
                             </Button>
-                            <Input type="file" multiple accept="image/*" className="hidden" ref={addPhotoInputRef} onChange={handleNewPhotoUpload}/>
+                            <Input type="file" multiple accept="image/*" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)}/>
                         </div>
 
                          <div className="space-y-2">
@@ -617,7 +626,7 @@ export default function MapPage() {
                                                                         <ImageIcon className="mr-2 h-4 w-4"/>
                                                                         Ajouter des photos
                                                                     </Button>
-                                                                    <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={handleEditedPhotoUpload}/>
+                                                                    <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                     <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
@@ -695,3 +704,5 @@ export default function MapPage() {
     </div>
   );
 }
+
+    
