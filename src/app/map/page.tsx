@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { getManualLocations, saveManualLocations, type ManualLocation } from "@/lib/idb";
+import { getManualLocations, saveManualLocations, type ManualLocation, getImage } from "@/lib/idb";
 import dynamic from 'next/dynamic';
 import type { LocationWithCoords } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,10 +63,16 @@ const toInputDate = (isoString?: string) => {
     }
 }
 
+// Extended type for client-side state
+interface ClientManualLocation extends ManualLocation {
+    photosData?: (string | null)[];
+}
+
+
 export default function MapPage() {
     const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
     const { toast } = useToast();
-    const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
+    const [manualLocations, setManualLocations] = useState<ClientManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
@@ -84,7 +90,7 @@ export default function MapPage() {
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
     
     // State for Edit Dialog
-    const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
+    const [editingLocation, setEditingLocation] = useState<ClientManualLocation | null>(null);
     const [editedName, setEditedName] = useState("");
     const [editedStartDate, setEditedStartDate] = useState("");
     const [editedEndDate, setEditedEndDate] = useState("");
@@ -97,7 +103,11 @@ export default function MapPage() {
         const loadLocations = async () => {
             try {
                 const savedManualLocations = await getManualLocations();
-                setManualLocations(savedManualLocations);
+                const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
+                    const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
+                    return { ...loc, photosData };
+                }));
+                setManualLocations(hydratedLocations);
             } catch (error) {
                 console.error("Failed to load manual locations from IndexedDB", error);
             }
@@ -108,7 +118,7 @@ export default function MapPage() {
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
     const allLocations = useMemo(() => {
-        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string }>();
+        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string, photosData?: (string | null)[] }>();
 
         manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
         instantLocations.forEach(location => {
@@ -209,6 +219,15 @@ export default function MapPage() {
             setNewCities(updatedCities);
         }
     };
+    
+    const reloadLocationsWithPhotos = async () => {
+        const savedManualLocations = await getManualLocations();
+        const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
+            const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
+            return { ...loc, photosData };
+        }));
+        setManualLocations(hydratedLocations);
+    };
 
     const handleAddLocations = async () => {
         const country = newCountry.trim();
@@ -246,7 +265,7 @@ export default function MapPage() {
 
         const updatedManualLocations = [...manualLocations, ...newManualLocations];
         await saveManualLocations(updatedManualLocations);
-        setManualLocations(updatedManualLocations);
+        await reloadLocationsWithPhotos();
 
         toast({ title: "Lieu(x) ajouté(s) !" });
         
@@ -261,12 +280,12 @@ export default function MapPage() {
     };
 
 
-    const openEditDialog = (location: ManualLocation) => {
+    const openEditDialog = (location: ClientManualLocation) => {
         setEditingLocation(location);
         setEditedName(location.name);
         setEditedStartDate(toInputDate(location.startDate));
         setEditedEndDate(toInputDate(location.endDate));
-        setEditedPhotos(location.photos || []);
+        setEditedPhotos(location.photosData?.filter(Boolean) as string[] || []);
         setEditedSouvenir(location.souvenir || "");
     }
 
@@ -284,16 +303,17 @@ export default function MapPage() {
         
         const updatedManualLocations = manualLocations.map(loc => 
             loc.name === editingLocation.name ? {
+                ...loc,
                 name: editedName.trim(),
                 startDate: editedStartDate || undefined,
                 endDate: editedEndDate || undefined,
-                photos: editedPhotos,
+                photos: editedPhotos, // Pass data URLs, IDB will handle keying
                 souvenir: editedSouvenir || undefined,
             } : loc
         );
 
         await saveManualLocations(updatedManualLocations);
-        setManualLocations(updatedManualLocations);
+        await reloadLocationsWithPhotos();
         
         toast({ title: "Lieu mis à jour." });
         setEditingLocation(null);
@@ -302,7 +322,7 @@ export default function MapPage() {
     const handleDeleteLocation = async (locationName: string) => {
         const updatedManualLocations = manualLocations.filter(l => l.name !== locationName);
         await saveManualLocations(updatedManualLocations);
-        setManualLocations(updatedManualLocations);
+        await reloadLocationsWithPhotos();
         deleteInstantsByLocation(locationName); // Also delete associated instants
         toast({title: "Lieu et souvenirs associés supprimés."});
     }
@@ -573,7 +593,7 @@ export default function MapPage() {
                                                 {location.isManual && (
                                                     <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
                                                         <DialogTrigger asChild>
-                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ClientManualLocation)}>
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
                                                         </DialogTrigger>
@@ -677,10 +697,10 @@ export default function MapPage() {
                                             <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
                                         )}
                                         
-                                        {location.photos && location.photos.length > 0 && (
+                                        {location.photosData && location.photosData.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pt-2">
-                                                {location.photos.map((photo, index) => (
-                                                    <Image
+                                                {location.photosData.map((photo, index) => (
+                                                   photo && <Image
                                                         key={index}
                                                         src={photo}
                                                         alt={`Miniature du lieu ${index + 1}`}
@@ -704,5 +724,3 @@ export default function MapPage() {
     </div>
   );
 }
-
-    

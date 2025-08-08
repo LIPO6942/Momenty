@@ -26,7 +26,7 @@ export interface ManualLocation {
     name: string;
     startDate?: string;
     endDate?: string;
-    photos?: string[];
+    photos?: string[]; // Will store image keys, not data URLs
     souvenir?: string;
 }
 
@@ -332,12 +332,32 @@ export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<voi
   // Manual Locations Functions
   export const saveManualLocations = async (locations: ManualLocation[]): Promise<void> => {
     const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([MANUAL_LOCATIONS_STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
-      // Use a fixed ID for the locations array
-      const request = store.put({ id: 1, locations });
+    const transaction = db.transaction([MANUAL_LOCATIONS_STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
+    const locationsStore = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
+    const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
   
+    // Process photos for all locations
+    const processedLocations = await Promise.all(locations.map(async (loc) => {
+      if (loc.photos && loc.photos.length > 0) {
+        const photoKeys = await Promise.all(loc.photos.map(async (photoData, index) => {
+          if (photoData.startsWith('data:')) { // It's a new Data URL
+            const photoKey = `location_${loc.name}_${Date.now()}_${index}`;
+            await new Promise<void>((res, rej) => {
+              const req = imagesStore.put({ id: photoKey, image: photoData });
+              req.onsuccess = () => res();
+              req.onerror = () => rej(req.error);
+            });
+            return photoKey;
+          }
+          return photoData; // It's an existing key
+        }));
+        return { ...loc, photos: photoKeys };
+      }
+      return loc;
+    }));
+  
+    return new Promise((resolve, reject) => {
+      const request = locationsStore.put({ id: 1, locations: processedLocations });
       request.onsuccess = () => resolve();
       request.onerror = () => {
         console.error('Save locations error:', request.error);
