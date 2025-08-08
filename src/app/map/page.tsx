@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -94,25 +95,23 @@ export default function MapPage() {
     const [editedName, setEditedName] = useState("");
     const [editedStartDate, setEditedStartDate] = useState("");
     const [editedEndDate, setEditedEndDate] = useState("");
-    const [editedPhotos, setEditedPhotos] = useState<string[]>([]);
+    const [editedPhotos, setEditedPhotos] = useState<string[]>([]); // This will hold data URLs or keys
+    const [editedPhotoKeys, setEditedPhotoKeys] = useState<string[]>([]); // This will hold just keys
     const [editedSouvenir, setEditedSouvenir] = useState("");
     const editPhotoInputRef = useRef<HTMLInputElement>(null);
 
+    const reloadLocationsWithPhotos = async () => {
+        const savedManualLocations = await getManualLocations();
+        const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
+            const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
+            return { ...loc, photosData };
+        }));
+        setManualLocations(hydratedLocations);
+    };
+
     useEffect(() => {
         setIsMounted(true);
-        const loadLocations = async () => {
-            try {
-                const savedManualLocations = await getManualLocations();
-                const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
-                    const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
-                    return { ...loc, photosData };
-                }));
-                setManualLocations(hydratedLocations);
-            } catch (error) {
-                console.error("Failed to load manual locations from IndexedDB", error);
-            }
-        };
-        loadLocations();
+        reloadLocationsWithPhotos();
     }, []);
 
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
@@ -220,14 +219,6 @@ export default function MapPage() {
         }
     };
     
-    const reloadLocationsWithPhotos = async () => {
-        const savedManualLocations = await getManualLocations();
-        const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
-            const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
-            return { ...loc, photosData };
-        }));
-        setManualLocations(hydratedLocations);
-    };
 
     const handleAddLocations = async () => {
         const country = newCountry.trim();
@@ -262,8 +253,10 @@ export default function MapPage() {
         });
 
         if (hasError) return;
-
-        const updatedManualLocations = [...manualLocations, ...newManualLocations];
+        
+        const currentLocations = await getManualLocations();
+        const updatedManualLocations = [...currentLocations, ...newManualLocations];
+        
         await saveManualLocations(updatedManualLocations);
         await reloadLocationsWithPhotos();
 
@@ -285,34 +278,43 @@ export default function MapPage() {
         setEditedName(location.name);
         setEditedStartDate(toInputDate(location.startDate));
         setEditedEndDate(toInputDate(location.endDate));
-        setEditedPhotos(location.photosData?.filter(Boolean) as string[] || []);
+        setEditedPhotos(location.photosData?.filter(Boolean) as string[] || []); // for display
+        setEditedPhotoKeys(location.photos || []); // for saving
         setEditedSouvenir(location.souvenir || "");
     }
 
     const handleEditLocation = async () => {
-        if (!editingLocation || !editedName.trim()) {
+        if (!editingLocation) return;
+        
+        const finalName = editedName.trim();
+        if (!finalName) {
             toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
             return;
         }
 
-        // Check if new name conflicts with an existing name (other than the original)
-        if (allLocations.some(l => l.name.toLowerCase() === editedName.trim().toLowerCase() && l.name.toLowerCase() !== editingLocation.name.toLowerCase())) {
+        if (allLocations.some(l => l.name.toLowerCase() === finalName.toLowerCase() && l.name.toLowerCase() !== editingLocation.name.toLowerCase())) {
             toast({ variant: "destructive", title: "Un autre lieu avec ce nom existe déjà." });
             return;
         }
-        
-        const updatedManualLocations = manualLocations.map(loc => 
+
+        const currentLocations = await getManualLocations();
+
+        // Create a list of photos to save. This includes existing keys and new data URLs
+        const photosToSave = editedPhotos.filter(p => p.startsWith('data:')) // new photos
+                             .concat(editedPhotoKeys); // existing photo keys
+
+        const updatedLocations = currentLocations.map(loc => 
             loc.name === editingLocation.name ? {
                 ...loc,
-                name: editedName.trim(),
+                name: finalName,
                 startDate: editedStartDate || undefined,
                 endDate: editedEndDate || undefined,
-                photos: editedPhotos, // Pass data URLs, IDB will handle keying
+                photos: photosToSave,
                 souvenir: editedSouvenir || undefined,
             } : loc
         );
 
-        await saveManualLocations(updatedManualLocations);
+        await saveManualLocations(updatedLocations);
         await reloadLocationsWithPhotos();
         
         toast({ title: "Lieu mis à jour." });
@@ -320,7 +322,8 @@ export default function MapPage() {
     }
     
     const handleDeleteLocation = async (locationName: string) => {
-        const updatedManualLocations = manualLocations.filter(l => l.name !== locationName);
+        const currentLocations = await getManualLocations();
+        const updatedManualLocations = currentLocations.filter(l => l.name !== locationName);
         await saveManualLocations(updatedManualLocations);
         await reloadLocationsWithPhotos();
         deleteInstantsByLocation(locationName); // Also delete associated instants
@@ -378,9 +381,33 @@ export default function MapPage() {
         setNewPhotos(prev => prev.filter((_, i) => i !== index));
     }
 
-    const removeEditedPhoto = (index: number) => {
-        setEditedPhotos(prev => prev.filter((_, i) => i !== index));
-    }
+    const removeEditedPhoto = async (indexToRemove: number) => {
+        if (!editingLocation) return;
+    
+        // This is complex because editedPhotos has data URLs and editedPhotoKeys has keys
+        // We need to figure out what to remove from where.
+        
+        const photoToRemove = editedPhotos[indexToRemove];
+    
+        // If it's a data URL, it's a new photo not yet saved. Just remove from display array.
+        if (photoToRemove.startsWith('data:')) {
+            setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
+            return;
+        }
+    
+        // If it's not a data URL, it must correspond to a saved key.
+        // We need to find the KEY to remove.
+        const originalLocationState = manualLocations.find(l => l.name === editingLocation.name);
+        const keyToRemove = originalLocationState?.photos?.[indexToRemove];
+    
+        if (keyToRemove) {
+            setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
+            setEditedPhotoKeys(prev => prev.filter(k => k !== keyToRemove));
+            // Note: The actual file is not deleted from IDB until the location is saved.
+            // This could be enhanced to delete the image immediately.
+        }
+    };
+    
 
     const formatDateRange = (startDate?: string, endDate?: string) => {
         if (!startDate) return null;
@@ -634,7 +661,7 @@ export default function MapPage() {
                                                                     <Label>Photos souvenirs</Label>
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {editedPhotos.map((photo, index) => (
-                                                                            <div key={index} className="relative group">
+                                                                            <div key={photo.substring(0,30) + index} className="relative group">
                                                                                 <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
                                                                                 <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
                                                                                     <Trash2 className="h-3 w-3" />
@@ -724,3 +751,4 @@ export default function MapPage() {
     </div>
   );
 }
+

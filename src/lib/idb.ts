@@ -1,4 +1,5 @@
 
+
 "use client";
 import type { GeneratedStory, Instant, Encounter } from './types';
 
@@ -335,27 +336,36 @@ export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<voi
     const transaction = db.transaction([MANUAL_LOCATIONS_STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
     const locationsStore = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
     const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
-  
-    // Process photos for all locations
+    
+    const imageSavePromises: Promise<any>[] = [];
+
+    // Process all locations to save their photos and get keys
     const processedLocations = await Promise.all(locations.map(async (loc) => {
+      let photoKeys: string[] = [];
       if (loc.photos && loc.photos.length > 0) {
-        const photoKeys = await Promise.all(loc.photos.map(async (photoData, index) => {
-          if (photoData.startsWith('data:')) { // It's a new Data URL
-            const photoKey = `location_${loc.name}_${Date.now()}_${index}`;
-            await new Promise<void>((res, rej) => {
-              const req = imagesStore.put({ id: photoKey, image: photoData });
+        photoKeys = await Promise.all(loc.photos.map(async (photoOrKey, index) => {
+          // If it's a new photo (data URL), save it and get a key
+          if (photoOrKey.startsWith('data:')) {
+            const photoKey = `location_${loc.name.replace(/\s/g, '_')}_${Date.now()}_${index}`;
+            const promise = new Promise<void>((res, rej) => {
+              const req = imagesStore.put({ id: photoKey, image: photoOrKey });
               req.onsuccess = () => res();
               req.onerror = () => rej(req.error);
             });
+            imageSavePromises.push(promise);
             return photoKey;
           }
-          return photoData; // It's an existing key
+          // If it's already a key, just return it
+          return photoOrKey;
         }));
-        return { ...loc, photos: photoKeys };
       }
-      return loc;
+      return { ...loc, photos: photoKeys };
     }));
+    
+    // Wait for all image saving operations to complete
+    await Promise.all(imageSavePromises);
   
+    // Now, save the locations object with the photo keys
     return new Promise((resolve, reject) => {
       const request = locationsStore.put({ id: 1, locations: processedLocations });
       request.onsuccess = () => resolve();
