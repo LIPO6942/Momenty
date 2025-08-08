@@ -586,7 +586,7 @@ export default function MapPage() {
                            {locations.map(location => (
                                 <Card key={location.name} className="border shadow-none">
                                     <CardHeader className="flex flex-col items-start gap-4 p-4">
-                                        <div className="flex flex-row items-start justify-between w-full">
+                                        <div className="flex flex-col sm:flex-row items-start justify-between w-full gap-4">
                                             <div className="flex-grow">
                                                 <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
                                                 <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
@@ -594,8 +594,8 @@ export default function MapPage() {
                                                     <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)}>
+                                            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                                                <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)} className="flex-grow sm:flex-grow-0">
                                                         <MapPin className="mr-2 h-4 w-4" />
                                                         Voir
                                                 </Button>
