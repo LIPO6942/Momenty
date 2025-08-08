@@ -332,26 +332,21 @@ export default function MapPage() {
 
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, setPhotosCallback: React.Dispatch<React.SetStateAction<string[]>>) => {
         const files = e.target.files;
-        if (!files) return;
-
-        let filesProcessed = 0;
+        if (!files || files.length === 0) return;
+    
         const newPhotoDataUrls: string[] = [];
-
-        if (files.length === 0) return;
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+    
+        Array.from(files).forEach(file => {
             const reader = new FileReader();
-
+    
             reader.onloadend = () => {
-                newPhotoDataUrls.push(reader.result as string);
-                filesProcessed++;
-                if (filesProcessed === files.length) {
-                    setPhotosCallback(prev => [...prev, ...newPhotoDataUrls]);
-                    toast({ title: `${newPhotoDataUrls.length} photo(s) ajoutée(s).` });
+                if (typeof reader.result === 'string') {
+                    newPhotoDataUrls.push(reader.result);
+                    // Update state after each photo is read
+                    setPhotosCallback(prev => [...prev, reader.result as string]);
                 }
             };
-
+    
             reader.onerror = () => {
                 console.error(`Erreur de lecture du fichier: ${file.name}`);
                 toast({
@@ -359,19 +354,14 @@ export default function MapPage() {
                     title: "Erreur d'importation",
                     description: `Impossible de lire le fichier "${file.name}".`
                 });
-                filesProcessed++;
-                // Check if all files (including errors) have been processed
-                 if (filesProcessed === files.length) {
-                    setPhotosCallback(prev => [...prev, ...newPhotoDataUrls]);
-                    if (newPhotoDataUrls.length > 0) {
-                        toast({ title: `${newPhotoDataUrls.length} photo(s) ajoutée(s).` });
-                    }
-                }
             };
-
+    
             reader.readAsDataURL(file);
-        }
-         // Reset file input to allow selecting the same file again
+        });
+
+        toast({ title: `${files.length} photo(s) en cours d'ajout...` });
+
+        // Reset file input to allow selecting the same file again
         if (e.target) {
             e.target.value = '';
         }
@@ -384,27 +374,19 @@ export default function MapPage() {
     const removeEditedPhoto = async (indexToRemove: number) => {
         if (!editingLocation) return;
     
-        // This is complex because editedPhotos has data URLs and editedPhotoKeys has keys
-        // We need to figure out what to remove from where.
-        
         const photoToRemove = editedPhotos[indexToRemove];
     
-        // If it's a data URL, it's a new photo not yet saved. Just remove from display array.
         if (photoToRemove.startsWith('data:')) {
             setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
             return;
         }
     
-        // If it's not a data URL, it must correspond to a saved key.
-        // We need to find the KEY to remove.
         const originalLocationState = manualLocations.find(l => l.name === editingLocation.name);
         const keyToRemove = originalLocationState?.photos?.[indexToRemove];
     
         if (keyToRemove) {
             setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
             setEditedPhotoKeys(prev => prev.filter(k => k !== keyToRemove));
-            // Note: The actual file is not deleted from IDB until the location is saved.
-            // This could be enhanced to delete the image immediately.
         }
     };
     
@@ -751,5 +733,7 @@ export default function MapPage() {
     </div>
   );
 }
+
+    
 
     
