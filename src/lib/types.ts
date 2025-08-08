@@ -41,8 +41,8 @@ export interface TimelineEventPhoto {
 }
 
 export interface GeneratedStory {
-  id: string; // Typically the day string 'yyyy-MM-dd'
-  date: string; // The day string 'yyyy-MM-dd'
+  id: string; // Can be a single day 'yyyy-MM-dd' or a composite key 'day1_day2'
+  date: string; // The first day string 'yyyy-MM-dd' for sorting purposes
   title: string;
   story: string;
   instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
@@ -54,5 +54,3 @@ export interface LocationWithCoords extends ManualLocation {
     isManual: boolean;
     coords: [number, number];
 }
-
-    

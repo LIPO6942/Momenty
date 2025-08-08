@@ -4,15 +4,16 @@
 import { useState, useContext, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TimelineContext } from '@/context/timeline-context';
 import { generateStory } from '@/ai/flows/generate-story-flow';
 import type { GeneratedStory, Instant } from '@/lib/types';
-import { Loader2, Wand2, Edit, Trash2, BookText } from 'lucide-react';
+import { Loader2, Wand2, Edit, Trash2, BookText, Check, ChevronsUpDown, X } from 'lucide-react';
 import Image from 'next/image';
 import { saveStory, getStories, deleteStory as deleteStoryFromDB, getProfile } from '@/lib/idb';
 import type { ProfileData } from '@/lib/idb';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,11 @@ import {
     AccordionItem,
     AccordionTrigger,
   } from "@/components/ui/accordion";
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
 
 const StoryPreview = ({ story }: { story: string }) => {
     const html = story
@@ -111,13 +117,14 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
 export default function StoryPage() {
     const { groupedInstants, instants, activeTrip, activeStay } = useContext(TimelineContext);
     const { toast } = useToast();
-    const [selectedDay, setSelectedDay] = useState<string | null>(null);
+    const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [stories, setStories] = useState<GeneratedStory[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState<GeneratedStory | null>(null);
     const [editText, setEditText] = useState("");
     const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>();
     const [userProfile, setUserProfile] = useState<Omit<ProfileData, 'id'> | null>(null);
+    const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -149,24 +156,33 @@ export default function StoryPage() {
     }, [groupedInstants]);
 
     const handleGenerateStory = async () => {
-        if (!selectedDay || !groupedInstants[selectedDay]) return;
+        if (selectedDays.length === 0) return;
 
         setIsLoading(true);
         try {
-            const dayData = groupedInstants[selectedDay];
-            const instantsForStory = dayData.instants.map(i => ({
+            const sortedDays = [...selectedDays].sort();
+            const storyId = sortedDays.join('_');
+            
+            const dayDataArray = sortedDays.map(dayKey => groupedInstants[dayKey]);
+            const allInstantsForStory = dayDataArray.flatMap(d => d.instants);
+
+            const storyTitle = dayDataArray.length > 1 
+                ? `Du ${format(parseISO(dayDataArray[0].instants[0].date), 'd MMM', {locale: fr})} au ${format(parseISO(dayDataArray[dayDataArray.length-1].instants[0].date), 'd MMM yyyy', {locale: fr})}`
+                : dayDataArray[0].title;
+            
+            const instantsForPrompt = allInstantsForStory.map(i => ({
                 title: i.title,
                 description: i.description,
                 location: i.location,
                 emotion: i.emotion,
-                photo: i.photo || undefined
+                photo: i.photo || undefined,
+                day: format(parseISO(i.date), "d MMMM yyyy", { locale: fr })
             }));
 
             const activeContext = activeTrip || activeStay;
 
             const result = await generateStory({
-                day: dayData.title,
-                instants: instantsForStory,
+                instants: instantsForPrompt,
                 companionType: activeContext?.companionType,
                 companionName: activeContext?.companionName,
                 userFirstName: userProfile?.firstName,
@@ -174,25 +190,25 @@ export default function StoryPage() {
                 userGender: userProfile?.gender,
             });
             
-            const cleanInstantsForDb = dayData.instants.map(i => {
+            const cleanInstantsForDb = allInstantsForStory.map(i => {
                 const { icon, color, ...rest } = i;
                 // Important: Ensure photo is a reference string if it exists for DB
                 return { ...rest, photo: rest.photo ? `local_${rest.id}` : null };
             });
             
             const newStory: GeneratedStory = {
-                id: selectedDay,
-                date: selectedDay,
-                title: dayData.title,
+                id: storyId,
+                date: sortedDays[0], // Use first day for sorting purposes
+                title: storyTitle,
                 story: result.story,
                 instants: cleanInstantsForDb,
             };
 
             await saveStory(newStory);
             
-            const fullNewStory = {...newStory, instants: dayData.instants };
+            const fullNewStory = {...newStory, instants: allInstantsForStory };
 
-            setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== selectedDay)]);
+            setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== storyId)]);
             setOpenAccordionItem(newStory.id);
             toast({ title: "Histoire générée et sauvegardée !" });
 
@@ -241,7 +257,15 @@ export default function StoryPage() {
         toast({ title: "Histoire supprimée." });
     };
 
-    const selectedDayInstants = selectedDay ? groupedInstants[selectedDay]?.instants : [];
+    const selectedDaysInstants = selectedDays.flatMap(dayKey => groupedInstants[dayKey]?.instants || []);
+
+    const toggleDaySelection = (dayKey: string) => {
+        setSelectedDays(prev => 
+            prev.includes(dayKey) 
+                ? prev.filter(d => d !== dayKey)
+                : [...prev, dayKey]
+        );
+    }
 
     return (
         <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
@@ -255,35 +279,80 @@ export default function StoryPage() {
                     <CardTitle>1. Créez ou recréez une histoire</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Select onValueChange={setSelectedDay} value={selectedDay || ""}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Choisissez une date..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {dayOptions.map(option => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    {selectedDay && (
-                        <div className='pt-2'>
-                             <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-4">
-                                {selectedDayInstants?.map(instant => (
-                                    instant.photo && (
-                                        <Image key={instant.id} src={instant.photo} alt={instant.title} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                    <Popover open={isDaySelectorOpen} onOpenChange={setIsDaySelectorOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={isDaySelectorOpen}
+                            className="w-full justify-between h-auto min-h-10"
+                            >
+                            <div className="flex flex-wrap gap-1">
+                                {selectedDays.length === 0 && "Choisissez une ou plusieurs dates..."}
+                                {selectedDays.map(dayKey => {
+                                    const option = dayOptions.find(o => o.value === dayKey);
+                                    return (
+                                        <Badge
+                                            key={dayKey}
+                                            variant="secondary"
+                                            className="rounded-sm"
+                                        >
+                                           {option?.label}
+                                        </Badge>
                                     )
-                                ))}
-                             </div>
+                                })}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Rechercher une date..." />
+                                <CommandList>
+                                    <CommandEmpty>Aucune date trouvée.</CommandEmpty>
+                                    <CommandGroup>
+                                        {dayOptions.map((option) => (
+                                        <CommandItem
+                                            key={option.value}
+                                            value={option.label}
+                                            onSelect={() => toggleDaySelection(option.value)}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    selectedDays.includes(option.value) ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            {option.label}
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+
+                    {selectedDays.length > 0 && (
+                        <div className='pt-2'>
+                             <ScrollArea className="w-full whitespace-nowrap rounded-lg">
+                                {selectedDaysInstants.some(i => i.photo) && (
+                                     <div className="flex w-max space-x-2 mb-4">
+                                        {selectedDaysInstants?.map(instant => (
+                                            instant.photo && (
+                                                <Image key={instant.id} src={instant.photo} alt={instant.title} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                                            )
+                                        ))}
+                                     </div>
+                                )}
+                                 <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
                              <Button onClick={handleGenerateStory} disabled={isLoading} className="w-full">
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
                                     <Wand2 className="mr-2 h-4 w-4" />
                                 )}
-                                {stories.some(s => s.id === selectedDay) ? 'Régénérer l\'histoire' : 'Générer mon histoire'}
+                                {stories.some(s => s.id === selectedDays.sort().join('_')) ? 'Régénérer l\'histoire' : 'Générer mon histoire'}
                             </Button>
                         </div>
                     )}
@@ -362,4 +431,3 @@ export default function StoryPage() {
         </div>
     );
 }
-
