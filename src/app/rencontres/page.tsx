@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MapPin, Trash2, Users } from "lucide-react";
+import { MapPin, Trash2, Users, Edit, MoreVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TimelineContext } from "@/context/timeline-context";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { EditEncounterDialog } from "@/components/timeline/edit-encounter-dialog";
 
 export default function EncountersPage() {
   const { encounters, deleteEncounter } = useContext(TimelineContext);
@@ -75,27 +82,43 @@ export default function EncountersPage() {
                             Rencontré(e) à {encounter.location}
                         </p>
                     </div>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                <Trash2 className="h-5 w-5" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Supprimer cette rencontre ?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Cette action est irréversible et supprimera définitivement le souvenir de cette rencontre de votre journal.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(encounter.id)}>
-                                Supprimer
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-5 w-5" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <EditEncounterDialog encounterToEdit={encounter}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Modifier</span>
+                                </DropdownMenuItem>
+                            </EditEncounterDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Supprimer</span>
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer cette rencontre ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible et supprimera définitivement le souvenir de cette rencontre de votre journal.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(encounter.id)}>
+                                        Supprimer
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                  </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-foreground/80 italic mb-4">"{encounter.description}"</p>

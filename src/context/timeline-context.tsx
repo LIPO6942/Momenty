@@ -28,12 +28,15 @@ interface TimelineContextType {
     activeStay: Trip | null; // Using Trip type for Stay as well
     encounters: Encounter[];
     addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
+    updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => Promise<void>;
     deleteEncounter: (id: string) => void;
     dishes: Dish[];
     addDish: (dish: Omit<Dish, 'id'>) => void;
+    updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => Promise<void>;
     deleteDish: (id: string) => void;
     accommodations: Accommodation[];
     addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => void;
+    updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => Promise<void>;
     deleteAccommodation: (id: string) => void;
 }
 
@@ -67,12 +70,15 @@ export const TimelineContext = createContext<TimelineContextType>({
     activeStay: null,
     encounters: [],
     addEncounter: () => {},
+    updateEncounter: async () => {},
     deleteEncounter: () => {},
     dishes: [],
     addDish: () => {},
+    updateDish: async () => {},
     deleteDish: () => {},
     accommodations: [],
     addAccommodation: () => {},
+    updateAccommodation: async () => {},
     deleteAccommodation: () => {},
 });
 
@@ -365,8 +371,75 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     }, [instants]);
 
+    const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => {
+        const originalEncounter = encounters.find(e => e.id === id);
+        if (!originalEncounter) return;
+
+        const updatedEncounter = { ...originalEncounter, ...updatedData };
+        
+        const photoKey = `encounter_${id}`;
+        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
+            await saveImage(photoKey, updatedData.photo);
+        } else if (updatedData.photo === null) {
+            await deleteImage(photoKey);
+        }
+        
+        const encounterForDb: Encounter = {
+            ...updatedEncounter,
+            photo: updatedEncounter.photo ? photoKey : null,
+        };
+        await saveEncounter(encounterForDb);
+
+        setEncounters(prev => prev.map(e => (e.id === id ? updatedEncounter : e)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    };
+
+    const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => {
+        const originalDish = dishes.find(d => d.id === id);
+        if (!originalDish) return;
+        
+        const updatedDish = { ...originalDish, ...updatedData };
+        
+        const photoKey = `dish_${id}`;
+        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
+            await saveImage(photoKey, updatedData.photo);
+        } else if (updatedData.photo === null) {
+            await deleteImage(photoKey);
+        }
+        
+        const dishForDb: Dish = {
+            ...updatedDish,
+            photo: updatedDish.photo ? photoKey : null,
+        };
+        await saveDish(dishForDb);
+        
+        setDishes(prev => prev.map(d => (d.id === id ? updatedDish : d)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    };
+
+    const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => {
+        const originalAccommodation = accommodations.find(a => a.id === id);
+        if (!originalAccommodation) return;
+        
+        const updatedAccommodation = { ...originalAccommodation, ...updatedData };
+        
+        const photoKey = `accommodation_${id}`;
+        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
+            await saveImage(photoKey, updatedData.photo);
+        } else if (updatedData.photo === null) {
+            await deleteImage(photoKey);
+        }
+        
+        const accommodationForDb: Accommodation = {
+            ...updatedAccommodation,
+            photo: updatedAccommodation.photo ? photoKey : null,
+        };
+        await saveAccommodation(accommodationForDb);
+        
+        setAccommodations(prev => prev.map(a => (a.id === id ? updatedAccommodation : a)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    };
+
+
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter, dishes, addDish, deleteDish, accommodations, addAccommodation, deleteAccommodation }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, updateEncounter, deleteEncounter, dishes, addDish, updateDish, deleteDish, accommodations, addAccommodation, updateAccommodation, deleteAccommodation }}>
             {children}
         </TimelineContext.Provider>
     )

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MapPin, Trash2, Home } from "lucide-react";
+import { MapPin, Trash2, Home, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TimelineContext } from "@/context/timeline-context";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,16 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import type { Accommodation } from "@/lib/types";
+import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
 
 export default function AccommodationsPage() {
   const { accommodations, deleteAccommodation } = useContext(TimelineContext);
@@ -72,7 +80,12 @@ export default function AccommodationsPage() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
-                        <div className="absolute top-0 right-0 p-2">
+                        <div className="absolute top-2 right-2 flex gap-2">
+                            <EditAccommodationDialog accommodationToEdit={accommodation}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                             </EditAccommodationDialog>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
@@ -135,27 +148,43 @@ export default function AccommodationsPage() {
                                    Séjour à {accommodation.location}
                                </p>
                            </div>
-                            <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                       <Trash2 className="h-5 w-5" />
-                                   </Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                   <AlertDialogHeader>
-                                   <AlertDialogTitle>Supprimer ce logement ?</AlertDialogTitle>
-                                   <AlertDialogDescription>
-                                       Cette action est irréversible et supprimera définitivement le souvenir de ce logement de votre journal.
-                                   </AlertDialogDescription>
-                                   </AlertDialogHeader>
-                                   <AlertDialogFooter>
-                                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                   <AlertDialogAction onClick={() => handleDelete(accommodation.id)}>
-                                       Supprimer
-                                   </AlertDialogAction>
-                                   </AlertDialogFooter>
-                               </AlertDialogContent>
-                           </AlertDialog>
+                           <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <MoreVertical className="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <EditAccommodationDialog accommodationToEdit={accommodation}>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            <span>Modifier</span>
+                                        </DropdownMenuItem>
+                                    </EditAccommodationDialog>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                <span>Supprimer</span>
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Supprimer ce logement ?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Cette action est irréversible.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(accommodation.id)}>
+                                                    Supprimer
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </CardHeader>
                      <CardContent className="pt-0">
                        <p className="text-foreground/80 italic mb-4">"{accommodation.description}"</p>
