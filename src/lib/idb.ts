@@ -114,6 +114,21 @@ export const getImage = async (id: string): Promise<string | null> => {
   });
 };
 
+export const deleteImage = async (id: string): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([IMAGE_STORE_NAME], "readwrite");
+        const store = transaction.objectStore(IMAGE_STORE_NAME);
+        const request = store.delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error("Delete image error:", request.error);
+            reject(request.error);
+        };
+    });
+}
+
 
 // Story functions
 export const saveStory = async (story: GeneratedStory): Promise<void> => {
@@ -220,17 +235,7 @@ export const saveEncounter = async (encounter: Encounter): Promise<void> => {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([ENCOUNTERS_STORE_NAME], 'readwrite');
         const store = transaction.objectStore(ENCOUNTERS_STORE_NAME);
-        
-        const encounterToSave = {...encounter};
-        if (encounterToSave.photo && encounterToSave.photo.startsWith('data:')) {
-            const photoId = `encounter_${encounterToSave.id}`;
-            saveImage(photoId, encounterToSave.photo);
-            encounterToSave.photo = photoId;
-        } else {
-             encounterToSave.photo = null;
-        }
-
-        const request = store.put(encounterToSave);
+        const request = store.put(encounter);
         request.onsuccess = () => resolve();
         request.onerror = () => {
             console.error('Save encounter error:', request.error);
@@ -252,6 +257,38 @@ export const getEncounters = async (): Promise<Encounter[]> => {
         request.onerror = () => {
             console.error('Get encounters error:', request.error);
             reject(request.error);
+        };
+    });
+};
+
+export const deleteEncounter = async (id: string): Promise<void> => {
+    const db = await initDB();
+    const transaction = db.transaction([ENCOUNTERS_STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
+    const encountersStore = transaction.objectStore(ENCOUNTERS_STORE_NAME);
+    const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+        const getRequest = encountersStore.get(id);
+        
+        getRequest.onsuccess = () => {
+            const encounter = getRequest.result;
+            if (encounter && encounter.photo) {
+                // Photo reference exists, so delete it from the images store
+                imagesStore.delete(encounter.photo);
+            }
+
+            // Now, delete the encounter record itself
+            const deleteEncounterRequest = encountersStore.delete(id);
+            deleteEncounterRequest.onsuccess = () => resolve();
+            deleteEncounterRequest.onerror = () => {
+                 console.error('Delete encounter record error:', deleteEncounterRequest.error);
+                 reject(deleteEncounterRequest.error)
+            };
+        };
+        
+        getRequest.onerror = () => {
+            console.error('Get encounter for deletion error:', getRequest.error);
+            reject(getRequest.error);
         };
     });
 };

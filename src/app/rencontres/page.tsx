@@ -3,27 +3,39 @@
 
 import { useState, useEffect, useContext } from "react";
 import Image from "next/image";
-import { getEncounters, type Encounter } from "@/lib/idb";
+import { type Encounter } from "@/lib/idb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MapPin, User, Users } from "lucide-react";
+import { MapPin, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TimelineContext } from "@/context/timeline-context";
+import { Button } from "@/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function EncountersPage() {
-  const { getEncounterPhotos } = useContext(TimelineContext);
-  const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const { encounters, deleteEncounter } = useContext(TimelineContext);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const loadEncounters = async () => {
-      const savedEncounters = await getEncounters();
-      const encountersWithPhotos = await getEncounterPhotos(savedEncounters);
-      setEncounters(encountersWithPhotos);
-    };
-    loadEncounters();
-  }, [getEncounterPhotos]);
+  const handleDelete = (id: string) => {
+    deleteEncounter(id);
+    toast({
+        title: "Rencontre supprimée",
+        description: "Le souvenir de cette rencontre a été retiré de votre journal.",
+    })
+  }
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
@@ -56,13 +68,34 @@ export default function EncountersPage() {
                             {encounter.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-grow">
                         <CardTitle className="text-2xl">{encounter.name}</CardTitle>
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                             <MapPin className="h-4 w-4" />
                             Rencontré(e) à {encounter.location}
                         </p>
                     </div>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-5 w-5" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer cette rencontre ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Cette action est irréversible et supprimera définitivement le souvenir de cette rencontre de votre journal.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(encounter.id)}>
+                                Supprimer
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                  </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-foreground/80 italic mb-4">"{encounter.description}"</p>

@@ -23,7 +23,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
-import { saveEncounter, saveImage } from "@/lib/idb";
+import { saveEncounter, saveImage, type Encounter } from "@/lib/idb";
 import { cn } from "@/lib/utils";
 
 interface AddInstantDialogProps {
@@ -42,7 +42,7 @@ const moods = [
 export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addInstant, activeTrip, activeStay } = useContext(TimelineContext);
+  const { addInstant, activeTrip, activeStay, addEncounter } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -272,9 +272,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             toast({variant: "destructive", title: "Veuillez nommer la personne rencontrée."});
             return;
         }
-        const encounterId = new Date().toISOString() + Math.random();
-        const newEncounter = {
-            id: encounterId,
+        const newEncounter: Omit<Encounter, 'id'> = {
             name: encounterName,
             description: description || "Rencontre mémorable",
             date: new Date().toISOString(),
@@ -283,7 +281,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             photo: photo,
         };
         
-        await saveEncounter(newEncounter);
+        addEncounter(newEncounter);
         toast({ title: "Nouvelle rencontre ajoutée !" });
 
     } else {

@@ -6,7 +6,7 @@ import type { Instant, Trip, Encounter } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -25,7 +25,8 @@ interface TimelineContextType {
     deleteInstantsByLocation: (locationName: string) => void;
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
-    getEncounterPhotos: (encounters: Encounter[]) => Promise<Encounter[]>;
+    encounters: Encounter[];
+    deleteEncounter: (id: string) => void;
 }
 
 const getCategoryAttributes = (category?: string) => {
@@ -56,7 +57,8 @@ export const TimelineContext = createContext<TimelineContextType>({
     deleteInstantsByLocation: () => {},
     activeTrip: null,
     activeStay: null,
-    getEncounterPhotos: async (encounters) => encounters,
+    encounters: [],
+    deleteEncounter: () => {},
 });
 
 interface TimelineProviderProps {
@@ -65,27 +67,25 @@ interface TimelineProviderProps {
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
+    const [encounters, setEncounters] = useState<Encounter[]>([]);
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
-    const getFullPhotoData = useCallback(async <T extends { photo?: string | null }>(item: T): Promise<T> => {
+    const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null }>(item: T): Promise<T> => {
         let finalPhoto = item.photo;
-        if (item.photo && (item.photo.startsWith('local_') || item.photo.startsWith('encounter_'))) {
-            const localPhoto = await getImage(item.photo);
+        const photoKey = item.photo; // e.g., 'local_123' or 'encounter_123'
+        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_'))) {
+            const localPhoto = await getImage(photoKey);
             finalPhoto = localPhoto; 
         }
         return { ...item, photo: finalPhoto };
     }, []);
 
-    const getEncounterPhotos = useCallback(async (encounters: Encounter[]): Promise<Encounter[]> => {
-        return Promise.all(encounters.map(e => getFullPhotoData(e)));
-    }, [getFullPhotoData]);
-
     useEffect(() => {
         const loadData = async () => {
           let loadedInstants = await getInstants();
+          let loadedEncounters = await getEncounters();
           
-          // Add icons and colors, and resolve local images
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
               const instWithPhotoData = await getFullPhotoData(inst);
@@ -93,7 +93,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
               return { ...instWithPhotoData, icon, color };
             })
           );
+          
+          const processedEncounters = await Promise.all(loadedEncounters.map(e => getFullPhotoData(e)));
+
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          setEncounters(processedEncounters.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         };
         loadData();
 
@@ -128,7 +132,6 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         
         const instantWithContext = { ...instantData };
 
-        // Object to be saved in DB - must be clean of complex objects
         const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
             id: newInstantId,
             type: instantWithContext.type,
@@ -137,25 +140,41 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: instantWithContext.date,
             location: instantWithContext.location,
             emotion: instantWithContext.emotion,
-            photo: null, // Will be set to a reference string if photo exists
+            photo: null,
             category: category,
         };
         
         if (instantWithContext.photo) {
             await saveImage(`local_${newInstantId}`, instantWithContext.photo);
-            newInstantForDb.photo = `local_${newInstantId}`; // Set the reference
+            newInstantForDb.photo = `local_${newInstantId}`;
         }
         
         await saveInstant(newInstantForDb as Instant);
         
-        // Object for the state - includes the actual photo data for immediate display
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
-            photo: instantData.photo // Use the full data URI for the state
+            photo: instantData.photo
         } as Instant);
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
+
+    const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
+        const newEncounterId = new Date().toISOString() + Math.random();
+        const encounterForDb = { id: newEncounterId, ...encounterData, photo: null };
+        const encounterForState = { id: newEncounterId, ...encounterData };
+
+        if (encounterData.photo) {
+            const photoId = `encounter_${newEncounterId}`;
+            await saveImage(photoId, encounterData.photo);
+            encounterForDb.photo = photoId;
+        }
+
+        await saveEncounter(encounterForDb as Encounter);
+        
+        setEncounters(prev => [encounterForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
         
@@ -164,7 +183,6 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         let updatedInstant = { ...originalInstant, ...updatedInstantData };
         
-        // Handle photo saving separately
         if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo && updatedInstant.photo.startsWith('data:')) {
             await saveImage(`local_${id}`, updatedInstant.photo);
         }
@@ -211,6 +229,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
     }
 
+    const deleteEncounter = async (id: string) => {
+        await deleteEncounterFromDB(id);
+        setEncounters(prev => prev.filter(encounter => encounter.id !== id));
+    }
+
     const deleteInstantsByLocation = async (locationName: string) => {
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
@@ -252,7 +275,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, getEncounterPhotos }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, deleteEncounter }}>
             {children}
         </TimelineContext.Provider>
     )
