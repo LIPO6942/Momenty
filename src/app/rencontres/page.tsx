@@ -1,37 +1,29 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Image from "next/image";
-import { getEncounters, type Encounter, getImage } from "@/lib/idb";
+import { getEncounters, type Encounter } from "@/lib/idb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { MapPin, User, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { TimelineContext } from "@/context/timeline-context";
 
 export default function EncountersPage() {
+  const { getEncounterPhotos } = useContext(TimelineContext);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
 
   useEffect(() => {
     const loadEncounters = async () => {
       const savedEncounters = await getEncounters();
-      // Hydrate encounters with full photo data
-      const hydratedEncounters = await Promise.all(
-        savedEncounters.map(async (encounter) => {
-          let finalPhoto = encounter.photo;
-          if (encounter.photo && encounter.photo.startsWith('local_')) {
-            const localPhoto = await getImage(encounter.photo);
-            finalPhoto = localPhoto;
-          }
-          return { ...encounter, photo: finalPhoto };
-        })
-      );
-      setEncounters(hydratedEncounters);
+       const encountersWithPhotos = await getEncounterPhotos(savedEncounters);
+      setEncounters(encountersWithPhotos);
     };
     loadEncounters();
-  }, []);
+  }, [getEncounterPhotos]);
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">

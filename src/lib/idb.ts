@@ -220,7 +220,15 @@ export const saveEncounter = async (encounter: Encounter): Promise<void> => {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([ENCOUNTERS_STORE_NAME], 'readwrite');
         const store = transaction.objectStore(ENCOUNTERS_STORE_NAME);
-        const request = store.put(encounter);
+        
+        const encounterToSave = {...encounter};
+        if (encounterToSave.photo && encounterToSave.photo.startsWith('data:')) {
+            const photoId = `local_encounter_${encounterToSave.id}`;
+            saveImage(photoId, encounterToSave.photo);
+            encounterToSave.photo = photoId;
+        }
+
+        const request = store.put(encounterToSave);
         request.onsuccess = () => resolve();
         request.onerror = () => {
             console.error('Save encounter error:', request.error);
