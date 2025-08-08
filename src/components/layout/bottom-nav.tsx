@@ -29,7 +29,7 @@ export default function BottomNav() {
   return (
     <TooltipProvider>
       <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
-        <nav className="flex items-center gap-2 rounded-full bg-card p-2 shadow-lg ring-1 ring-black/5">
+        <nav className="flex items-center gap-1 rounded-full bg-card p-1 shadow-lg ring-1 ring-black/5">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -38,13 +38,13 @@ export default function BottomNav() {
                   <Link
                     href={link.href}
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                      "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-secondary"
                     )}
                   >
-                    <link.icon className="h-6 w-6" />
+                    <link.icon className="h-5 w-5" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -59,9 +59,9 @@ export default function BottomNav() {
                     <Button
                       variant="default"
                       size="icon"
-                      className="h-14 w-14 rounded-full"
+                      className="h-12 w-12 rounded-full"
                     >
-                      <Plus className="h-6 w-6" />
+                      <Plus className="h-5 w-5" />
                     </Button>
                 </TooltipTrigger>
             </AddInstantDialog>
