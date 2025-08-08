@@ -26,6 +26,7 @@ import { improveDescription as improveTextDescription } from "@/ai/flows/improve
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
+import heic2any from "heic2any";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -43,7 +44,7 @@ const moods = [
 export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addInstant, activeTrip, activeStay, addEncounter, addDish, addAccommodation } = useContext(TimelineContext);
+  const { addInstant, addEncounter, addDish, addAccommodation } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,6 +69,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [isImprovingText, setIsImprovingText] = useState(false);
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+
+
+  const { activeTrip, activeStay } = useContext(TimelineContext);
 
   useEffect(() => {
     const activeContext = activeTrip || activeStay;
@@ -159,32 +164,54 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     }
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-                setPhoto(reader.result);
-            }
-        };
-        reader.onerror = () => {
-            console.error(`Erreur de lecture du fichier: ${file.name}`);
-            toast({
-                variant: "destructive",
-                title: "Erreur d'importation",
-                description: `Impossible de lire le fichier "${file.name}".`
-            });
-        };
-        reader.readAsDataURL(file);
-    });
-
-    toast({ title: `${files.length} photo(s) en cours d'ajout...` });
-
+  
+    const file = files[0];
+    let processingFile: File | Blob = file;
+    
+    // Check if it's a HEIC file and convert it
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      setIsConverting(true);
+      toast({ title: "Conversion de l'image HEIC..." });
+      try {
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 0.9,
+        });
+        processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      } catch (error) {
+        console.error('HEIC Conversion Error:', error);
+        toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+        setIsConverting(false);
+        return;
+      } finally {
+        setIsConverting(false);
+      }
+    }
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setPhoto(reader.result);
+        toast({ title: `Photo ajoutée !` });
+      }
+    };
+    reader.onerror = () => {
+      console.error(`Erreur de lecture du fichier: ${file.name}`);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'importation",
+        description: `Impossible de lire le fichier "${file.name}".`
+      });
+    };
+    reader.readAsDataURL(processingFile);
+  
+    // Reset file input
     if (e.target) {
-        e.target.value = '';
+      e.target.value = '';
     }
   };
 
@@ -346,8 +373,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     cleanup();
   };
   
-  const activeContext = activeTrip || activeStay;
-  const isLoading = isLocating || isAnalyzing || isImprovingText;
+  const isLoading = isLocating || isAnalyzing || isImprovingText || isConverting;
 
   const handleToggleEncounter = () => {
     setIsEncounter(!isEncounter);
@@ -408,7 +434,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <Label>Ajouter un souvenir visuel</Label>
                     <div className="grid grid-cols-2 gap-2">
                         <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
-                            <ImageIcon className="h-6 w-6" />
+                            {isConverting ? <Loader2 className="h-6 w-6 animate-spin"/> : <ImageIcon className="h-6 w-6" />}
                             <span>Importer</span>
                         </Button>
                         <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => setIsCameraMode(true)}>
@@ -416,7 +442,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
 
                 {photo && (

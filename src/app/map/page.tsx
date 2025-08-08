@@ -48,6 +48,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import heic2any from "heic2any";
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -89,6 +90,7 @@ export default function MapPage() {
     const [newSouvenir, setNewSouvenir] = useState("");
     const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
+    const [isConverting, setIsConverting] = useState(false);
     
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ClientManualLocation | null>(null);
@@ -330,38 +332,58 @@ export default function MapPage() {
         toast({title: "Lieu et souvenirs associés supprimés."});
     }
 
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, setPhotosCallback: React.Dispatch<React.SetStateAction<string[]>>) => {
+    const handlePhotoUpload = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setPhotosCallback: React.Dispatch<React.SetStateAction<string[]>>
+    ) => {
         const files = e.target.files;
-        if (!files || files.length === 0) return;
+        if (!files) return;
     
-        const newPhotoDataUrls: string[] = [];
+        setIsConverting(true);
+        toast({ title: `Traitement de ${files.length} photo(s)...` });
     
-        Array.from(files).forEach(file => {
+        for (const file of Array.from(files)) {
+            let processingFile: File | Blob = file;
+    
+            if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                try {
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.9,
+                    });
+                    processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                } catch (error) {
+                    console.error('HEIC Conversion Error:', error);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Erreur de conversion',
+                        description: `Impossible de convertir ${file.name}.`,
+                    });
+                    continue; // Skip to next file
+                }
+            }
+    
             const reader = new FileReader();
-    
             reader.onloadend = () => {
                 if (typeof reader.result === 'string') {
-                    newPhotoDataUrls.push(reader.result);
-                    // Update state after each photo is read
                     setPhotosCallback(prev => [...prev, reader.result as string]);
                 }
             };
-    
             reader.onerror = () => {
                 console.error(`Erreur de lecture du fichier: ${file.name}`);
                 toast({
-                    variant: "destructive",
+                    variant: 'destructive',
                     title: "Erreur d'importation",
-                    description: `Impossible de lire le fichier "${file.name}".`
+                    description: `Impossible de lire le fichier "${file.name}".`,
                 });
             };
+            reader.readAsDataURL(processingFile);
+        }
     
-            reader.readAsDataURL(file);
-        });
-
-        toast({ title: `${files.length} photo(s) en cours d'ajout...` });
-
-        // Reset file input to allow selecting the same file again
+        setIsConverting(false);
+        toast({ title: 'Toutes les photos ont été traitées.' });
+    
         if (e.target) {
             e.target.value = '';
         }
@@ -537,11 +559,11 @@ export default function MapPage() {
                                     </div>
                                 ))}
                             </div>
-                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2">
-                                <ImageIcon className="mr-2 h-4 w-4"/>
-                                Ajouter des photos
+                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isConverting}>
+                                {isConverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
+                                {isConverting ? "Conversion..." : "Ajouter des photos"}
                             </Button>
-                            <Input type="file" multiple accept="image/*" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)}/>
+                            <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)}/>
                         </div>
 
                          <div className="space-y-2">
@@ -653,11 +675,11 @@ export default function MapPage() {
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2">
-                                                                        <ImageIcon className="mr-2 h-4 w-4"/>
-                                                                        Ajouter des photos
+                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isConverting}>
+                                                                        {isConverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
+                                                                        {isConverting ? "Conversion..." : "Ajouter des photos"}
                                                                     </Button>
-                                                                    <Input type="file" multiple accept="image/*" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
+                                                                    <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                     <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
@@ -739,3 +761,4 @@ export default function MapPage() {
     
 
     
+

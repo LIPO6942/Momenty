@@ -22,6 +22,7 @@ import type { Encounter } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
+import heic2any from "heic2any";
 
 // Helper to format ISO string to datetime-local string
 const toDateTimeLocal = (isoString: string) => {
@@ -68,6 +69,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
   const [date, setDate] = useState(encounterToEdit.date);
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
 
   useEffect(() => {
     if (encounterToEdit) {
@@ -116,15 +118,36 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
     }
   };
   
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      let processingFile: File | Blob = file;
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        setIsConverting(true);
+        toast({ title: "Conversion de l'image HEIC..." });
+        try {
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.9,
+          });
+          processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        } catch (error) {
+          console.error('HEIC Conversion Error:', error);
+          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+          setIsConverting(false);
+          return;
+        } finally {
+          setIsConverting(false);
+        }
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhoto(reader.result as string);
         toast({title: "Photo mise à jour."});
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processingFile);
     }
   };
 
@@ -175,12 +198,12 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
                             </div>
                         </div>
                     ) : (
-                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
-                            <ImageIcon className="h-6 w-6" />
-                            <span>Importer une nouvelle photo</span>
+                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
+                            {isConverting ? <Loader2 className="h-6 w-6 animate-spin"/> : <ImageIcon className="h-6 w-6" />}
+                            <span>{isConverting ? "Conversion..." : "Importer une nouvelle photo"}</span>
                         </Button>
                     )}
-                    <Input type="file" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
                  
                  <Separator />
@@ -267,8 +290,8 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Fermer</Button>
                 </DialogClose>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isLoading || isConverting}>
+                  {(isLoading || isConverting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enregistrer
                 </Button>
             </DialogFooter>
