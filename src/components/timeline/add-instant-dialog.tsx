@@ -24,8 +24,7 @@ import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage } from "@/lib/idb";
-import { Switch } from "../ui/switch";
-import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -344,28 +343,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </div>
                 ) : (
                 <>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="is-encounter" checked={isEncounter} onCheckedChange={(checked) => setIsEncounter(checked as boolean)} />
-                    <Label htmlFor="is-encounter" className="text-base font-medium flex items-center gap-2">
-                        <Users className="h-5 w-5"/> C'est une rencontre ?
-                    </Label>
-                </div>
-                 
-                 {isEncounter && (
-                    <div className="space-y-2">
-                        <Label htmlFor="encounterName">Nom de la personne</Label>
-                        <Input 
-                            id="encounterName"
-                            value={encounterName}
-                            onChange={(e) => setEncounterName(e.target.value)}
-                            placeholder="ex: Alex" 
-                            disabled={isLoading}
-                        />
-                    </div>
-                 )}
-                 <Separator/>
-
-
                  <div className="space-y-2">
                     <Label>Ajouter un souvenir visuel</Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -400,10 +377,16 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                  <div className="space-y-2">
                     <Label htmlFor="description" className="flex items-center justify-between">
                        <span>{isEncounter ? 'Racontez ce moment...' : 'Qu\'avez-vous en tête ?'}</span>
-                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
-                            {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                            <span className="sr-only">Améliorer la description</span>
-                        </Button>
+                       <div className="flex items-center">
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={() => setIsEncounter(!isEncounter)} disabled={isLoading}>
+                                <Users className="h-4 w-4" />
+                                <span className="sr-only">Marquer comme rencontre</span>
+                            </Button>
+                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
+                                {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                <span className="sr-only">Améliorer la description</span>
+                            </Button>
+                       </div>
                     </Label>
                     <Textarea 
                         id="description"
@@ -414,6 +397,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         disabled={isLoading}
                     />
                  </div>
+
+                 {isEncounter && (
+                    <div className="space-y-2">
+                        <Label htmlFor="encounterName">Nom de la personne</Label>
+                        <Input 
+                            id="encounterName"
+                            value={encounterName}
+                            onChange={(e) => setEncounterName(e.target.value)}
+                            placeholder="ex: Alex" 
+                            disabled={isLoading}
+                        />
+                    </div>
+                 )}
 
                  <div className="space-y-2">
                     <Label htmlFor="location" className="flex items-center gap-2">

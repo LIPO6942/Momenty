@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, Settings, PlusSquare, Search, Plane, Anchor } from "lucide-react";
+import { User, Settings, PlusSquare, Users, Plane, Anchor } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,7 @@ export default function Header() {
 
             <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
                 <Link href="/rencontres">
-                    <Search className="h-6 w-6" />
+                    <Users className="h-6 w-6" />
                 </Link>
             </Button>
 

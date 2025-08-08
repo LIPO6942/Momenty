@@ -79,7 +79,7 @@ export default function EncountersPage() {
         <div className="text-center py-16 border-2 border-dashed rounded-xl">
           <p className="text-muted-foreground">Aucune rencontre enregistrée pour le moment.</p>
           <p className="text-sm text-muted-foreground/80 mt-2">
-            Utilisez le bouton '+' et cochez "Rencontre" pour en ajouter une.
+            Utilisez le bouton '+' et l'icône de rencontre pour en ajouter une.
           </p>
         </div>
       )}
