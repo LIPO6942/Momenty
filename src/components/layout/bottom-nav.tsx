@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, Map, BookText, Plus, Users, Utensils } from "lucide-react";
+import { Globe, Map, BookText, Plus, Users, Utensils, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddInstantDialog } from "../timeline/add-instant-dialog";
 import { Button } from "../ui/button";
@@ -20,6 +21,7 @@ const navLinks = [
   { href: "/story", label: "Histoires", icon: BookText },
   { href: "/map", label: "Carte", icon: Map },
   { href: "/plats", label: "Plats", icon: Utensils },
+  { href: "/logements", label: "Logements", icon: Home },
   { href: "/rencontres", label: "Rencontres", icon: Users },
 ];
 

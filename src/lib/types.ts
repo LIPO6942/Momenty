@@ -1,4 +1,5 @@
 
+
 import { type ManualLocation } from "./idb";
 
 export interface Instant {
@@ -26,6 +27,16 @@ export interface Encounter {
 }
 
 export interface Dish {
+    id: string;
+    name: string;
+    description: string;
+    date: string; // ISO String
+    location: string;
+    emotion: string | string[];
+    photo?: string | null;
+}
+
+export interface Accommodation {
     id: string;
     name: string;
     description: string;

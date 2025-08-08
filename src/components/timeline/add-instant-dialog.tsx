@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -18,12 +19,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
-import { saveEncounter, saveImage, type Encounter, type Dish } from "@/lib/idb";
+import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
 
 interface AddInstantDialogProps {
@@ -42,7 +43,7 @@ const moods = [
 export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addInstant, activeTrip, activeStay, addEncounter, addDish } = useContext(TimelineContext);
+  const { addInstant, activeTrip, activeStay, addEncounter, addDish, addAccommodation } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,6 +59,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [encounterName, setEncounterName] = useState("");
   const [isDish, setIsDish] = useState(false);
   const [dishName, setDishName] = useState("");
+  const [isAccommodation, setIsAccommodation] = useState(false);
+  const [accommodationName, setAccommodationName] = useState("");
   
   // UI State
   const [isLocating, setIsLocating] = useState(false);
@@ -201,6 +204,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setEncounterName("");
     setIsDish(false);
     setDishName("");
+    setIsAccommodation(false);
+    setAccommodationName("");
   }
 
   const handleGetLocation = () => {
@@ -306,6 +311,21 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         };
         addDish(newDish);
         toast({ title: "Nouveau plat ajouté !" });
+    } else if (isAccommodation) {
+        if (!accommodationName) {
+            toast({variant: "destructive", title: "Veuillez nommer le logement."});
+            return;
+        }
+        const newAccommodation: Omit<Accommodation, 'id'> = {
+            name: accommodationName,
+            description: description || "Un logement mémorable",
+            date: new Date().toISOString(),
+            location,
+            emotion: emotions.length > 0 ? emotions : ["Neutre"],
+            photo: photo,
+        };
+        addAccommodation(newAccommodation);
+        toast({ title: "Nouveau logement ajouté !" });
     } else {
         const finalDescription = description || (photo ? "Photo souvenir" : "Note");
         const newInstant = {
@@ -331,12 +351,26 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const handleToggleEncounter = () => {
     setIsEncounter(!isEncounter);
-    if (!isEncounter) setIsDish(false);
+    if (!isEncounter) {
+        setIsDish(false);
+        setIsAccommodation(false);
+    }
   }
 
   const handleToggleDish = () => {
     setIsDish(!isDish);
-    if (!isDish) setIsEncounter(false);
+    if (!isDish) {
+        setIsEncounter(false);
+        setIsAccommodation(false);
+    }
+  }
+
+  const handleToggleAccommodation = () => {
+    setIsAccommodation(!isAccommodation);
+    if (!isAccommodation) {
+        setIsEncounter(false);
+        setIsDish(false);
+    }
   }
 
 
@@ -403,15 +437,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
                  <div className="space-y-2">
                     <Label htmlFor="description" className="flex items-center justify-between">
-                       <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : 'Qu\'avez-vous en tête ?'}</span>
+                       <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : 'Qu\'avez-vous en tête ?'}</span>
                        <div className="flex items-center">
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={handleToggleEncounter} disabled={isLoading}>
-                                <Users className="h-4 w-4" />
-                                <span className="sr-only">Marquer comme rencontre</span>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isAccommodation && "text-primary bg-primary/10")} onClick={handleToggleAccommodation} disabled={isLoading}>
+                                <Home className="h-4 w-4" />
+                                <span className="sr-only">Marquer comme logement</span>
                             </Button>
                             <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isDish && "text-primary bg-primary/10")} onClick={handleToggleDish} disabled={isLoading}>
                                 <Utensils className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme plat</span>
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={handleToggleEncounter} disabled={isLoading}>
+                                <Users className="h-4 w-4" />
+                                <span className="sr-only">Marquer comme rencontre</span>
                             </Button>
                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
                                 {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -429,19 +467,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     />
                  </div>
 
-                 {isEncounter && (
+                 {isAccommodation && (
                     <div className="space-y-2">
-                        <Label htmlFor="encounterName">Nom de la personne</Label>
+                        <Label htmlFor="accommodationName">Nom de l'hôtel/logement</Label>
                         <Input 
-                            id="encounterName"
-                            value={encounterName}
-                            onChange={(e) => setEncounterName(e.target.value)}
-                            placeholder="ex: Alex" 
+                            id="accommodationName"
+                            value={accommodationName}
+                            onChange={(e) => setAccommodationName(e.target.value)}
+                            placeholder="ex: Hôtel Belle Vue" 
                             disabled={isLoading}
                         />
                     </div>
                  )}
-                 
+
                  {isDish && (
                     <div className="space-y-2">
                         <Label htmlFor="dishName">Nom du plat</Label>
@@ -450,6 +488,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             value={dishName}
                             onChange={(e) => setDishName(e.target.value)}
                             placeholder="ex: Paella Valenciana" 
+                            disabled={isLoading}
+                        />
+                    </div>
+                 )}
+
+                 {isEncounter && (
+                    <div className="space-y-2">
+                        <Label htmlFor="encounterName">Nom de la personne</Label>
+                        <Input 
+                            id="encounterName"
+                            value={encounterName}
+                            onChange={(e) => setEncounterName(e.target.value)}
+                            placeholder="ex: Alex" 
                             disabled={isLoading}
                         />
                     </div>

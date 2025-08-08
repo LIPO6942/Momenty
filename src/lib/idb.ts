@@ -1,6 +1,7 @@
 
+
 "use client";
-import type { GeneratedStory, Instant, Encounter, Dish } from './types';
+import type { GeneratedStory, Instant, Encounter, Dish, Accommodation } from './types';
 
 const DB_NAME = "Momenty_DB";
 const IMAGE_STORE_NAME = "images";
@@ -9,8 +10,9 @@ const INSTANT_STORE_NAME = "instants";
 const PROFILE_STORE_NAME = "profile";
 const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
 const ENCOUNTERS_STORE_NAME = "encounters";
-const DISHES_STORE_NAME = "dishes"; // New store
-const DB_VERSION = 7; // Incremented version for schema change
+const DISHES_STORE_NAME = "dishes";
+const ACCOMMODATIONS_STORE_NAME = "accommodations";
+const DB_VERSION = 8; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
@@ -81,6 +83,9 @@ const initDB = (): Promise<IDBDatabase> => {
       }
       if (!dbInstance.objectStoreNames.contains(DISHES_STORE_NAME)) {
         dbInstance.createObjectStore(DISHES_STORE_NAME, { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains(ACCOMMODATIONS_STORE_NAME)) {
+        dbInstance.createObjectStore(ACCOMMODATIONS_STORE_NAME, { keyPath: "id" });
       }
     };
   });
@@ -369,6 +374,69 @@ export const deleteDish = async (id: string): Promise<void> => {
 };
 
 
+// Accommodation functions
+export const saveAccommodation = async (accommodation: Accommodation): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([ACCOMMODATIONS_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(ACCOMMODATIONS_STORE_NAME);
+        const request = store.put(accommodation);
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error('Save accommodation error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
+export const getAccommodations = async (): Promise<Accommodation[]> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([ACCOMMODATIONS_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(ACCOMMODATIONS_STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const sortedAccommodations = request.result.sort((a: Accommodation, b: Accommodation) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            resolve(sortedAccommodations);
+        };
+        request.onerror = () => {
+            console.error('Get accommodations error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
+export const deleteAccommodation = async (id: string): Promise<void> => {
+    const db = await initDB();
+    const transaction = db.transaction([ACCOMMODATIONS_STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
+    const accommodationsStore = transaction.objectStore(ACCOMMODATIONS_STORE_NAME);
+    const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+        const getRequest = accommodationsStore.get(id);
+        
+        getRequest.onsuccess = () => {
+            const accommodation = getRequest.result;
+            if (accommodation && accommodation.photo) {
+                imagesStore.delete(accommodation.photo);
+            }
+
+            const deleteRequest = accommodationsStore.delete(id);
+            deleteRequest.onsuccess = () => resolve();
+            deleteRequest.onerror = () => {
+                 console.error('Delete accommodation record error:', deleteRequest.error);
+                 reject(deleteRequest.error)
+            };
+        };
+        
+        getRequest.onerror = () => {
+            console.error('Get accommodation for deletion error:', getRequest.error);
+            reject(getRequest.error);
+        };
+    });
+};
+
+
 // Profile Functions
 export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<void> => {
     const db = await initDB();
@@ -411,33 +479,29 @@ export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<voi
     const locationsStore = transaction.objectStore(MANUAL_LOCATIONS_STORE_NAME);
     const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
     
-    const imageSavePromises: Promise<any>[] = [];
-
     // Process all locations to save their photos and get keys
     const processedLocations = await Promise.all(locations.map(async (loc) => {
-      let photoKeys: string[] = [];
-      if (loc.photos && loc.photos.length > 0) {
-        photoKeys = await Promise.all(loc.photos.map(async (photoOrKey, index) => {
+      if (!loc.photos || loc.photos.length === 0) {
+        return loc;
+      }
+      
+      const photoKeys = await Promise.all(loc.photos.map(async (photoOrKey, index) => {
           // If it's a new photo (data URL), save it and get a key
           if (photoOrKey.startsWith('data:')) {
-            const photoKey = `location_${loc.name.replace(/\s/g, '_')}_${Date.now()}_${index}`;
-            const promise = new Promise<void>((res, rej) => {
-              const req = imagesStore.put({ id: photoKey, image: photoOrKey });
-              req.onsuccess = () => res();
-              req.onerror = () => rej(req.error);
-            });
-            imageSavePromises.push(promise);
-            return photoKey;
+              const photoKey = `location_${loc.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${index}`;
+              
+              return new Promise<string>((res, rej) => {
+                  const req = imagesStore.put({ id: photoKey, image: photoOrKey });
+                  req.onsuccess = () => res(photoKey);
+                  req.onerror = () => rej(req.error);
+              });
           }
           // If it's already a key, just return it
           return photoOrKey;
-        }));
-      }
+      }));
+      
       return { ...loc, photos: photoKeys };
     }));
-    
-    // Wait for all image saving operations to complete
-    await Promise.all(imageSavePromises);
   
     // Now, save the locations object with the photo keys
     return new Promise((resolve, reject) => {

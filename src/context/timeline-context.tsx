@@ -1,12 +1,13 @@
 
+
 "use client";
 
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
-import type { Instant, Trip, Encounter, Dish } from '@/lib/types';
+import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB, getAccommodations, saveAccommodation, deleteAccommodation as deleteAccommodationFromDB } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -31,6 +32,9 @@ interface TimelineContextType {
     dishes: Dish[];
     addDish: (dish: Omit<Dish, 'id'>) => void;
     deleteDish: (id: string) => void;
+    accommodations: Accommodation[];
+    addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => void;
+    deleteAccommodation: (id: string) => void;
 }
 
 const getCategoryAttributes = (category?: string) => {
@@ -67,6 +71,9 @@ export const TimelineContext = createContext<TimelineContextType>({
     dishes: [],
     addDish: () => {},
     deleteDish: () => {},
+    accommodations: [],
+    addAccommodation: () => {},
+    deleteAccommodation: () => {},
 });
 
 interface TimelineProviderProps {
@@ -77,13 +84,14 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
     const [encounters, setEncounters] = useState<Encounter[]>([]);
     const [dishes, setDishes] = useState<Dish[]>([]);
+    const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
     const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null }>(item: T): Promise<T> => {
         let finalPhoto = item.photo;
         const photoKey = item.photo; 
-        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_') || photoKey.startsWith('dish_'))) {
+        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_') || photoKey.startsWith('dish_') || photoKey.startsWith('accommodation_'))) {
             const localPhoto = await getImage(photoKey);
             finalPhoto = localPhoto; 
         }
@@ -95,6 +103,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           let loadedInstants = await getInstants();
           let loadedEncounters = await getEncounters();
           let loadedDishes = await getDishes();
+          let loadedAccommodations = await getAccommodations();
           
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
@@ -106,10 +115,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           
           const processedEncounters = await Promise.all(loadedEncounters.map(e => getFullPhotoData(e)));
           const processedDishes = await Promise.all(loadedDishes.map(d => getFullPhotoData(d)));
+          const processedAccommodations = await Promise.all(loadedAccommodations.map(a => getFullPhotoData(a)));
 
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setEncounters(processedEncounters.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setDishes(processedDishes.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          setAccommodations(processedAccommodations.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         };
         loadData();
 
@@ -203,6 +214,22 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setDishes(prev => [dishForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
+    const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
+        const newAccommodationId = new Date().toISOString() + Math.random();
+        const accommodationForDb = { id: newAccommodationId, ...accommodationData, photo: null };
+        const accommodationForState = { id: newAccommodationId, ...accommodationData };
+
+        if (accommodationData.photo) {
+            const photoId = `accommodation_${newAccommodationId}`;
+            await saveImage(photoId, accommodationData.photo);
+            accommodationForDb.photo = photoId;
+        }
+
+        await saveAccommodation(accommodationForDb as Accommodation);
+        
+        setAccommodations(prev => [accommodationForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
         
@@ -293,6 +320,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setDishes(prev => prev.filter(dish => dish.id !== id));
     }
 
+    const deleteAccommodation = async (id: string) => {
+        await deleteAccommodationFromDB(id);
+        setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
+    }
+
     const deleteInstantsByLocation = async (locationName: string) => {
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
@@ -334,7 +366,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter, dishes, addDish, deleteDish }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter, dishes, addDish, deleteDish, accommodations, addAccommodation, deleteAccommodation }}>
             {children}
         </TimelineContext.Provider>
     )
