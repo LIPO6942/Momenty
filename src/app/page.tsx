@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -10,9 +10,21 @@ import {
 } from "@/components/ui/accordion";
 import { TimelineContext } from "@/context/timeline-context";
 import { InstantCard } from "@/components/timeline/instant-card";
+import { getProfile } from "@/lib/idb";
 
 export default function TimelinePage() {
   const { groupedInstants } = useContext(TimelineContext);
+  const [firstName, setFirstName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const profile = await getProfile();
+      if (profile && profile.firstName) {
+        setFirstName(profile.firstName);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const allDayKeys = useMemo(() => {
     return Object.keys(groupedInstants);
@@ -21,7 +33,9 @@ export default function TimelinePage() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
        <div className="py-16 space-y-2 text-center">
-        <h1 className="text-4xl font-bold text-primary">Bienvenue sur Momenty</h1>
+        <h1 className="text-4xl font-bold text-primary">
+          {firstName ? `Bienvenue ${firstName} sur Momenty` : 'Bienvenue sur Momenty'}
+        </h1>
         <p className="text-muted-foreground">Le journal de vos plus beaux souvenirs.</p>
       </div>
 
