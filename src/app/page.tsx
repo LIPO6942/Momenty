@@ -8,13 +8,27 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TimelineContext } from "@/context/timeline-context";
 import { InstantCard } from "@/components/timeline/instant-card";
 import { getProfile } from "@/lib/idb";
+import { parseISO, getMonth, getYear, format } from "date-fns";
+import { fr } from 'date-fns/locale';
 
 export default function TimelinePage() {
-  const { groupedInstants } = useContext(TimelineContext);
+  const { groupedInstants, instants } = useContext(TimelineContext);
   const [firstName, setFirstName] = useState<string | null>(null);
+
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
+
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -26,9 +40,62 @@ export default function TimelinePage() {
     loadProfile();
   }, []);
 
+  const availableFilters = useMemo(() => {
+    const years = new Set<number>();
+    const months: { [year: number]: Set<number> } = {};
+
+    instants.forEach(instant => {
+      const date = parseISO(instant.date);
+      const year = getYear(date);
+      const month = getMonth(date);
+      
+      years.add(year);
+      if (!months[year]) {
+        months[year] = new Set<number>();
+      }
+      months[year].add(month);
+    });
+
+    return {
+      years: Array.from(years).sort((a, b) => b - a),
+      months,
+    }
+  }, [instants]);
+  
+  useEffect(() => {
+      if (instants.length > 0 && !hasSetInitialFilter) {
+          const mostRecentInstantDate = parseISO(instants[0].date);
+          const currentMonthHasInstants = instants.some(i => {
+              const d = parseISO(i.date);
+              return getYear(d) === selectedYear && getMonth(d) === selectedMonth;
+          });
+
+          if (!currentMonthHasInstants) {
+              setSelectedYear(getYear(mostRecentInstantDate));
+              setSelectedMonth(getMonth(mostRecentInstantDate));
+          }
+          setHasSetInitialFilter(true);
+      }
+  }, [instants, selectedYear, selectedMonth, hasSetInitialFilter]);
+
+
+  const filteredGroupedInstants = useMemo(() => {
+    return Object.entries(groupedInstants)
+      .filter(([dayKey]) => {
+        const date = parseISO(dayKey);
+        return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+      })
+      .reduce((acc, [dayKey, dayData]) => {
+        acc[dayKey] = dayData;
+        return acc;
+      }, {} as typeof groupedInstants);
+  }, [groupedInstants, selectedMonth, selectedYear]);
+
   const allDayKeys = useMemo(() => {
-    return Object.keys(groupedInstants);
-  }, [groupedInstants]);
+    return Object.keys(filteredGroupedInstants);
+  }, [filteredGroupedInstants]);
+
+  const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
@@ -39,22 +106,70 @@ export default function TimelinePage() {
         <p className="text-muted-foreground">Le journal de vos plus beaux souvenirs.</p>
       </div>
 
-      <Accordion type="multiple" value={allDayKeys} className="w-full space-y-4">
-        {Object.entries(groupedInstants).map(([day, dayData]) => (
-          <AccordionItem key={day} value={day} className="border-none">
-             <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
-                {dayData.title}
-             </AccordionTrigger>
-             <AccordionContent>
-                <div className="space-y-6 pt-4">
-                  {dayData.instants.map((instant) => (
-                    <InstantCard key={instant.id} instant={instant} />
-                  ))}
-                </div>
-             </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      <div className="flex gap-4 mb-8">
+        <Select 
+            value={String(selectedYear)}
+            onValueChange={(val) => {
+                const newYear = Number(val);
+                setSelectedYear(newYear);
+                // Reset month to the most recent one available for the new year
+                if (availableFilters.months[newYear]) {
+                    const mostRecentMonth = Math.max(...Array.from(availableFilters.months[newYear]));
+                    setSelectedMonth(mostRecentMonth);
+                }
+            }}
+            disabled={availableFilters.years.length === 0}
+        >
+            <SelectTrigger>
+                <SelectValue placeholder="Année" />
+            </SelectTrigger>
+            <SelectContent>
+                {availableFilters.years.map(year => (
+                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+
+        <Select
+            value={String(selectedMonth)}
+            onValueChange={(val) => setSelectedMonth(Number(val))}
+            disabled={!availableFilters.months[selectedYear]}
+        >
+            <SelectTrigger>
+                <SelectValue placeholder="Mois" />
+            </SelectTrigger>
+            <SelectContent>
+                {availableFilters.months[selectedYear] && 
+                 Array.from(availableFilters.months[selectedYear]).sort((a,b) => b-a).map(month => (
+                    <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+      </div>
+
+      {allDayKeys.length > 0 ? (
+        <Accordion type="multiple" value={allDayKeys} className="w-full space-y-4">
+            {Object.entries(filteredGroupedInstants).map(([day, dayData]) => (
+            <AccordionItem key={day} value={day} className="border-none">
+                <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+                    {dayData.title}
+                </AccordionTrigger>
+                <AccordionContent>
+                    <div className="space-y-6 pt-4">
+                    {dayData.instants.map((instant) => (
+                        <InstantCard key={instant.id} instant={instant} />
+                    ))}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+            ))}
+        </Accordion>
+      ) : (
+        <div className="text-center py-10 text-muted-foreground">
+            <p>Aucun souvenir trouvé pour {monthNames[selectedMonth]} {selectedYear}.</p>
+            <p className="text-sm mt-1">Essayez de sélectionner un autre mois ou une autre année.</p>
+        </div>
+      )}
     </div>
   );
 }
