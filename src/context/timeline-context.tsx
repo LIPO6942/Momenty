@@ -6,7 +6,7 @@ import type { Instant, Trip, Encounter } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -26,6 +26,7 @@ interface TimelineContextType {
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
     encounters: Encounter[];
+    addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
     deleteEncounter: (id: string) => void;
 }
 
@@ -58,6 +59,7 @@ export const TimelineContext = createContext<TimelineContextType>({
     activeTrip: null,
     activeStay: null,
     encounters: [],
+    addEncounter: () => {},
     deleteEncounter: () => {},
 });
 
@@ -275,7 +277,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, deleteEncounter }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter }}>
             {children}
         </TimelineContext.Provider>
     )
