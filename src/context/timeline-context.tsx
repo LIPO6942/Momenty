@@ -237,7 +237,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           const dayIndex = reversedDayKeys.indexOf(dayKey) + 1;
 
           groups[dayKey] = {
-              title: `Jour ${dayIndex} - ${format(dayDate, 'd MMMM yyyy', { locale: fr })}`,
+              title: `Jour ${dayIndex} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`,
               instants: []
           };
       });
