@@ -75,7 +75,7 @@ Adapte subtilement le ton et les réflexions en fonction de ce profil, sans jama
   - Titre: {{{title}}}
   - Description: {{{description}}}
   - Lieu: {{{location}}}
-  - Émotion(s) ressentie(s): {{#if (Array.isArray emotion)}}{{emotion.join ', '}}{{else}}{{{emotion}}}{{/if}}
+  - Émotion(s) ressentie(s): {{#each emotion}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless emotion.length}}{{{emotion}}}{{/unless}}
   {{#if photo}}
   - Photo: {{media url=photo}}
   {{/if}}
@@ -112,4 +112,3 @@ const generateStoryFlow = ai.defineFlow(
     return output!;
   }
 );
-
