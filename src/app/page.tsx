@@ -120,7 +120,7 @@ export default function TimelinePage() {
             }}
             disabled={availableFilters.years.length === 0}
         >
-            <SelectTrigger>
+            <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
                 <SelectValue placeholder="Année" />
             </SelectTrigger>
             <SelectContent>
@@ -135,7 +135,7 @@ export default function TimelinePage() {
             onValueChange={(val) => setSelectedMonth(Number(val))}
             disabled={!availableFilters.months[selectedYear]}
         >
-            <SelectTrigger>
+            <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
                 <SelectValue placeholder="Mois" />
             </SelectTrigger>
             <SelectContent>
