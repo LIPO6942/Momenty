@@ -26,6 +26,9 @@ const GenerateStoryInputSchema = z.object({
   instants: z.array(InstantForStorySchema).describe("Une liste des moments (notes, photos) de la journée."),
   companionType: z.string().optional().describe("Le type de compagnon de voyage (ex: 'Ami(e)', 'Solo')."),
   companionName: z.string().optional().describe("Le nom du compagnon de voyage."),
+  userFirstName: z.string().optional().describe("Le prénom de l'utilisateur."),
+  userAge: z.string().optional().describe("L'âge de l'utilisateur."),
+  userGender: z.string().optional().describe("Le genre de l'utilisateur (Homme, Femme)."),
 });
 export type GenerateStoryInput = z.infer<typeof GenerateStoryInputSchema>;
 
@@ -42,9 +45,21 @@ const prompt = ai.definePrompt({
   name: 'generateStoryPrompt',
   input: {schema: GenerateStoryInputSchema},
   output: {schema: GenerateStoryOutputSchema},
-  prompt: `Tu es un écrivain de voyage poétique et concis. Ta mission est de transformer une série de moments (notes, photos, émotions) d'une journée en un récit de voyage immersif, court et bien structuré.
+  prompt: `Tu es un écrivain de voyage poétique et concis. Ta mission est de transformer une série de moments (notes, photos, émotions) d'une journée en un récit de voyage immersif, court, réaliste et bien structuré.
 
 Le récit doit être en français, ne doit pas dépasser 4 ou 5 paragraphes.
+
+**Contexte du narrateur:**
+{{#if userFirstName}}
+- Le narrateur s'appelle {{userFirstName}}.
+{{/if}}
+{{#if userAge}}
+- Il/Elle a {{userAge}} ans.
+{{/if}}
+{{#if userGender}}
+- C'est un(e) {{userGender}}.
+{{/if}}
+Adapte subtilement le ton et les réflexions en fonction de ce profil, sans jamais le mentionner directement.
 
 **Contexte du voyage pour la journée du {{day}} :**
 {{#if companionName}}
@@ -67,7 +82,7 @@ Le récit doit être en français, ne doit pas dépasser 4 ou 5 paragraphes.
 {{/each}}
 
 **Instructions :**
-Rédige une histoire fluide et captivante qui relie ces moments. Base-toi sur le contenu visuel des photos pour décrire les scènes et l'atmosphère. Utilise les notes et les émotions pour donner vie au récit.
+Rédige une histoire fluide, réaliste et captivante qui relie ces moments. Base-toi sur le contenu visuel des photos pour décrire les scènes et l'atmosphère. Utilise les notes et les émotions pour donner vie au récit.
 Commence par une introduction qui plante le décor (le lieu principal de la journée). Ensuite, décris les moments forts de manière chronologique. Termine par une conclusion qui résume le sentiment général de la journée.
 
 Sois bref mais poétique. Le résultat doit être un texte unique et personnel.
@@ -97,3 +112,4 @@ const generateStoryFlow = ai.defineFlow(
     return output!;
   }
 );
+

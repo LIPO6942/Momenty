@@ -10,7 +10,8 @@ import { generateStory } from '@/ai/flows/generate-story-flow';
 import type { GeneratedStory, Instant } from '@/lib/types';
 import { Loader2, Wand2, Edit, Trash2, BookText } from 'lucide-react';
 import Image from 'next/image';
-import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/idb';
+import { saveStory, getStories, deleteStory as deleteStoryFromDB, getProfile } from '@/lib/idb';
+import type { ProfileData } from '@/lib/idb';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -116,10 +117,14 @@ export default function StoryPage() {
     const [isEditing, setIsEditing] = useState<GeneratedStory | null>(null);
     const [editText, setEditText] = useState("");
     const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>();
+    const [userProfile, setUserProfile] = useState<Omit<ProfileData, 'id'> | null>(null);
 
     useEffect(() => {
-        const loadStories = async () => {
+        const loadData = async () => {
             const loadedStories = await getStories();
+            const profile = await getProfile();
+            setUserProfile(profile);
+
             // Hydrate stories with full instant data for display
             const hydratedStories = loadedStories.map(story => {
                 const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Instant[];
@@ -132,7 +137,7 @@ export default function StoryPage() {
             }
         };
         if(instants.length > 0) { // ensure instants are loaded first
-            loadStories();
+            loadData();
         }
     }, [instants]);
 
@@ -164,6 +169,9 @@ export default function StoryPage() {
                 instants: instantsForStory,
                 companionType: activeContext?.companionType,
                 companionName: activeContext?.companionName,
+                userFirstName: userProfile?.firstName,
+                userAge: userProfile?.age,
+                userGender: userProfile?.gender,
             });
             
             const cleanInstantsForDb = dayData.instants.map(i => {
@@ -354,3 +362,4 @@ export default function StoryPage() {
         </div>
     );
 }
+
