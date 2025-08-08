@@ -2,11 +2,11 @@
 "use client";
 
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
-import type { Instant, Trip, Encounter } from '@/lib/types';
+import type { Instant, Trip, Encounter, Dish } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -28,6 +28,9 @@ interface TimelineContextType {
     encounters: Encounter[];
     addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
     deleteEncounter: (id: string) => void;
+    dishes: Dish[];
+    addDish: (dish: Omit<Dish, 'id'>) => void;
+    deleteDish: (id: string) => void;
 }
 
 const getCategoryAttributes = (category?: string) => {
@@ -61,6 +64,9 @@ export const TimelineContext = createContext<TimelineContextType>({
     encounters: [],
     addEncounter: () => {},
     deleteEncounter: () => {},
+    dishes: [],
+    addDish: () => {},
+    deleteDish: () => {},
 });
 
 interface TimelineProviderProps {
@@ -70,13 +76,14 @@ interface TimelineProviderProps {
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [instants, setInstants] = useState<Instant[]>([]);
     const [encounters, setEncounters] = useState<Encounter[]>([]);
+    const [dishes, setDishes] = useState<Dish[]>([]);
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
     const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null }>(item: T): Promise<T> => {
         let finalPhoto = item.photo;
-        const photoKey = item.photo; // e.g., 'local_123' or 'encounter_123'
-        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_'))) {
+        const photoKey = item.photo; 
+        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_') || photoKey.startsWith('dish_'))) {
             const localPhoto = await getImage(photoKey);
             finalPhoto = localPhoto; 
         }
@@ -87,6 +94,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const loadData = async () => {
           let loadedInstants = await getInstants();
           let loadedEncounters = await getEncounters();
+          let loadedDishes = await getDishes();
           
           const processedInstants = await Promise.all(
             loadedInstants.map(async (inst) => {
@@ -97,9 +105,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
           );
           
           const processedEncounters = await Promise.all(loadedEncounters.map(e => getFullPhotoData(e)));
+          const processedDishes = await Promise.all(loadedDishes.map(d => getFullPhotoData(d)));
 
           setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           setEncounters(processedEncounters.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          setDishes(processedDishes.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         };
         loadData();
 
@@ -177,6 +187,22 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setEncounters(prev => [encounterForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
+    const addDish = async (dishData: Omit<Dish, 'id'>) => {
+        const newDishId = new Date().toISOString() + Math.random();
+        const dishForDb = { id: newDishId, ...dishData, photo: null };
+        const dishForState = { id: newDishId, ...dishData };
+
+        if (dishData.photo) {
+            const photoId = `dish_${newDishId}`;
+            await saveImage(photoId, dishData.photo);
+            dishForDb.photo = photoId;
+        }
+
+        await saveDish(dishForDb as Dish);
+        
+        setDishes(prev => [dishForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
         
@@ -235,6 +261,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         await deleteEncounterFromDB(id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
     }
+    
+    const deleteDish = async (id: string) => {
+        await deleteDishFromDB(id);
+        setDishes(prev => prev.filter(dish => dish.id !== id));
+    }
 
     const deleteInstantsByLocation = async (locationName: string) => {
         const instantsToDelete = instants.filter(i => i.location === locationName);
@@ -277,7 +308,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [instants]);
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, deleteEncounter, dishes, addDish, deleteDish }}>
             {children}
         </TimelineContext.Provider>
     )

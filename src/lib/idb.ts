@@ -1,7 +1,6 @@
 
-
 "use client";
-import type { GeneratedStory, Instant, Encounter } from './types';
+import type { GeneratedStory, Instant, Encounter, Dish } from './types';
 
 const DB_NAME = "Momenty_DB";
 const IMAGE_STORE_NAME = "images";
@@ -10,7 +9,8 @@ const INSTANT_STORE_NAME = "instants";
 const PROFILE_STORE_NAME = "profile";
 const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
 const ENCOUNTERS_STORE_NAME = "encounters";
-const DB_VERSION = 6; // Incremented version for schema change
+const DISHES_STORE_NAME = "dishes"; // New store
+const DB_VERSION = 7; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
@@ -69,6 +69,9 @@ const initDB = (): Promise<IDBDatabase> => {
       }
       if (!dbInstance.objectStoreNames.contains(ENCOUNTERS_STORE_NAME)) {
         dbInstance.createObjectStore(ENCOUNTERS_STORE_NAME, { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains(DISHES_STORE_NAME)) {
+        dbInstance.createObjectStore(DISHES_STORE_NAME, { keyPath: "id" });
       }
     };
   });
@@ -289,6 +292,68 @@ export const deleteEncounter = async (id: string): Promise<void> => {
         
         getRequest.onerror = () => {
             console.error('Get encounter for deletion error:', getRequest.error);
+            reject(getRequest.error);
+        };
+    });
+};
+
+// Dish functions
+export const saveDish = async (dish: Dish): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([DISHES_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(DISHES_STORE_NAME);
+        const request = store.put(dish);
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error('Save dish error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
+export const getDishes = async (): Promise<Dish[]> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([DISHES_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(DISHES_STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const sortedDishes = request.result.sort((a: Dish, b: Dish) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            resolve(sortedDishes);
+        };
+        request.onerror = () => {
+            console.error('Get dishes error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
+export const deleteDish = async (id: string): Promise<void> => {
+    const db = await initDB();
+    const transaction = db.transaction([DISHES_STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
+    const dishesStore = transaction.objectStore(DISHES_STORE_NAME);
+    const imagesStore = transaction.objectStore(IMAGE_STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+        const getRequest = dishesStore.get(id);
+        
+        getRequest.onsuccess = () => {
+            const dish = getRequest.result;
+            if (dish && dish.photo) {
+                imagesStore.delete(dish.photo);
+            }
+
+            const deleteDishRequest = dishesStore.delete(id);
+            deleteDishRequest.onsuccess = () => resolve();
+            deleteDishRequest.onerror = () => {
+                 console.error('Delete dish record error:', deleteDishRequest.error);
+                 reject(deleteDishRequest.error)
+            };
+        };
+        
+        getRequest.onerror = () => {
+            console.error('Get dish for deletion error:', getRequest.error);
             reject(getRequest.error);
         };
     });

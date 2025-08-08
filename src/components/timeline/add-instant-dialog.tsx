@@ -18,12 +18,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
-import { saveEncounter, saveImage, type Encounter } from "@/lib/idb";
+import { saveEncounter, saveImage, type Encounter, type Dish } from "@/lib/idb";
 import { cn } from "@/lib/utils";
 
 interface AddInstantDialogProps {
@@ -42,7 +42,7 @@ const moods = [
 export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const { addInstant, activeTrip, activeStay, addEncounter } = useContext(TimelineContext);
+  const { addInstant, activeTrip, activeStay, addEncounter, addDish } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,6 +56,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [emotions, setEmotions] = useState<string[]>([]);
   const [isEncounter, setIsEncounter] = useState(false);
   const [encounterName, setEncounterName] = useState("");
+  const [isDish, setIsDish] = useState(false);
+  const [dishName, setDishName] = useState("");
   
   // UI State
   const [isLocating, setIsLocating] = useState(false);
@@ -155,29 +157,34 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPhoto(result);
-        toast({ title: "Photo prête à être ajoutée." });
-      };
-      reader.onerror = () => {
-        console.error(`Erreur de lecture du fichier: ${file.name}`);
-        toast({
-            variant: "destructive",
-            title: "Erreur d'importation",
-            description: `Impossible de lire le fichier "${file.name}".`
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-     // Reset file input to allow selecting the same file again
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                setPhoto(reader.result);
+            }
+        };
+        reader.onerror = () => {
+            console.error(`Erreur de lecture du fichier: ${file.name}`);
+            toast({
+                variant: "destructive",
+                title: "Erreur d'importation",
+                description: `Impossible de lire le fichier "${file.name}".`
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    toast({ title: `${files.length} photo(s) en cours d'ajout...` });
+
     if (e.target) {
         e.target.value = '';
     }
   };
+
 
   const cleanup = () => {
     setDescription("");
@@ -192,6 +199,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setIsImprovingText(false);
     setIsEncounter(false);
     setEncounterName("");
+    setIsDish(false);
+    setDishName("");
   }
 
   const handleGetLocation = () => {
@@ -280,10 +289,23 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
             photo: photo,
         };
-        
         addEncounter(newEncounter);
         toast({ title: "Nouvelle rencontre ajoutée !" });
-
+    } else if (isDish) {
+        if (!dishName) {
+            toast({variant: "destructive", title: "Veuillez nommer le plat."});
+            return;
+        }
+        const newDish: Omit<Dish, 'id'> = {
+            name: dishName,
+            description: description || "Un plat mémorable",
+            date: new Date().toISOString(),
+            location,
+            emotion: emotions.length > 0 ? emotions : ["Neutre"],
+            photo: photo,
+        };
+        addDish(newDish);
+        toast({ title: "Nouveau plat ajouté !" });
     } else {
         const finalDescription = description || (photo ? "Photo souvenir" : "Note");
         const newInstant = {
@@ -306,6 +328,17 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   
   const activeContext = activeTrip || activeStay;
   const isLoading = isLocating || isAnalyzing || isImprovingText;
+
+  const handleToggleEncounter = () => {
+    setIsEncounter(!isEncounter);
+    if (!isEncounter) setIsDish(false);
+  }
+
+  const handleToggleDish = () => {
+    setIsDish(!isDish);
+    if (!isDish) setIsEncounter(false);
+  }
+
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -349,7 +382,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
 
                 {photo && (
@@ -370,11 +403,15 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
                  <div className="space-y-2">
                     <Label htmlFor="description" className="flex items-center justify-between">
-                       <span>{isEncounter ? 'Racontez ce moment...' : 'Qu\'avez-vous en tête ?'}</span>
+                       <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : 'Qu\'avez-vous en tête ?'}</span>
                        <div className="flex items-center">
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={() => setIsEncounter(!isEncounter)} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={handleToggleEncounter} disabled={isLoading}>
                                 <Users className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme rencontre</span>
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isDish && "text-primary bg-primary/10")} onClick={handleToggleDish} disabled={isLoading}>
+                                <Utensils className="h-4 w-4" />
+                                <span className="sr-only">Marquer comme plat</span>
                             </Button>
                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
                                 {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -400,6 +437,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             value={encounterName}
                             onChange={(e) => setEncounterName(e.target.value)}
                             placeholder="ex: Alex" 
+                            disabled={isLoading}
+                        />
+                    </div>
+                 )}
+                 
+                 {isDish && (
+                    <div className="space-y-2">
+                        <Label htmlFor="dishName">Nom du plat</Label>
+                        <Input 
+                            id="dishName"
+                            value={dishName}
+                            onChange={(e) => setDishName(e.target.value)}
+                            placeholder="ex: Paella Valenciana" 
                             disabled={isLoading}
                         />
                     </div>

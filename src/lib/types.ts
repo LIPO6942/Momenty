@@ -25,6 +25,16 @@ export interface Encounter {
     photo?: string | null;
 }
 
+export interface Dish {
+    id: string;
+    name: string;
+    description: string;
+    date: string; // ISO String
+    location: string;
+    emotion: string | string[];
+    photo?: string | null;
+}
+
 export interface Trip {
     location?: string;
     startDate?: string; // ISO String
