@@ -48,58 +48,107 @@ export default function PlatsPage() {
       {dishes.length > 0 ? (
         <div className="grid md:grid-cols-1 gap-8">
           {dishes.map((dish) => (
-            <Card key={dish.id} className="overflow-hidden">
-                 {dish.photo && (
-                    <Image
-                        src={dish.photo}
-                        alt={`Photo de ${dish.name}`}
-                        width={600}
-                        height={300}
-                        className="w-full h-48 object-cover"
-                        data-ai-hint="food dish"
-                    />
-                 )}
-                 <CardHeader className="flex flex-row items-start gap-4">
-                    <div className="flex-grow">
-                        <CardTitle className="text-2xl">{dish.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                            <MapPin className="h-4 w-4" />
-                            Dégusté à {dish.location}
-                        </p>
-                    </div>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                <Trash2 className="h-5 w-5" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Supprimer ce plat ?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Cette action est irréversible et supprimera définitivement le souvenir de ce plat de votre journal.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(dish.id)}>
-                                Supprimer
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                 </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-foreground/80 italic mb-4">"{dish.description}"</p>
-                <div className="text-xs text-muted-foreground flex justify-between items-center">
-                    <span>{format(parseISO(dish.date), "d MMMM yyyy", { locale: fr })}</span>
-                    <div className="flex gap-2 flex-wrap">
-                        {(Array.isArray(dish.emotion) ? dish.emotion : [dish.emotion]).map(e => (
-                             <Badge key={e} variant="outline">{e}</Badge>
-                        ))}
-                    </div>
-                </div>
-              </CardContent>
+            <Card key={dish.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
+                {dish.photo ? (
+                    <>
+                        <Image
+                            src={dish.photo}
+                            alt={`Photo de ${dish.name}`}
+                            width={600}
+                            height={400}
+                            className="w-full h-[400px] object-cover"
+                            data-ai-hint="food dish"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+                        <div className="absolute top-0 right-0 p-2">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer ce plat ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible et supprimera définitivement le souvenir de ce plat de votre journal.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(dish.id)}>
+                                        Supprimer
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        
+                        <div className="absolute bottom-0 left-0 w-full p-4">
+                             <h3 className="font-bold text-2xl">{dish.name}</h3>
+                             <p className="text-sm text-white/80 mt-1 italic">"{dish.description}"</p>
+                            <div className="flex items-center gap-1.5 mt-3">
+                                <MapPin className="h-4 w-4 text-white/90" />
+                                <span className="font-semibold text-sm">Dégusté à {dish.location}</span>
+                            </div>
+                            <div className="flex justify-between items-end mt-3">
+                                <div className="flex gap-2 flex-wrap">
+                                    {(Array.isArray(dish.emotion) ? dish.emotion : [dish.emotion]).map(e => (
+                                        <Badge key={e} variant="outline" className="bg-white/20 text-white border-none">
+                                            {e}
+                                        </Badge>
+                                    ))}
+                                </div>
+                                <span className="text-xs text-white/70">{format(parseISO(dish.date), "d MMM yyyy", { locale: fr })}</span>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <CardHeader className="flex flex-row items-start gap-4">
+                           <div className="flex-grow">
+                               <CardTitle className="text-2xl">{dish.name}</CardTitle>
+                               <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+                                   <MapPin className="h-4 w-4" />
+                                   Dégusté à {dish.location}
+                               </p>
+                           </div>
+                            <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                       <Trash2 className="h-5 w-5" />
+                                   </Button>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                   <AlertDialogTitle>Supprimer ce plat ?</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                       Cette action est irréversible et supprimera définitivement le souvenir de ce plat de votre journal.
+                                   </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                   <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                   <AlertDialogAction onClick={() => handleDelete(dish.id)}>
+                                       Supprimer
+                                   </AlertDialogAction>
+                                   </AlertDialogFooter>
+                               </AlertDialogContent>
+                           </AlertDialog>
+                        </CardHeader>
+                     <CardContent className="pt-0">
+                       <p className="text-foreground/80 italic mb-4">"{dish.description}"</p>
+                       <div className="text-xs text-muted-foreground flex justify-between items-center">
+                           <span>{format(parseISO(dish.date), "d MMMM yyyy", { locale: fr })}</span>
+                           <div className="flex gap-2 flex-wrap">
+                               {(Array.isArray(dish.emotion) ? dish.emotion : [dish.emotion]).map(e => (
+                                    <Badge key={e} variant="outline">{e}</Badge>
+                               ))}
+                           </div>
+                       </div>
+                     </CardContent>
+                    </>
+                )}
             </Card>
           ))}
         </div>
