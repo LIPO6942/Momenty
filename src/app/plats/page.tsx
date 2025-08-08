@@ -59,7 +59,7 @@ export default function PlatsPage() {
                         data-ai-hint="food dish"
                     />
                  )}
-                 <CardHeader className="flex flex-row items-center gap-4">
+                 <CardHeader className="flex flex-row items-start gap-4">
                     <div className="flex-grow">
                         <CardTitle className="text-2xl">{dish.name}</CardTitle>
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
