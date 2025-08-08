@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
@@ -22,10 +22,12 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function PlatsPage() {
   const { dishes, deleteDish } = useContext(TimelineContext);
   const { toast } = useToast();
+  const [textVisibility, setTextVisibility] = useState<{ [key: string]: boolean }>({});
 
   const handleDelete = (id: string) => {
     deleteDish(id);
@@ -33,6 +35,13 @@ export default function PlatsPage() {
         title: "Plat supprimé",
         description: "Le souvenir de ce plat a été retiré de votre journal.",
     })
+  }
+
+  const toggleTextVisibility = (id: string) => {
+    setTextVisibility(prev => ({
+        ...prev,
+        [id]: !(prev[id] ?? true) // Default to true (visible)
+    }));
   }
 
   return (
@@ -47,7 +56,9 @@ export default function PlatsPage() {
 
       {dishes.length > 0 ? (
         <div className="grid md:grid-cols-1 gap-8">
-          {dishes.map((dish) => (
+          {dishes.map((dish) => {
+            const isTextVisible = textVisibility[dish.id] ?? true;
+            return (
             <Card key={dish.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 {dish.photo ? (
                     <>
@@ -85,22 +96,32 @@ export default function PlatsPage() {
                             </AlertDialog>
                         </div>
                         
-                        <div className="absolute bottom-0 left-0 w-full p-4">
-                             <h3 className="font-bold text-2xl">{dish.name}</h3>
-                             <p className="text-sm text-white/80 mt-1 italic">"{dish.description}"</p>
-                            <div className="flex items-center gap-1.5 mt-3">
-                                <MapPin className="h-4 w-4 text-white/90" />
-                                <span className="font-semibold text-sm">Dégusté à {dish.location}</span>
-                            </div>
-                            <div className="flex justify-between items-end mt-3">
-                                <div className="flex gap-2 flex-wrap">
-                                    {(Array.isArray(dish.emotion) ? dish.emotion : [dish.emotion]).map(e => (
-                                        <Badge key={e} variant="outline" className="bg-white/20 text-white border-none">
-                                            {e}
-                                        </Badge>
-                                    ))}
+                        <div 
+                            className="absolute bottom-0 left-0 w-full cursor-pointer transition-opacity duration-300"
+                            onClick={() => toggleTextVisibility(dish.id)}
+                        >
+                             <div 
+                                className={cn(
+                                    "p-4 transition-transform duration-300 ease-in-out",
+                                    isTextVisible ? "translate-y-0" : "translate-y-full"
+                                )}
+                             >
+                                <h3 className="font-bold text-2xl">{dish.name}</h3>
+                                <p className="text-sm text-white/80 mt-1 italic">"{dish.description}"</p>
+                                <div className="flex items-center gap-1.5 mt-3">
+                                    <MapPin className="h-4 w-4 text-white/90" />
+                                    <span className="font-semibold text-sm">Dégusté à {dish.location}</span>
                                 </div>
-                                <span className="text-xs text-white/70">{format(parseISO(dish.date), "d MMM yyyy", { locale: fr })}</span>
+                                <div className="flex justify-between items-end mt-3">
+                                    <div className="flex gap-2 flex-wrap">
+                                        {(Array.isArray(dish.emotion) ? dish.emotion : [dish.emotion]).map(e => (
+                                            <Badge key={e} variant="outline" className="bg-white/20 text-white border-none">
+                                                {e}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                    <span className="text-xs text-white/70">{format(parseISO(dish.date), "d MMM yyyy", { locale: fr })}</span>
+                                </div>
                             </div>
                         </div>
                     </>
@@ -150,7 +171,8 @@ export default function PlatsPage() {
                     </>
                 )}
             </Card>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="text-center py-16 border-2 border-dashed rounded-xl">
