@@ -23,7 +23,7 @@ import type { Instant } from "@/lib/types";
 import { ScrollArea } from "../ui/scroll-area";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 
@@ -43,12 +43,16 @@ const moods = [
 
 // Helper to format ISO string to datetime-local string
 const toDateTimeLocal = (isoString: string) => {
+    if (!isoString) return "";
     try {
         const date = parseISO(isoString);
-        // Format to "yyyy-MM-ddTHH:mm"
-        return format(date, "yyyy-MM-dd'T'HH:mm");
+        if (isValid(date)) {
+            // Format to "yyyy-MM-ddTHH:mm"
+            return format(date, "yyyy-MM-dd'T'HH:mm");
+        }
+        return "";
     } catch (error) {
-        console.error("Invalid date format:", isoString, error);
+        console.error("Invalid date format for parsing:", isoString, error);
         return ""; // Fallback to empty string
     }
 };
@@ -112,6 +116,16 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const dateToSave = new Date(date);
+    if (!isValid(dateToSave)) {
+        toast({
+            variant: "destructive",
+            title: "Date invalide",
+            description: "Veuillez entrer une date et une heure valides.",
+        });
+        return;
+    }
+
     const finalDescription = description || "Note";
 
     // Call the context function to update the instant
@@ -121,7 +135,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       photo,
       location,
       emotion: emotions.length > 0 ? emotions : ["Neutre"],
-      date: new Date(date).toISOString(), // Ensure date is in ISO format
+      date: dateToSave.toISOString(), // Ensure date is in ISO format
     });
 
     setOpen(false); // Close the dialog
