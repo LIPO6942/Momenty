@@ -18,8 +18,8 @@ import {
 const navLinks = [
   { href: "/", label: "Timeline", icon: Globe },
   { href: "/story", label: "Histoires", icon: BookText },
-  { href: "/plats", label: "Plats", icon: Utensils },
   { href: "/map", label: "Carte", icon: Map },
+  { href: "/plats", label: "Plats", icon: Utensils },
   { href: "/rencontres", label: "Rencontres", icon: Users },
 ];
 
