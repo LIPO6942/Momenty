@@ -5,20 +5,29 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { LocationWithCoords } from "@/lib/types";
+import { capitals } from "@/lib/capitals";
 
-// Fix for broken marker icons in Next.js
-try {
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
+// Custom icons for capitals (red) and other cities (blue)
+const redIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    });
-} catch (e) {
-    console.error('Could not apply Leaflet icon fix', e);
-}
+const blueIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
+// Create a Set of capitals for faster lookups
+const capitalsSet = new Set(capitals.map(c => c.toLowerCase()));
 
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
@@ -67,10 +76,14 @@ export default function InteractiveMap({ locations, focusedLocation }: Interacti
     
     // Add new markers
     locations.forEach((location) => {
+      const cityName = location.name.split(',')[0].trim().toLowerCase();
+      const isCapital = capitalsSet.has(cityName);
+
       const marker = L.marker(location.coords, {
-          title: location.name
+          title: location.name,
+          icon: isCapital ? redIcon : blueIcon
       });
-      marker.bindPopup(`${location.name} (${location.count} instant(s))`);
+      marker.bindPopup(`${location.name} (${location.count > 0 ? `${location.count} instant(s)`: ''})`);
       if (markersLayer.current) {
         marker.addTo(markersLayer.current);
       }
