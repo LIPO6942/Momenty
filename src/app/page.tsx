@@ -28,6 +28,7 @@ export default function TimelinePage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
+  const [openDays, setOpenDays] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -95,6 +96,11 @@ export default function TimelinePage() {
     return Object.keys(filteredGroupedInstants);
   }, [filteredGroupedInstants]);
 
+  useEffect(() => {
+    setOpenDays(allDayKeys);
+  }, [allDayKeys]);
+
+
   const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
 
   return (
@@ -148,7 +154,7 @@ export default function TimelinePage() {
       </div>
 
       {allDayKeys.length > 0 ? (
-        <Accordion type="multiple" value={allDayKeys} className="w-full space-y-4">
+        <Accordion type="multiple" value={openDays} onValueChange={setOpenDays} className="w-full space-y-4">
             {Object.entries(filteredGroupedInstants).map(([day, dayData]) => (
             <AccordionItem key={day} value={day} className="border-none">
                 <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
