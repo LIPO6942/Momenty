@@ -143,8 +143,19 @@ export default function StoryPage() {
                 setOpenAccordionItem(hydratedStories[0].id);
             }
         };
+
+        const handleStoriesUpdated = () => {
+            loadData();
+        };
+
         if(instants.length > 0) { // ensure instants are loaded first
             loadData();
+        }
+
+        window.addEventListener('stories-updated', handleStoriesUpdated);
+
+        return () => {
+            window.removeEventListener('stories-updated', handleStoriesUpdated);
         }
     }, [instants]);
 

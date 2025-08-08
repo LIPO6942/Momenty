@@ -59,7 +59,16 @@ const initDB = (): Promise<IDBDatabase> => {
         dbInstance.createObjectStore(STORY_STORE_NAME, { keyPath: "id" });
       }
       if (!dbInstance.objectStoreNames.contains(INSTANT_STORE_NAME)) {
-        dbInstance.createObjectStore(INSTANT_STORE_NAME, { keyPath: "id" });
+        const instantStore = dbInstance.createObjectStore(INSTANT_STORE_NAME, { keyPath: "id" });
+        instantStore.createIndex("date", "date", { unique: false });
+      } else {
+        const transaction = request.transaction;
+        if(transaction) {
+            const instantStore = transaction.objectStore(INSTANT_STORE_NAME);
+            if (!instantStore.indexNames.contains("date")) {
+                instantStore.createIndex("date", "date", { unique: false });
+            }
+        }
       }
       if (!dbInstance.objectStoreNames.contains(PROFILE_STORE_NAME)) {
         dbInstance.createObjectStore(PROFILE_STORE_NAME, { keyPath: "id" });

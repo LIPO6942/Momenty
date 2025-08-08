@@ -6,7 +6,7 @@ import type { Instant, Trip, Encounter, Dish } from '@/lib/types';
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -252,10 +252,36 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }
 
     const deleteInstant = async (id: string) => {
+        const instantToDelete = instants.find(i => i.id === id);
+        if (!instantToDelete) return;
+    
+        const dayKeyOfDeletedInstant = format(startOfDay(parseISO(instantToDelete.date)), 'yyyy-MM-dd');
+    
+        // Delete the instant itself
         await deleteInstantFromDB(id);
-        await saveImage(`local_${id}`, ''); 
-        setInstants(prevInstants => prevInstants.filter(instant => instant.id !== id));
-    }
+        if (instantToDelete.photo) {
+            await saveImage(`local_${id}`, ''); // Clear photo from storage
+        }
+    
+        const remainingInstants = instants.filter(instant => instant.id !== id);
+        setInstants(remainingInstants);
+    
+        // Check if it was the last instant of the day
+        const isLastInstantOfDay = !remainingInstants.some(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd') === dayKeyOfDeletedInstant);
+    
+        if (isLastInstantOfDay) {
+            // If it was, find and delete all stories that contained that day
+            const allStories = await getStories();
+            for (const story of allStories) {
+                const storyContainsDay = story.id.includes(dayKeyOfDeletedInstant);
+                if (storyContainsDay) {
+                    await deleteStoryFromDB(story.id);
+                }
+            }
+            // Trigger a re-render/reload in the story page if it's open
+            window.dispatchEvent(new Event('stories-updated'));
+        }
+    };
 
     const deleteEncounter = async (id: string) => {
         await deleteEncounterFromDB(id);
