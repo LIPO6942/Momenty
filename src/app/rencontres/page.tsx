@@ -1,0 +1,88 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { getEncounters, type Encounter } from "@/lib/idb";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import { MapPin, User, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+export default function EncountersPage() {
+  const [encounters, setEncounters] = useState<Encounter[]>([]);
+
+  useEffect(() => {
+    const loadEncounters = async () => {
+      const savedEncounters = await getEncounters();
+      setEncounters(savedEncounters);
+    };
+    loadEncounters();
+  }, []);
+
+  return (
+    <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+      <div className="py-16 space-y-2">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary"/>
+            Mes Rencontres
+        </h1>
+        <p className="text-muted-foreground">Les personnes qui ont marqué votre voyage.</p>
+      </div>
+
+      {encounters.length > 0 ? (
+        <div className="grid md:grid-cols-1 gap-8">
+          {encounters.map((encounter) => (
+            <Card key={encounter.id} className="overflow-hidden">
+                 {encounter.photo && (
+                    <Image
+                        src={encounter.photo}
+                        alt={`Photo liée à ${encounter.name}`}
+                        width={600}
+                        height={300}
+                        className="w-full h-48 object-cover"
+                        data-ai-hint="person portrait"
+                    />
+                 )}
+                 <CardHeader className="flex flex-row items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        {encounter.photo && <AvatarImage src={encounter.photo} alt={encounter.name} />}
+                        <AvatarFallback className="text-2xl bg-primary/20">
+                            {encounter.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle className="text-2xl">{encounter.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+                            <MapPin className="h-4 w-4" />
+                            Rencontré(e) à {encounter.location}
+                        </p>
+                    </div>
+                 </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-foreground/80 italic mb-4">"{encounter.description}"</p>
+                <div className="text-xs text-muted-foreground flex justify-between items-center">
+                    <span>{format(parseISO(encounter.date), "d MMMM yyyy", { locale: fr })}</span>
+                    <div className="flex gap-2 flex-wrap">
+                        {(Array.isArray(encounter.emotion) ? encounter.emotion : [encounter.emotion]).map(e => (
+                             <Badge key={e} variant="outline">{e}</Badge>
+                        ))}
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 border-2 border-dashed rounded-xl">
+          <p className="text-muted-foreground">Aucune rencontre enregistrée pour le moment.</p>
+          <p className="text-sm text-muted-foreground/80 mt-2">
+            Utilisez le bouton '+' et cochez "Rencontre" pour en ajouter une.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

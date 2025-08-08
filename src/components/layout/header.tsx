@@ -35,7 +35,7 @@ export default function Header() {
             </StayDialog>
 
             <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
-                <Link href="/explore">
+                <Link href="/rencontres">
                     <Search className="h-6 w-6" />
                 </Link>
             </Button>

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -19,12 +18,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe } from "lucide-react";
-import { ScrollArea } from "../ui/scroll-area";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
+import { saveEncounter, saveImage } from "@/lib/idb";
+import { Switch } from "../ui/switch";
+import { Checkbox } from "../ui/checkbox";
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -47,12 +48,17 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Form State
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<string[]>([]);
+  const [isEncounter, setIsEncounter] = useState(false);
+  const [encounterName, setEncounterName] = useState("");
+  
+  // UI State
   const [isLocating, setIsLocating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImprovingText, setIsImprovingText] = useState(false);
@@ -185,6 +191,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setHasCameraPermission(null);
     setIsAnalyzing(false);
     setIsImprovingText(false);
+    setIsEncounter(false);
+    setEncounterName("");
   }
 
   const handleGetLocation = () => {
@@ -249,7 +257,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     );
   };
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!description && !photo) {
         toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
@@ -259,22 +267,48 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
         return;
     }
-    const finalDescription = description || (photo ? "Photo souvenir" : "Note");
+    
+    if (isEncounter) {
+        if (!encounterName) {
+            toast({variant: "destructive", title: "Veuillez nommer la personne rencontrée."});
+            return;
+        }
+        const encounterId = new Date().toISOString() + Math.random();
+        const newEncounter = {
+            id: encounterId,
+            name: encounterName,
+            description: description || "Rencontre mémorable",
+            date: new Date().toISOString(),
+            location,
+            emotion: emotions.length > 0 ? emotions : ["Neutre"],
+            photo: photo,
+        };
+        
+        if (photo) {
+          await saveImage(`encounter_${encounterId}`, photo);
+          newEncounter.photo = `local_encounter_${encounterId}`;
+        }
+        await saveEncounter(newEncounter);
+        toast({ title: "Nouvelle rencontre ajoutée !" });
 
-    const newInstant = {
-      type: photo ? "photo" as const : "note" as const,
-      title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
-      description: finalDescription,
-      date: new Date().toISOString(),
-      location: location || "Lieu inconnu",
-      emotion: emotions.length > 0 ? emotions : ["Neutre"],
-      photo: photo,
-      category: 'Note' // Default category, will be updated by context
-    };
-    addInstant(newInstant);
+    } else {
+        const finalDescription = description || (photo ? "Photo souvenir" : "Note");
+        const newInstant = {
+          type: photo ? "photo" as const : "note" as const,
+          title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
+          description: finalDescription,
+          date: new Date().toISOString(),
+          location: location || "Lieu inconnu",
+          emotion: emotions.length > 0 ? emotions : ["Neutre"],
+          photo: photo,
+          category: 'Note' // Default category, will be updated by context
+        };
+        addInstant(newInstant);
+        toast({ title: "Nouvel instant ajouté !" });
+    }
+
     setOpen(false);
     cleanup();
-    toast({ title: "Nouvel instant ajouté !" });
   };
   
   const activeContext = activeTrip || activeStay;
@@ -310,6 +344,28 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     </div>
                 ) : (
                 <>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="is-encounter" checked={isEncounter} onCheckedChange={(checked) => setIsEncounter(checked as boolean)} />
+                    <Label htmlFor="is-encounter" className="text-base font-medium flex items-center gap-2">
+                        <Users className="h-5 w-5"/> C'est une rencontre ?
+                    </Label>
+                </div>
+                 
+                 {isEncounter && (
+                    <div className="space-y-2">
+                        <Label htmlFor="encounterName">Nom de la personne</Label>
+                        <Input 
+                            id="encounterName"
+                            value={encounterName}
+                            onChange={(e) => setEncounterName(e.target.value)}
+                            placeholder="ex: Alex" 
+                            disabled={isLoading}
+                        />
+                    </div>
+                 )}
+                 <Separator/>
+
+
                  <div className="space-y-2">
                     <Label>Ajouter un souvenir visuel</Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -343,7 +399,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
                  <div className="space-y-2">
                     <Label htmlFor="description" className="flex items-center justify-between">
-                       <span>Qu'avez-vous en tête ?</span>
+                       <span>{isEncounter ? 'Racontez ce moment...' : 'Qu\'avez-vous en tête ?'}</span>
                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
                             {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                             <span className="sr-only">Améliorer la description</span>

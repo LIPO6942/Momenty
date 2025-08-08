@@ -1,6 +1,6 @@
 
 "use client";
-import type { GeneratedStory, Instant } from './types';
+import type { GeneratedStory, Instant, Encounter } from './types';
 
 const DB_NAME = "Momenty_DB";
 const IMAGE_STORE_NAME = "images";
@@ -8,7 +8,8 @@ const STORY_STORE_NAME = "stories";
 const INSTANT_STORE_NAME = "instants";
 const PROFILE_STORE_NAME = "profile";
 const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
-const DB_VERSION = 5; // Incremented version for schema change
+const ENCOUNTERS_STORE_NAME = "encounters";
+const DB_VERSION = 6; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
@@ -64,6 +65,9 @@ const initDB = (): Promise<IDBDatabase> => {
       }
       if (!dbInstance.objectStoreNames.contains(MANUAL_LOCATIONS_STORE_NAME)) {
         dbInstance.createObjectStore(MANUAL_LOCATIONS_STORE_NAME, { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains(ENCOUNTERS_STORE_NAME)) {
+        dbInstance.createObjectStore(ENCOUNTERS_STORE_NAME, { keyPath: "id" });
       }
     };
   });
@@ -209,6 +213,39 @@ export const deleteInstantFromDB = async (id: string): Promise<void> => {
         };
     });
 };
+
+// Encounter functions
+export const saveEncounter = async (encounter: Encounter): Promise<void> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([ENCOUNTERS_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(ENCOUNTERS_STORE_NAME);
+        const request = store.put(encounter);
+        request.onsuccess = () => resolve();
+        request.onerror = () => {
+            console.error('Save encounter error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
+export const getEncounters = async (): Promise<Encounter[]> => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([ENCOUNTERS_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(ENCOUNTERS_STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const sortedEncounters = request.result.sort((a: Encounter, b: Encounter) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            resolve(sortedEncounters);
+        };
+        request.onerror = () => {
+            console.error('Get encounters error:', request.error);
+            reject(request.error);
+        };
+    });
+};
+
 
 // Profile Functions
 export const saveProfile = async (profile: Omit<ProfileData, 'id'>): Promise<void> => {

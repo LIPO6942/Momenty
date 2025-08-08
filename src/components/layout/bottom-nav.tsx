@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, Map, Compass, Plus, BookText } from "lucide-react";
+import { Globe, Map, BookText, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddInstantDialog } from "../timeline/add-instant-dialog";
 import { Button } from "../ui/button";
@@ -19,7 +19,7 @@ const navLinks = [
   { href: "/", label: "Timeline", icon: Globe },
   { href: "/story", label: "Histoires", icon: BookText },
   { href: "/map", label: "Carte", icon: Map },
-  { href: "/explore", label: "Explorer", icon: Compass },
+  { href: "/rencontres", label: "Rencontres", icon: Users },
 ];
 
 export default function BottomNav() {
