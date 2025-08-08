@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -22,7 +23,7 @@ import type { Accommodation } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
-import heic2any from "heic2any";
+
 
 // Helper to format ISO string to datetime-local string
 const toDateTimeLocal = (isoString: string) => {
@@ -126,6 +127,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
         setIsConverting(true);
         toast({ title: "Conversion de l'image HEIC..." });
         try {
+          const heic2any = (await import('heic2any')).default;
           const convertedBlob = await heic2any({
             blob: file,
             toType: "image/jpeg",

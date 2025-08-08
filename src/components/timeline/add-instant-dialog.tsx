@@ -26,7 +26,7 @@ import { improveDescription as improveTextDescription } from "@/ai/flows/improve
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
-import heic2any from "heic2any";
+
 
 interface AddInstantDialogProps {
   children: ReactNode;
@@ -73,9 +73,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
 
   const { activeTrip, activeStay } = useContext(TimelineContext);
+  const activeContext = activeTrip || activeStay;
 
   useEffect(() => {
-    const activeContext = activeTrip || activeStay;
     if (activeContext) {
         setCountry(activeContext.location || "");
         const finalLocation = city ? `${city}, ${activeContext.location}` : activeContext.location;
@@ -84,7 +84,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         const finalLocation = city && country ? `${city}, ${country}` : (city || country);
         setLocation(finalLocation);
     }
-  }, [activeTrip, activeStay, city, country]);
+  }, [activeContext, city, country]);
 
 
   useEffect(() => {
@@ -176,6 +176,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
       setIsConverting(true);
       toast({ title: "Conversion de l'image HEIC..." });
       try {
+        const heic2any = (await import('heic2any')).default;
         const convertedBlob = await heic2any({
           blob: file,
           toType: "image/jpeg",

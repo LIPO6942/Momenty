@@ -26,7 +26,7 @@ import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
-import heic2any from "heic2any";
+
 
 interface EditNoteDialogProps {
   children: ReactNode;
@@ -152,6 +152,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
         setIsConverting(true);
         toast({ title: "Conversion de l'image HEIC..." });
         try {
+          const heic2any = (await import('heic2any')).default;
           const convertedBlob = await heic2any({
             blob: file,
             toType: "image/jpeg",

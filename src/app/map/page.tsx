@@ -48,7 +48,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import heic2any from "heic2any";
+
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -347,6 +347,7 @@ export default function MapPage() {
     
             if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
                 try {
+                    const heic2any = (await import('heic2any')).default;
                     const convertedBlob = await heic2any({
                         blob: file,
                         toType: 'image/jpeg',
@@ -761,4 +762,5 @@ export default function MapPage() {
     
 
     
+
 
