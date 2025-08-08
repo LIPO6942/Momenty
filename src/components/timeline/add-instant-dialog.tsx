@@ -158,7 +158,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         setPhoto(result);
         toast({ title: "Photo prête à être ajoutée." });
       };
+      reader.onerror = () => {
+        console.error(`Erreur de lecture du fichier: ${file.name}`);
+        toast({
+            variant: "destructive",
+            title: "Erreur d'importation",
+            description: `Impossible de lire le fichier "${file.name}".`
+        });
+      };
       reader.readAsDataURL(file);
+    }
+     // Reset file input to allow selecting the same file again
+    if (e.target) {
+        e.target.value = '';
     }
   };
 
@@ -310,7 +322,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
                  </div>
 
                 {photo && (
