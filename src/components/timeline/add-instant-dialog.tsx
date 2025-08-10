@@ -507,7 +507,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <Label htmlFor="description" className="flex items-center justify-between">
                        <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : 'Qu\'avez-vous en tête ?'}</span>
                        <div className="flex items-center">
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isAccommodation && "text-primary bg-primary/10")} onClick={handleToggleAccommodation} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-sky-500", isAccommodation && "bg-sky-400/20")} onClick={handleToggleAccommodation} disabled={isLoading}>
                                 <Home className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme logement</span>
                             </Button>
