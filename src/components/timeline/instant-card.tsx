@@ -26,19 +26,134 @@ import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
+const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) => {
+    const [mainPhoto, setMainPhoto] = useState(photos[0]);
+    const photoCount = photos.length;
+
+    const renderGrid = () => {
+        switch (photoCount) {
+            case 1:
+                return (
+                    <Image
+                        src={photos[0]}
+                        alt={title}
+                        width={500}
+                        height={500}
+                        className="w-full h-auto object-cover aspect-[4/3] rounded-lg"
+                        data-ai-hint="travel photo"
+                    />
+                );
+            case 2:
+                return (
+                    <div className="grid grid-cols-2 gap-1">
+                        {photos.map((photo, index) => (
+                             <Image
+                                key={index}
+                                src={photo}
+                                alt={`${title} ${index + 1}`}
+                                width={300}
+                                height={400}
+                                className="w-full h-full object-cover aspect-[3/4] rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        ))}
+                    </div>
+                );
+            case 3:
+                return (
+                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px]">
+                        <div className="col-span-1 row-span-2">
+                             <Image
+                                src={photos[0]}
+                                alt={`${title} 1`}
+                                width={400}
+                                height={600}
+                                className="w-full h-full object-cover rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        </div>
+                        <div className="col-span-1 row-span-1">
+                             <Image
+                                src={photos[1]}
+                                alt={`${title} 2`}
+                                width={300}
+                                height={300}
+                                className="w-full h-full object-cover rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        </div>
+                         <div className="col-span-1 row-span-1">
+                             <Image
+                                src={photos[2]}
+                                alt={`${title} 3`}
+                                width={300}
+                                height={300}
+                                className="w-full h-full object-cover rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        </div>
+                    </div>
+                );
+            case 4:
+                return (
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px]">
+                       {photos.map((photo, index) => (
+                             <Image
+                                key={index}
+                                src={photo}
+                                alt={`${title} ${index + 1}`}
+                                width={300}
+                                height={300}
+                                className="w-full h-full object-cover rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        ))}
+                    </div>
+                );
+            default: // 5+ photos
+                const otherPhotos = photos.filter(p => p !== mainPhoto);
+                return (
+                     <div className="flex gap-2 h-[450px]">
+                        <div className="w-3/4">
+                            <Image
+                                src={mainPhoto}
+                                alt={title}
+                                width={500}
+                                height={700}
+                                className="w-full h-full object-cover rounded-lg"
+                                data-ai-hint="travel photo"
+                            />
+                        </div>
+                        <div className="w-1/4 flex flex-col gap-2 overflow-y-auto">
+                           {otherPhotos.map((photo, index) => (
+                                <button key={index} onClick={() => setMainPhoto(photo)} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-lg flex-shrink-0">
+                                    <Image
+                                        src={photo}
+                                        alt={`thumbnail ${index + 1}`}
+                                        width={100}
+                                        height={100}
+                                        className={cn(
+                                            "w-full h-auto object-cover aspect-square rounded-lg cursor-pointer transition-opacity hover:opacity-80"
+                                        )}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+        }
+    };
+    
+    return <div className="p-4">{renderGrid()}</div>
+}
+
+
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
-    const [mainPhoto, setMainPhoto] = useState(instant.photos ? instant.photos[0] : null);
-
+    
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
 
-    const handleThumbnailClick = (photoUrl: string) => {
-        setMainPhoto(photoUrl);
-    };
-
     if (instant.photos && instant.photos.length > 0) {
-        const otherPhotos = instant.photos.slice(1);
-        
         return (
             <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
                  <CardHeader className="p-0 relative">
@@ -64,35 +179,8 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </DropdownMenu>
                     </div>
                  </CardHeader>
-                <CardContent className="p-4 flex gap-4">
-                    <div className="flex-grow w-3/4">
-                         {mainPhoto && <Image
-                            src={mainPhoto}
-                            alt={instant.title}
-                            width={500}
-                            height={500}
-                            className="w-full h-auto object-cover aspect-[4/5] rounded-lg"
-                            data-ai-hint="travel photo"
-                        />}
-                    </div>
-                    {otherPhotos.length > 0 && (
-                        <div className="w-1/4 flex flex-col gap-2">
-                            {otherPhotos.map((photo, index) => (
-                                <button key={index} onClick={() => handleThumbnailClick(photo)} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-lg">
-                                    <Image
-                                        src={photo}
-                                        alt={`thumbnail ${index + 1}`}
-                                        width={100}
-                                        height={100}
-                                        className={cn(
-                                            "w-full h-auto object-cover aspect-square rounded-lg cursor-pointer transition-opacity",
-                                            mainPhoto === photo ? 'opacity-50' : 'hover:opacity-80'
-                                        )}
-                                    />
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                <CardContent className="p-0">
+                   <PhotoCollage photos={instant.photos} title={instant.title} />
                 </CardContent>
                  <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
                     <h3 className="font-bold text-lg">{instant.title}</h3>
