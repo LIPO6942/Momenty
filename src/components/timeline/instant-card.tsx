@@ -202,7 +202,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                 >
                      <div className={cn(
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
-                        isTextVisible ? "translate-y-0" : "translate-y-[calc(100%-4rem)]" // leave a bit visible
+                        isTextVisible ? "translate-y-0" : "translate-y-full"
                      )}>
                         <h3 className="font-bold text-lg">{instant.title}</h3>
                          {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
