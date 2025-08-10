@@ -286,6 +286,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         canvas.height = video.videoHeight;
         const context = canvas.getContext('2d');
         if (context) {
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const dataUrl = canvas.toDataURL('image/png');
             if (isMultiSelect) {
               setPhotos(prev => [...prev, dataUrl]);
@@ -514,7 +515,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 <Utensils className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme plat</span>
                             </Button>
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isEncounter && "text-primary bg-primary/10")} onClick={handleToggleEncounter} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-green-500", isEncounter && "bg-green-400/20")} onClick={handleToggleEncounter} disabled={isLoading}>
                                 <Users className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme rencontre</span>
                             </Button>
