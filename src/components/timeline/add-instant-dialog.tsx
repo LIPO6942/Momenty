@@ -453,7 +453,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7 text-yellow-400", isMultiSelect && "bg-yellow-400/20")}
+                            className={cn("h-7 w-7 text-cyan-400", isMultiSelect && "bg-cyan-400/20")}
                         >
                             <Images className="h-4 w-4" />
                             <span className="sr-only">Sélection multiple</span>
@@ -605,7 +605,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 />
                             </div>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-500">
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
                             <LocateFixed className="h-5 w-5" />
                         </Button>
                     </div>
