@@ -127,7 +127,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     try {
         const result = await describePhoto({ photoDataUri });
         if (result.description) {
-            setDescription(prev => prev ? `${prev}\\n\\n${result.description}` : result.description);
+            setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
         }
         if (result.location) {
             const [resultCity, resultCountry] = result.location.split(',').map(s => s.trim());
@@ -453,7 +453,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7", isMultiSelect && "bg-yellow-400/20 text-yellow-500")}
+                            className={cn("h-7 w-7 text-yellow-500", isMultiSelect && "bg-yellow-400/20")}
                         >
                             <Images className="h-4 w-4" />
                             <span className="sr-only">Sélection multiple</span>
