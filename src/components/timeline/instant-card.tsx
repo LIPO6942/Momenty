@@ -27,7 +27,6 @@ import type { Instant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
 const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) => {
-    const [mainPhoto, setMainPhoto] = useState(photos[0]);
     const photoCount = photos.length;
 
     const renderGrid = () => {
@@ -39,13 +38,13 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                         alt={title}
                         width={500}
                         height={500}
-                        className="w-full h-auto object-cover aspect-[4/3] rounded-lg"
+                        className="w-full h-full object-cover"
                         data-ai-hint="travel photo"
                     />
                 );
             case 2:
                 return (
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-2 gap-1 h-full">
                         {photos.map((photo, index) => (
                              <Image
                                 key={index}
@@ -53,7 +52,7 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                                 alt={`${title} ${index + 1}`}
                                 width={300}
                                 height={400}
-                                className="w-full h-full object-cover aspect-[3/4] rounded-lg"
+                                className="w-full h-full object-cover first:rounded-l-xl last:rounded-r-xl"
                                 data-ai-hint="travel photo"
                             />
                         ))}
@@ -61,14 +60,14 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                 );
             case 3:
                 return (
-                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px]">
+                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
                              <Image
                                 src={photos[0]}
                                 alt={`${title} 1`}
                                 width={400}
                                 height={600}
-                                className="w-full h-full object-cover rounded-lg"
+                                className="w-full h-full object-cover rounded-l-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
@@ -78,7 +77,7 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                                 alt={`${title} 2`}
                                 width={300}
                                 height={300}
-                                className="w-full h-full object-cover rounded-lg"
+                                className="w-full h-full object-cover rounded-tr-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
@@ -88,7 +87,7 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                                 alt={`${title} 3`}
                                 width={300}
                                 height={300}
-                                className="w-full h-full object-cover rounded-lg"
+                                className="w-full h-full object-cover rounded-br-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
@@ -96,7 +95,7 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                 );
             case 4:
                 return (
-                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px]">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                        {photos.map((photo, index) => (
                              <Image
                                 key={index}
@@ -104,59 +103,77 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                                 alt={`${title} ${index + 1}`}
                                 width={300}
                                 height={300}
-                                className="w-full h-full object-cover rounded-lg"
+                                className={cn("w-full h-full object-cover",
+                                    index === 0 && "rounded-tl-xl",
+                                    index === 1 && "rounded-tr-xl",
+                                    index === 2 && "rounded-bl-xl",
+                                    index === 3 && "rounded-br-xl",
+                                )}
                                 data-ai-hint="travel photo"
                             />
                         ))}
                     </div>
                 );
             default: // 5+ photos
-                const otherPhotos = photos.filter(p => p !== mainPhoto);
                 return (
-                     <div className="flex gap-2 h-[450px]">
-                        <div className="w-3/4">
-                            <Image
-                                src={mainPhoto}
-                                alt={title}
-                                width={500}
-                                height={700}
-                                className="w-full h-full object-cover rounded-lg"
+                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                        <div className="col-span-1 row-span-2">
+                             <Image
+                                src={photos[0]}
+                                alt={`${title} 1`}
+                                width={400}
+                                height={600}
+                                className="w-full h-full object-cover rounded-l-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
-                        <div className="w-1/4 flex flex-col gap-2 overflow-y-auto">
-                           {otherPhotos.map((photo, index) => (
-                                <button key={index} onClick={() => setMainPhoto(photo)} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-lg flex-shrink-0">
-                                    <Image
-                                        src={photo}
-                                        alt={`thumbnail ${index + 1}`}
-                                        width={100}
-                                        height={100}
-                                        className={cn(
-                                            "w-full h-auto object-cover aspect-square rounded-lg cursor-pointer transition-opacity hover:opacity-80"
-                                        )}
-                                    />
-                                </button>
-                            ))}
+                        <div className="col-span-1 row-span-1 relative">
+                             <Image
+                                src={photos[1]}
+                                alt={`${title} 2`}
+                                width={300}
+                                height={300}
+                                className="w-full h-full object-cover rounded-tr-xl"
+                                data-ai-hint="travel photo"
+                            />
+                        </div>
+                         <div className="col-span-1 row-span-1 relative">
+                             <Image
+                                src={photos[2]}
+                                alt={`${title} 3`}
+                                width={300}
+                                height={300}
+                                className="w-full h-full object-cover rounded-br-xl"
+                                data-ai-hint="travel photo"
+                            />
+                             {photos.length > 3 && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-br-xl">
+                                    <span className="text-white text-2xl font-bold">+{photos.length - 3}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
         }
     };
     
-    return <div className="p-4">{renderGrid()}</div>
+    return <div className="h-[450px]">{renderGrid()}</div>
 }
 
 
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
+    const [isTextVisible, setIsTextVisible] = useState(true);
     
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
 
     if (instant.photos && instant.photos.length > 0) {
         return (
-            <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
+            <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                  <CardHeader className="p-0 relative">
+                    <PhotoCollage photos={instant.photos} title={instant.title} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
+
                     <div className="absolute top-2 right-2 z-10">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -179,32 +196,37 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </DropdownMenu>
                     </div>
                  </CardHeader>
-                <CardContent className="p-0">
-                   <PhotoCollage photos={instant.photos} title={instant.title} />
-                </CardContent>
-                 <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
-                    <h3 className="font-bold text-lg">{instant.title}</h3>
-                    {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
-                        <p className="text-sm text-muted-foreground">{instant.description}</p>
-                    )}
-                    <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-indigo-500" />
-                        <span className="font-semibold text-sm">{instant.location}</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                        {instant.category && (
-                                <Badge variant="secondary" className="flex items-center gap-1.5">
-                                <Tag className="h-3 w-3" />
-                                {instant.category}
-                            </Badge>
+                <div 
+                    className="absolute bottom-0 left-0 w-full cursor-pointer"
+                    onClick={() => setIsTextVisible(prev => !prev)}
+                >
+                     <div className={cn(
+                        "p-4 space-y-3 transition-transform duration-300 ease-in-out",
+                        isTextVisible ? "translate-y-0" : "translate-y-[calc(100%-4rem)]" // leave a bit visible
+                     )}>
+                        <h3 className="font-bold text-lg">{instant.title}</h3>
+                         {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                            <p className="text-sm text-white/80">{instant.description}</p>
                         )}
-                        {emotions.map(emotion => (
-                            <Badge key={emotion} variant="outline">
-                                {emotion}
-                            </Badge>
-                        ))}
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4 text-white/90" />
+                            <span className="font-semibold text-sm">{instant.location}</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {instant.category && (
+                                    <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
+                                    <Tag className="h-3 w-3" />
+                                    {instant.category}
+                                </Badge>
+                            )}
+                            {emotions.map(emotion => (
+                                <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
+                                    {emotion}
+                                </Badge>
+                            ))}
+                        </div>
                     </div>
-                </CardFooter>
+                </div>
             </Card>
         )
     }
