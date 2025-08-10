@@ -453,7 +453,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7 text-yellow-500", isMultiSelect && "bg-yellow-400/20")}
+                            className={cn("h-7 w-7 text-yellow-400", isMultiSelect && "bg-yellow-400/20")}
                         >
                             <Images className="h-4 w-4" />
                             <span className="sr-only">Sélection multiple</span>
@@ -581,7 +581,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <div className="flex items-center gap-2">
                         <div className="flex-grow space-y-2">
                             <div className="flex items-center gap-1 border rounded-md">
-                                <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                <Building className="h-5 w-5 text-red-500 flex-shrink-0 ml-3" />
                                  <Input 
                                     id="city"
                                     name="city" 
