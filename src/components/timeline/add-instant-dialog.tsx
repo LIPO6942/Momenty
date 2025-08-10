@@ -26,6 +26,7 @@ import { improveDescription as improveTextDescription } from "@/ai/flows/improve
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
+import heic2any from "heic2any";
 
 
 interface AddInstantDialogProps {
@@ -48,6 +49,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { activeTrip, activeStay } = useContext(TimelineContext);
+  const activeContext = activeTrip || activeStay;
 
   // Form State
   const [description, setDescription] = useState("");
@@ -71,10 +74,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [isMultiSelect, setIsMultiSelect] = useState(false);
-
-
-  const { activeTrip, activeStay } = useContext(TimelineContext);
-  const activeContext = activeTrip || activeStay;
 
   useEffect(() => {
     if (activeContext) {
@@ -177,8 +176,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     
       if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
         try {
-          const heic2any = (await import('heic2any')).default;
-          const convertedBlob = await heic2any({
+          const heic2anyModule = (await import('heic2any')).default;
+          const convertedBlob = await heic2anyModule({
             blob: file,
             toType: "image/jpeg",
             quality: 0.9,
@@ -507,7 +506,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <Label htmlFor="description" className="flex items-center justify-between">
                        <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : 'Qu\'avez-vous en tête ?'}</span>
                        <div className="flex items-center">
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-sky-500", isAccommodation && "bg-sky-400/20")} onClick={handleToggleAccommodation} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-sky-400", isAccommodation && "bg-sky-400/20")} onClick={handleToggleAccommodation} disabled={isLoading}>
                                 <Home className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme logement</span>
                             </Button>
@@ -519,7 +518,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 <Users className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme rencontre</span>
                             </Button>
-                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
+                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-blue-800" onClick={handleImproveDescription} disabled={isLoading || !description}>
                                 {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                                 <span className="sr-only">Améliorer la description</span>
                             </Button>
