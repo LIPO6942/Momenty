@@ -26,6 +26,7 @@ import { improveDescription as improveTextDescription } from "@/ai/flows/improve
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
+import heic2any from "heic2any";
 
 
 interface AddInstantDialogProps {
@@ -454,7 +455,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7 text-yellow-500", isMultiSelect && "bg-yellow-400/20")}
+                            className={cn("h-7 w-7 text-yellow-500", isMultiSelect && "bg-yellow-400/20 text-yellow-600")}
                         >
                             <Images className="h-4 w-4" />
                             <span className="sr-only">Sélection multiple</span>
@@ -511,7 +512,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 <Home className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme logement</span>
                             </Button>
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7", isDish && "text-primary bg-primary/10")} onClick={handleToggleDish} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-cyan-500", isDish && "bg-cyan-400/20")} onClick={handleToggleDish} disabled={isLoading}>
                                 <Utensils className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme plat</span>
                             </Button>
