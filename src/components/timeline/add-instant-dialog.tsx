@@ -510,7 +510,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 <Home className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme logement</span>
                             </Button>
-                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-cyan-500", isDish && "bg-cyan-400/20")} onClick={handleToggleDish} disabled={isLoading}>
+                            <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-blue-900", isDish && "bg-blue-900/20")} onClick={handleToggleDish} disabled={isLoading}>
                                 <Utensils className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme plat</span>
                             </Button>
@@ -518,7 +518,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 <Users className="h-4 w-4" />
                                 <span className="sr-only">Marquer comme rencontre</span>
                             </Button>
-                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-blue-800" onClick={handleImproveDescription} disabled={isLoading || !description}>
+                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-blue-900" onClick={handleImproveDescription} disabled={isLoading || !description}>
                                 {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                                 <span className="sr-only">Améliorer la description</span>
                             </Button>
