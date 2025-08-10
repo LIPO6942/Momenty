@@ -66,7 +66,7 @@ const StoryPreview = ({ story }: { story: string }) => {
 };
 
 const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
-    const photos = story.instants.filter(i => i.photo);
+    const photos = story.instants.flatMap(i => i.photos || []);
     const notes = story.instants.filter(i => i.type === 'note' && i.description);
     
     return (
@@ -76,12 +76,12 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
             {photos.length > 0 && (
                  <ScrollArea className="w-full whitespace-nowrap rounded-lg">
                     <div className="flex w-max space-x-4 p-1">
-                        {photos.map((instant) => (
-                           instant.photo && (
-                            <div key={instant.id} className="flex-shrink-0">
+                        {photos.map((photo, index) => (
+                           photo && (
+                            <div key={index} className="flex-shrink-0">
                                 <Image
-                                    src={instant.photo}
-                                    alt={instant.title}
+                                    src={photo}
+                                    alt={`Story photo ${index}`}
                                     width={80}
                                     height={80}
                                     className="aspect-square rounded-md object-cover"
@@ -186,7 +186,7 @@ export default function StoryPage() {
                 description: i.description,
                 location: i.location,
                 emotion: i.emotion,
-                photo: i.photo || undefined,
+                photos: i.photos || undefined,
                 day: format(parseISO(i.date), "d MMMM yyyy", { locale: fr })
             }));
 
@@ -203,8 +203,9 @@ export default function StoryPage() {
             
             const cleanInstantsForDb = allInstantsForStory.map(i => {
                 const { icon, color, ...rest } = i;
-                // Important: Ensure photo is a reference string if it exists for DB
-                return { ...rest, photo: rest.photo ? `local_${rest.id}` : null };
+                // Important: Ensure photos are reference strings if they exist for DB
+                const photoKeys = rest.photos?.map((_, index) => `local_${rest.id}_${index}`) || null;
+                return { ...rest, photos: photoKeys };
             });
             
             const newStory: GeneratedStory = {
@@ -246,7 +247,8 @@ export default function StoryPage() {
         
         const cleanInstantsForDb = storyWithHydratedInstants.instants.map(i => {
             const { icon, color, ...rest } = i;
-            return { ...rest, photo: rest.photo ? `local_${rest.id}` : null };
+            const photoKeys = rest.photos?.map((_, index) => `local_${rest.id}_${index}`) || null;
+            return { ...rest, photos: photoKeys };
         });
 
         const updatedStoryForDb: GeneratedStory = {
@@ -346,11 +348,11 @@ export default function StoryPage() {
                     {selectedDays.length > 0 && (
                         <div className='pt-2'>
                              <ScrollArea className="w-full whitespace-nowrap rounded-lg">
-                                {selectedDaysInstants.some(i => i.photo) && (
+                                {selectedDaysInstants.some(i => i.photos && i.photos.length > 0) && (
                                      <div className="flex w-max space-x-2 mb-4">
-                                        {selectedDaysInstants?.map(instant => (
-                                            instant.photo && (
-                                                <Image key={instant.id} src={instant.photo} alt={instant.title} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                                        {selectedDaysInstants?.flatMap(instant => instant.photos || []).map((photo, index) => (
+                                            photo && (
+                                                <Image key={index} src={photo} alt={selectedDaysInstants[0].title} width={100} height={100} className="rounded-md object-cover aspect-square" />
                                             )
                                         ))}
                                      </div>

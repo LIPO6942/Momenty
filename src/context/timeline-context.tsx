@@ -7,7 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB, getAccommodations, saveAccommodation, deleteAccommodation as deleteAccommodationFromDB } from '@/lib/idb';
+import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB, getAccommodations, saveAccommodation, deleteAccommodation as deleteAccommodationFromDB, deleteImage } from '@/lib/idb';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 
 interface GroupedInstants {
@@ -94,14 +94,27 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
-    const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null }>(item: T): Promise<T> => {
+    const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null, photos?: string[] | null }>(item: T): Promise<T> => {
         let finalPhoto = item.photo;
         const photoKey = item.photo; 
         if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_') || photoKey.startsWith('dish_') || photoKey.startsWith('accommodation_'))) {
             const localPhoto = await getImage(photoKey);
             finalPhoto = localPhoto; 
         }
-        return { ...item, photo: finalPhoto };
+
+        let finalPhotos: string[] | undefined | null = item.photos;
+        if (item.photos && item.photos.length > 0) {
+            finalPhotos = await Promise.all(
+                item.photos.map(async (key) => {
+                    if (key.startsWith('local_')) {
+                        return await getImage(key) || key;
+                    }
+                    return key;
+                })
+            )
+        }
+
+        return { ...item, photo: finalPhoto, photos: finalPhotos };
     }, []);
 
     useEffect(() => {
@@ -169,20 +182,26 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: instantWithContext.date,
             location: instantWithContext.location,
             emotion: instantWithContext.emotion,
-            photo: null,
+            photos: null,
             category: category,
         };
         
-        if (instantWithContext.photo) {
-            await saveImage(`local_${newInstantId}`, instantWithContext.photo);
-            newInstantForDb.photo = `local_${newInstantId}`;
+        if (instantWithContext.photos && instantWithContext.photos.length > 0) {
+            const photoKeys = await Promise.all(
+                instantWithContext.photos.map((photo, index) => {
+                    const key = `local_${newInstantId}_${index}`;
+                    saveImage(key, photo);
+                    return key;
+                })
+            );
+            newInstantForDb.photos = photoKeys;
         }
         
         await saveInstant(newInstantForDb as Instant);
         
         const newInstantForState = addRuntimeAttributes({
             ...newInstantForDb,
-            photo: instantData.photo
+            photos: instantData.photos
         } as Instant);
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -238,16 +257,40 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
-        
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
-
-        let updatedInstant = { ...originalInstant, ...updatedInstantData };
-        
-        if(updatedInstant.photo && updatedInstant.photo !== originalInstant.photo && updatedInstant.photo.startsWith('data:')) {
-            await saveImage(`local_${id}`, updatedInstant.photo);
+    
+        const updatedInstant = { ...originalInstant, ...updatedInstantData };
+    
+        // Handle photo updates
+        if (updatedInstantData.photos) {
+            // Delete old photos first
+            if(originalInstant.photos) {
+                for(let i=0; i < originalInstant.photos.length; i++) {
+                    await deleteImage(`local_${id}_${i}`);
+                }
+            }
+    
+            // Save new photos
+            const photoKeys = await Promise.all(
+                updatedInstantData.photos.map((photo, index) => {
+                    const key = `local_${id}_${index}`;
+                    if(photo.startsWith('data:')) {
+                        saveImage(key, photo);
+                    }
+                    return key;
+                })
+            );
+            updatedInstant.photos = photoKeys;
+        } else if (updatedInstantData.photos === null) {
+             if(originalInstant.photos) {
+                for(let i=0; i < originalInstant.photos.length; i++) {
+                    await deleteImage(`local_${id}_${i}`);
+                }
+            }
+            updatedInstant.photos = null;
         }
-
+    
         if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
             try {
                 const { category } = await categorizeInstant({
@@ -259,7 +302,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                  console.error("AI categorization failed on update", error);
             }
         }
-        
+    
         const updatedInstantForDb: Instant = {
             id: updatedInstant.id,
             type: updatedInstant.type,
@@ -268,21 +311,22 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             date: updatedInstant.date,
             location: updatedInstant.location,
             emotion: updatedInstant.emotion,
-            photo: updatedInstant.photo ? `local_${id}` : null,
+            photos: updatedInstant.photos,
             category: updatedInstant.category
         };
-
+    
         await saveInstant(updatedInstantForDb);
-        
+    
         const updatedInstantForState = addRuntimeAttributes({
             ...updatedInstantForDb,
-            photo: updatedInstant.photo
+            photos: updatedInstantData.photos // keep data URLs for state
         });
-
+    
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
         ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
+    
 
     const deleteInstant = async (id: string) => {
         const instantToDelete = instants.find(i => i.id === id);
@@ -290,20 +334,19 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     
         const dayKeyOfDeletedInstant = format(startOfDay(parseISO(instantToDelete.date)), 'yyyy-MM-dd');
     
-        // Delete the instant itself
         await deleteInstantFromDB(id);
-        if (instantToDelete.photo) {
-            await saveImage(`local_${id}`, ''); // Clear photo from storage
+        if (instantToDelete.photos) {
+            for(let i=0; i < instantToDelete.photos.length; i++) {
+                await deleteImage(`local_${id}_${i}`);
+            }
         }
     
         const remainingInstants = instants.filter(instant => instant.id !== id);
         setInstants(remainingInstants);
     
-        // Check if it was the last instant of the day
         const isLastInstantOfDay = !remainingInstants.some(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd') === dayKeyOfDeletedInstant);
     
         if (isLastInstantOfDay) {
-            // If it was, find and delete all stories that contained that day
             const allStories = await getStories();
             for (const story of allStories) {
                 const storyContainsDay = story.id.includes(dayKeyOfDeletedInstant);
@@ -311,7 +354,6 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                     await deleteStoryFromDB(story.id);
                 }
             }
-            // Trigger a re-render/reload in the story page if it's open
             window.dispatchEvent(new Event('stories-updated'));
         }
     };
@@ -335,7 +377,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
             await deleteInstantFromDB(instant.id);
-            await saveImage(`local_${instant.id}`, '');
+            if(instant.photos) {
+                for(let i=0; i < instant.photos.length; i++) {
+                    await deleteImage(`local_${instant.id}_${i}`);
+                }
+            }
         }
         setInstants(prev => prev.filter(i => i.location !== locationName));
     };

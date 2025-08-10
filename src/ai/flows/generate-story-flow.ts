@@ -16,7 +16,7 @@ const InstantForStorySchema = z.object({
   description: z.string(),
   location: z.string(),
   emotion: z.union([z.string(), z.array(z.string())]),
-  photo: z.string().optional().describe(
+  photos: z.array(z.string()).optional().describe(
       "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   day: z.string().describe("La date à laquelle ce moment a eu lieu, ex: '20 juillet 2024'."),
@@ -76,8 +76,10 @@ Adapte subtilement le ton et les réflexions en fonction de ce profil, sans jama
   - Description: {{{description}}}
   - Lieu: {{{location}}}
   - Émotion(s) ressentie(s): {{#if emotion.length}}{{#each emotion}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}{{{emotion}}}{{/if}}
-  {{#if photo}}
-  - Photo: {{media url=photo}}
+  {{#if photos}}
+    {{#each photos}}
+  - Photo: {{media url=this}}
+    {{/each}}
   {{/if}}
 {{/each}}
 

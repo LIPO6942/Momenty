@@ -19,7 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
@@ -54,7 +54,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [emotions, setEmotions] = useState<string[]>([]);
   const [isEncounter, setIsEncounter] = useState(false);
   const [encounterName, setEncounterName] = useState("");
@@ -70,6 +70,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [isMultiSelect, setIsMultiSelect] = useState(false);
 
 
   const { activeTrip, activeStay } = useContext(TimelineContext);
@@ -168,49 +169,52 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
   
-    const file = files[0];
-    let processingFile: File | Blob = file;
+    setIsConverting(true);
+    toast({ title: `Traitement de ${files.length} photo(s)...` });
+
+    for (const file of Array.from(files)) {
+      let processingFile: File | Blob = file;
     
-    // Check if it's a HEIC file and convert it
-    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-      setIsConverting(true);
-      toast({ title: "Conversion de l'image HEIC..." });
-      try {
-        const heic2any = (await import('heic2any')).default;
-        const convertedBlob = await heic2any({
-          blob: file,
-          toType: "image/jpeg",
-          quality: 0.9,
-        });
-        processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-      } catch (error) {
-        console.error('HEIC Conversion Error:', error);
-        toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
-        setIsConverting(false);
-        return;
-      } finally {
-        setIsConverting(false);
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        try {
+          const heic2any = (await import('heic2any')).default;
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.9,
+          });
+          processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        } catch (error) {
+          console.error('HEIC Conversion Error:', error);
+          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+          continue;
+        }
       }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          if(isMultiSelect) {
+            setPhotos(prev => [...prev, reader.result as string]);
+          } else {
+            setPhotos([reader.result as string]);
+          }
+        }
+      };
+      reader.onerror = () => {
+        console.error(`Erreur de lecture du fichier: ${file.name}`);
+        toast({
+          variant: "destructive",
+          title: "Erreur d'importation",
+          description: `Impossible de lire le fichier "${file.name}".`
+        });
+      };
+      reader.readAsDataURL(processingFile);
     }
     
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        setPhoto(reader.result);
-        toast({ title: `Photo ajoutée !` });
-      }
-    };
-    reader.onerror = () => {
-      console.error(`Erreur de lecture du fichier: ${file.name}`);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'importation",
-        description: `Impossible de lire le fichier "${file.name}".`
-      });
-    };
-    reader.readAsDataURL(processingFile);
+    setIsConverting(false);
+    toast({ title: 'Toutes les photos ont été traitées.' });
   
-    // Reset file input
     if (e.target) {
       e.target.value = '';
     }
@@ -222,7 +226,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setLocation("");
     setCity("");
     setCountry("");
-    setPhoto(null);
+    setPhotos([]);
     setEmotions([]);
     setIsCameraMode(false);
     setHasCameraPermission(null);
@@ -234,6 +238,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setDishName("");
     setIsAccommodation(false);
     setAccommodationName("");
+    setIsMultiSelect(false);
   }
 
   const handleGetLocation = () => {
@@ -281,9 +286,12 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         canvas.height = video.videoHeight;
         const context = canvas.getContext('2d');
         if (context) {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL('image/png');
-            setPhoto(dataUrl);
+            if (isMultiSelect) {
+              setPhotos(prev => [...prev, dataUrl]);
+            } else {
+              setPhotos([dataUrl]);
+            }
             setIsCameraMode(false); // Exit camera mode after taking photo
             toast({title: "Photo capturée !"});
         }
@@ -300,7 +308,9 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!description && !photo) {
+    const mainPhoto = photos.length > 0 ? photos[0] : null;
+
+    if (!description && photos.length === 0) {
         toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
         return;
     }
@@ -320,7 +330,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             date: new Date().toISOString(),
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: photo,
+            photo: mainPhoto,
         };
         addEncounter(newEncounter);
         toast({ title: "Nouvelle rencontre ajoutée !" });
@@ -335,7 +345,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             date: new Date().toISOString(),
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: photo,
+            photo: mainPhoto,
         };
         addDish(newDish);
         toast({ title: "Nouveau plat ajouté !" });
@@ -350,20 +360,20 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             date: new Date().toISOString(),
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: photo,
+            photo: mainPhoto,
         };
         addAccommodation(newAccommodation);
         toast({ title: "Nouveau logement ajouté !" });
     } else {
-        const finalDescription = description || (photo ? "Photo souvenir" : "Note");
+        const finalDescription = description || (photos.length > 0 ? "Collage photo" : "Note");
         const newInstant = {
-          type: photo ? "photo" as const : "note" as const,
+          type: photos.length > 0 ? "photo" as const : "note" as const,
           title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
           description: finalDescription,
           date: new Date().toISOString(),
           location: location || "Lieu inconnu",
           emotion: emotions.length > 0 ? emotions : ["Neutre"],
-          photo: photo,
+          photos: photos.length > 0 ? photos : null,
           category: 'Note' // Default category, will be updated by context
         };
         addInstant(newInstant);
@@ -399,6 +409,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         setIsDish(false);
     }
   }
+  
+  const removePhoto = (indexToRemove: number) => {
+    setPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
+  }
 
 
   return (
@@ -432,7 +446,19 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                 ) : (
                 <>
                  <div className="space-y-2">
-                    <Label>Ajouter un souvenir visuel</Label>
+                    <Label className="flex justify-between items-center">
+                        <span>Ajouter un souvenir visuel</span>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsMultiSelect(!isMultiSelect)}
+                            className={cn("h-7 w-7", isMultiSelect && "bg-yellow-400/20 text-yellow-500")}
+                        >
+                            <Images className="h-4 w-4" />
+                            <span className="sr-only">Sélection multiple</span>
+                        </Button>
+                    </Label>
                     <div className="grid grid-cols-2 gap-2">
                         <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
                             {isConverting ? <Loader2 className="h-6 w-6 animate-spin"/> : <ImageIcon className="h-6 w-6" />}
@@ -443,20 +469,34 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} multiple={isMultiSelect} />
                  </div>
 
-                {photo && (
-                    <div className="relative group">
-                        <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
-                        <div className="absolute top-2 right-2 flex gap-2">
-                            <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photo)} disabled={isLoading}>
-                                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
-                            </Button>
-                            <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
-                                <Trash2 className="h-4 w-4"/>
-                            </Button>
+                {photos.length > 0 && (
+                    <div className="space-y-2">
+                         <div className="relative group">
+                            <Image src={photos[0]} alt="Aperçu principal" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
+                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
+                                </Button>
+                                <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
+                                    <Trash2 className="h-4 w-4"/>
+                                </Button>
+                            </div>
                         </div>
+                        {photos.length > 1 && (
+                            <div className="flex flex-wrap gap-2">
+                                {photos.slice(1).map((photo, index) => (
+                                     <div key={index} className="relative group">
+                                        <Image src={photo} alt={`Miniature ${index + 1}`} width={80} height={80} className="rounded-md object-cover w-20 h-20" />
+                                        <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(index + 1)}>
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
                  

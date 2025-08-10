@@ -12,7 +12,7 @@ export interface Instant {
     color?: string;
     location: string;
     emotion: string | string[];
-    photo?: string | null; // Data URL for the image or a reference string like "local_..."
+    photos?: string[] | null; // Data URL for the image or a reference string like "local_..."
     category?: string; // AI-generated category
 }
 

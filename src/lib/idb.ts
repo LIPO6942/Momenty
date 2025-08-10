@@ -12,7 +12,7 @@ const MANUAL_LOCATIONS_STORE_NAME = "manualLocations";
 const ENCOUNTERS_STORE_NAME = "encounters";
 const DISHES_STORE_NAME = "dishes";
 const ACCOMMODATIONS_STORE_NAME = "accommodations";
-const DB_VERSION = 8; // Incremented version for schema change
+const DB_VERSION = 9; // Incremented version for schema change
 
 let db: IDBDatabase | null = null;
 
