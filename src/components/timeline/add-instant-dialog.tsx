@@ -26,7 +26,7 @@ import { improveDescription as improveTextDescription } from "@/ai/flows/improve
 import { Separator } from "../ui/separator";
 import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
 import { cn } from "@/lib/utils";
-import heic2any from "heic2any";
+import type heic2any from "heic2any";
 
 
 interface AddInstantDialogProps {
@@ -176,8 +176,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     
       if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
         try {
-          const heic2anyModule = (await import('heic2any')).default;
-          const convertedBlob = await heic2anyModule({
+          const heic2any = (await import('heic2any')).default;
+          const convertedBlob = await heic2any({
             blob: file,
             toType: "image/jpeg",
             quality: 0.9,
@@ -605,7 +605,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 />
                             </div>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center">
+                        <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
                             <LocateFixed className="h-5 w-5" />
                         </Button>
                     </div>
