@@ -593,7 +593,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 />
                             </div>
                             <div className="flex items-center gap-1 border rounded-md">
-                                <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                <Globe className="h-5 w-5 text-red-500 flex-shrink-0 ml-3" />
                                 <Input 
                                     id="country"
                                     name="country"
