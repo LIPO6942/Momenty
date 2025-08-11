@@ -193,11 +193,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          if(isMultiSelect) {
-            setPhotos(prev => [...prev, reader.result as string]);
-          } else {
-            setPhotos([reader.result as string]);
-          }
+          // Always add to the list of photos (multi-select is default)
+          setPhotos(prev => [...prev, reader.result as string]);
         }
       };
       reader.onerror = () => {
@@ -287,11 +284,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         if (context) {
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const dataUrl = canvas.toDataURL('image/png');
-            if (isMultiSelect) {
-              setPhotos(prev => [...prev, dataUrl]);
-            } else {
-              setPhotos([dataUrl]);
-            }
+            // Always add to the list of photos (multi-select is default)
+            setPhotos(prev => [...prev, dataUrl]);
             setIsCameraMode(false); // Exit camera mode after taking photo
             toast({title: "Photo capturée !"});
         }
@@ -465,16 +459,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                  <div className="space-y-2">
                     <Label className="flex justify-between items-center">
                         <span>Ajouter un souvenir visuel</span>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7 text-cyan-400", isMultiSelect && "bg-cyan-400/20 text-blue-300")}
-                        >
-                            <Images className="h-4 w-4" />
-                            <span className="sr-only">Sélection multiple</span>
-                        </Button>
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
                         <Button type="button" variant="outline" className="h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
@@ -486,7 +470,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             <span>Prendre photo</span>
                         </Button>
                     </div>
-                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} multiple={isMultiSelect} />
+                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} multiple />
                  </div>
 
                 {photos.length > 0 && (
