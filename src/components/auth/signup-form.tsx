@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -12,16 +13,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function SignupForm() {
   const router = useRouter();
+  const { signup, loading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would handle registration here.
-    // On success, redirect to the dashboard.
-    router.push("/");
+    await signup(email, password);
   };
+  
   return (
     <Card className="w-full max-w-sm border-none shadow-none">
       <CardHeader className="text-center">
@@ -49,13 +55,16 @@ export function SignupForm() {
               type="email"
               placeholder="m@exemple.com"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Mot de passe</Label>
-            <Input id="password" type="password" />
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Créer mon compte
           </Button>
         </CardContent>

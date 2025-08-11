@@ -2,6 +2,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
+import { getAuth } from "firebase/auth";
+
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -16,6 +18,14 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const messaging = () => getMessaging(app);
+const auth = getAuth(app);
+const messaging = () => {
+    try {
+      return getMessaging(app);
+    } catch (e) {
+      console.error("Firebase messaging is not supported in this environment.");
+      return null;
+    }
+};
 
-export { app, messaging };
+export { app, auth, messaging };

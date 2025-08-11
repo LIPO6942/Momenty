@@ -20,6 +20,10 @@ import { InstantCard } from "@/components/timeline/instant-card";
 import { getProfile } from "@/lib/idb";
 import { parseISO, getMonth, getYear, format } from "date-fns";
 import { fr } from 'date-fns/locale';
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 export default function TimelinePage() {
   const { groupedInstants, instants } = useContext(TimelineContext);
@@ -29,7 +33,15 @@ export default function TimelinePage() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
   const [openDays, setOpenDays] = useState<string[]>([]);
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
+
+  useEffect(() => {
+    if(!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -102,6 +114,23 @@ export default function TimelinePage() {
 
 
   const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
+
+  if (loading) {
+    return (
+        <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+            <div className="py-16 space-y-4 text-center">
+              <Skeleton className="h-10 w-3/4 mx-auto" />
+              <Skeleton className="h-6 w-1/2 mx-auto" />
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">

@@ -308,7 +308,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const mainPhoto = photos.length > 0 ? photos[0] : null;
 
     if (!description && photos.length === 0) {
         toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
@@ -318,6 +317,24 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
         return;
     }
+
+    let uploadedPhotoUrls: string[] = [];
+    if (photos.length > 0) {
+        const formData = new FormData();
+        const fetchPromises = photos.map(async (photoDataUrl) => {
+            const blob = await (await fetch(photoDataUrl)).blob();
+            formData.append('file', blob);
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            return result.secure_url;
+        });
+        uploadedPhotoUrls = await Promise.all(fetchPromises);
+    }
+    
+    const mainPhoto = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : null;
     
     if (isEncounter) {
         if (!encounterName) {
@@ -373,7 +390,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
           date: new Date().toISOString(),
           location: location || "Lieu inconnu",
           emotion: emotions.length > 0 ? emotions : ["Neutre"],
-          photos: photos.length > 0 ? photos : null,
+          photos: uploadedPhotoUrls,
           category: 'Note' // Default category, will be updated by context
         };
         addInstant(newInstant);
@@ -453,7 +470,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsMultiSelect(!isMultiSelect)}
-                            className={cn("h-7 w-7 text-cyan-400", isMultiSelect && "bg-cyan-400/20")}
+                            className={cn("h-7 w-7 text-cyan-400", isMultiSelect && "bg-cyan-400/20 text-blue-300")}
                         >
                             <Images className="h-4 w-4" />
                             <span className="sr-only">Sélection multiple</span>
@@ -581,7 +598,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                     <div className="flex items-center gap-2">
                         <div className="flex-grow space-y-2">
                             <div className="flex items-center gap-1 border rounded-md">
-                                <Building className="h-5 w-5 text-red-500 flex-shrink-0 ml-3" />
+                                <Building className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
                                  <Input 
                                     id="city"
                                     name="city" 
@@ -593,7 +610,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                                 />
                             </div>
                             <div className="flex items-center gap-1 border rounded-md">
-                                <Globe className="h-5 w-5 text-red-500 flex-shrink-0 ml-3" />
+                                <Globe className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
                                 <Input 
                                     id="country"
                                     name="country"

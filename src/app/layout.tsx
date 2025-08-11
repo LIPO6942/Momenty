@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -5,6 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import BottomNav from '@/components/layout/bottom-nav';
 import { TimelineProvider } from '@/context/timeline-context';
+import { AuthProvider } from '@/context/auth-context';
+
 
 export const metadata: Metadata = {
   title: 'Momenty - Votre journal de voyage',
@@ -37,14 +40,16 @@ export default function RootLayout({
           'font-body antialiased min-h-screen bg-secondary text-base'
         )}
       >
-        <TimelineProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 pb-24">{children}</main>
-            <BottomNav />
-          </div>
-          <Toaster />
-        </TimelineProvider>
+        <AuthProvider>
+          <TimelineProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1 pb-24">{children}</main>
+              <BottomNav />
+            </div>
+            <Toaster />
+          </TimelineProvider>
+        </AuthProvider>
       </body>
     </html>
   );

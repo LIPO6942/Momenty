@@ -1,6 +1,8 @@
 
 
 import { type ManualLocation } from "./idb";
+import type { User } from 'firebase/auth';
+
 
 export interface Instant {
     id: string;
@@ -14,6 +16,7 @@ export interface Instant {
     emotion: string | string[];
     photos?: string[] | null; // Data URL for the image or a reference string like "local_..."
     category?: string; // AI-generated category
+    userId?: string;
 }
 
 export interface Encounter {
@@ -24,6 +27,7 @@ export interface Encounter {
     location: string;
     emotion: string | string[];
     photo?: string | null;
+    userId?: string;
 }
 
 export interface Dish {
@@ -34,6 +38,7 @@ export interface Dish {
     location: string;
     emotion: string | string[];
     photo?: string | null;
+    userId?: string;
 }
 
 export interface Accommodation {
@@ -44,6 +49,7 @@ export interface Accommodation {
     location: string;
     emotion: string | string[];
     photo?: string | null;
+    userId?: string;
 }
 
 export interface Trip {
@@ -84,4 +90,12 @@ export interface LocationWithCoords extends ManualLocation {
     count: number;
     isManual: boolean;
     coords: [number, number];
+}
+
+export interface AuthContextType {
+    user: User | null;
+    loading: boolean;
+    login: (email: string, pass: string) => Promise<void>;
+    signup: (email: string, pass: string) => Promise<void>;
+    logout: () => Promise<void>;
 }
