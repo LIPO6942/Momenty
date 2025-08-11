@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { db } from "./firebase";
@@ -30,10 +31,10 @@ export interface ManualLocation {
 
 // --- Generic CRUD Functions ---
 
-const saveData = async <T>(collectionName: string, data: T, id?: string): Promise<string> => {
+const saveData = async <T extends { userId: string }>(collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
     if (id) {
         const docRef = doc(db, collectionName, id);
-        await setDoc(docRef, data);
+        await setDoc(docRef, data, { merge: true }); // Use merge: true for updates
         return id;
     } else {
         const docRef = await addDoc(collection(db, collectionName), data as any);
