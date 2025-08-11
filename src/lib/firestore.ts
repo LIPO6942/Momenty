@@ -43,10 +43,12 @@ const saveData = async <T extends { userId: string }>(collectionName: string, da
 };
 
 const getData = async <T>(collectionName: string, userId: string): Promise<(T & { id: string })[]> => {
+    // This query requires a composite index on (userId, date desc)
     const q = query(collection(db, collectionName), where("userId", "==", userId), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T & { id: string }));
 };
+
 
 const deleteData = async (collectionName: string, id: string): Promise<void> => {
     await deleteDoc(doc(db, collectionName, id));
@@ -54,10 +56,10 @@ const deleteData = async (collectionName: string, id: string): Promise<void> => 
 
 
 // --- Instant Functions ---
-
 export const saveInstant = (instant: Omit<Instant, 'id'>, id?: string) => saveData('instants', instant, id);
 export const getInstants = (userId: string): Promise<Instant[]> => getData<Instant>('instants', userId);
 export const deleteInstant = (id: string) => deleteData('instants', id);
+
 
 // --- Encounter Functions ---
 
@@ -79,7 +81,14 @@ export const deleteAccommodation = (id: string) => deleteData('accommodations', 
 
 // --- Story Functions ---
 
-export const saveStory = (story: Omit<GeneratedStory, 'id'>, id?: string) => saveData('stories', story, id);
+export const saveStory = (story: GeneratedStory, id?: string) => {
+    const storyForDb = { ...story };
+    // Firestore cannot store non-primitive values in arrays for query purposes
+    // So we convert the instants to an array of IDs
+    // @ts-ignore
+    storyForDb.instants = story.instants.map(i => i.id);
+    return saveData('stories', storyForDb, id || story.id);
+};
 export const getStories = (userId: string): Promise<GeneratedStory[]> => getData<GeneratedStory>('stories', userId);
 export const deleteStory = (id: string) => deleteData('stories', id);
 

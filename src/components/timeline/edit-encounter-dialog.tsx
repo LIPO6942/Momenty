@@ -73,7 +73,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
   const [isConverting, setIsConverting] = useState(false);
 
   useEffect(() => {
-    if (encounterToEdit) {
+    if (open && encounterToEdit) {
         setName(encounterToEdit.name);
         setDescription(encounterToEdit.description);
         setLocation(encounterToEdit.location);
@@ -81,7 +81,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
         setEmotions(Array.isArray(encounterToEdit.emotion) ? encounterToEdit.emotion : (encounterToEdit.emotion ? [encounterToEdit.emotion] : []));
         setDate(encounterToEdit.date);
     }
-  }, [encounterToEdit]);
+  }, [open, encounterToEdit]);
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,10 +99,23 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
     }
 
     try {
+        let uploadedPhotoUrl = photo;
+        if (photo && photo.startsWith('data:')) {
+             const formData = new FormData();
+             const blob = await (await fetch(photo)).blob();
+             formData.append('file', blob);
+             const response = await fetch('/api/upload', {
+                 method: 'POST',
+                 body: formData,
+             });
+             const result = await response.json();
+             uploadedPhotoUrl = result.secure_url;
+        }
+
         await updateEncounter(encounterToEdit.id, {
             name,
             description,
-            photo,
+            photo: uploadedPhotoUrl,
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
             date: dateToSave.toISOString(),
@@ -147,7 +160,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhoto(reader.result as string);
-        toast({title: "Photo mise à jour."});
+        toast({title: "Photo prête à être téléversée."});
       };
       reader.readAsDataURL(processingFile);
     }

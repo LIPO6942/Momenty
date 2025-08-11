@@ -71,20 +71,21 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [photos, setPhotos] = useState<string[]>(instantToEdit.photos || []);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImprovingText, setIsImprovingText] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isMultiSelect, setIsMultiSelect] = useState(true); // Always allow multi-select in edit mode
 
   useEffect(() => {
-    if (instantToEdit) {
+    if (open && instantToEdit) {
       setDescription(instantToEdit.description);
       setLocation(instantToEdit.location);
       setPhotos(instantToEdit.photos || []);
       setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
       setDate(instantToEdit.date);
     }
-  }, [instantToEdit]);
+  }, [open, instantToEdit]);
 
 
   const handleAnalyzePhoto = async (photoDataUri: string) => {
@@ -129,6 +130,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsLoading(true);
 
     const dateToSave = new Date(date);
     if (!isValid(dateToSave)) {
@@ -137,23 +139,47 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
             title: "Date invalide",
             description: "Veuillez entrer une date et une heure valides.",
         });
+        setIsLoading(false);
         return;
     }
 
-    const finalDescription = description || "Note";
+    try {
+        const uploadPromises = photos.filter(p => p.startsWith('data:')).map(async (photoDataUrl) => {
+            const formData = new FormData();
+            const blob = await (await fetch(photoDataUrl)).blob();
+            formData.append('file', blob);
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            return result.secure_url;
+        });
 
-    // Call the context function to update the instant
-    updateInstant(instantToEdit.id, {
-      title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
-      description,
-      photos: photos.length > 0 ? photos : null,
-      location,
-      emotion: emotions.length > 0 ? emotions : ["Neutre"],
-      date: dateToSave.toISOString(), // Ensure date is in ISO format
-    });
+        const uploadedUrls = await Promise.all(uploadPromises);
+        const existingUrls = photos.filter(p => !p.startsWith('data:'));
+        const finalPhotoUrls = [...existingUrls, ...uploadedUrls];
 
-    setOpen(false); // Close the dialog
-    toast({ title: "Instant mis à jour !" });
+
+        const finalDescription = description || "Note";
+
+        updateInstant(instantToEdit.id, {
+          title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
+          description,
+          photos: finalPhotoUrls.length > 0 ? finalPhotoUrls : null,
+          location,
+          emotion: emotions.length > 0 ? emotions : ["Neutre"],
+          date: dateToSave.toISOString(), // Ensure date is in ISO format
+        });
+
+        setOpen(false); // Close the dialog
+        toast({ title: "Instant mis à jour !" });
+    } catch (error) {
+        console.error(error);
+        toast({ title: "Erreur lors de la mise à jour", variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,7 +215,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     }
     
     setIsConverting(false);
-    toast({ title: "Photos ajoutées." });
+    toast({ title: "Photos ajoutées et prêtes à être téléversées." });
   };
 
   // Function to reset state when the dialog is closed without saving
@@ -215,8 +241,6 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
   }
 
-  const isLoading = isAnalyzing || isImprovingText || isConverting;
-
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
           setOpen(isOpen);
@@ -239,7 +263,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                           <div className="relative group">
                               <Image src={photos[0]} alt="Aperçu principal" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
                               <div className="absolute top-2 right-2 flex gap-2">
-                                  <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
+                                  <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => photos[0].startsWith('data:') && handleAnalyzePhoto(photos[0])} disabled={isLoading || !photos[0].startsWith('data:')}>
                                       {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4"/>}
                                   </Button>
                                   <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
@@ -273,7 +297,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                  <div>
                     <Label htmlFor="description" className="text-muted-foreground flex items-center justify-between">
                         <span>Qu'avez-vous en tête ?</span>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading}>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={handleImproveDescription} disabled={isLoading || !description}>
                             {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                             <span className="sr-only">Améliorer la description</span>
                         </Button>

@@ -166,28 +166,28 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const newId = await saveInstant(newInstantForDb);
         const newInstantForState = addRuntimeAttributes({ id: newId, ...newInstantForDb });
 
-        setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setInstants(prevInstants => [newInstantForState, ...prevInstants]);
     };
 
     const addEncounter = async (encounterData: Omit<Encounter, 'id' | 'userId'>) => {
         if(!user) return;
         const encounterForDb = { ...encounterData, userId: user.uid };
         const newId = await saveEncounter(encounterForDb);
-        setEncounters(prev => [{...encounterForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setEncounters(prev => [{...encounterForDb, id: newId}, ...prev]);
     }
 
     const addDish = async (dishData: Omit<Dish, 'id' | 'userId'>) => {
         if(!user) return;
         const dishForDb = { ...dishData, userId: user.uid };
         const newId = await saveDish(dishForDb);
-        setDishes(prev => [{...dishForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setDishes(prev => [{...dishForDb, id: newId}, ...prev]);
     }
 
     const addAccommodation = async (accommodationData: Omit<Accommodation, 'id' | 'userId'>) => {
         if(!user) return;
         const accommodationForDb = { ...accommodationData, userId: user.uid };
         const newId = await saveAccommodation(accommodationForDb);
-        setAccommodations(prev => [{...accommodationForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setAccommodations(prev => [{...accommodationForDb, id: newId}, ...prev]);
     }
 
 
@@ -216,7 +216,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
-        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        ));
     }
     
 
@@ -273,26 +273,22 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     };
 
     const groupedInstants = useMemo(() => {
-      if (instants.length === 0) return {};
-      
-      const sortedDayKeys = [...new Set(instants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
-          .sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
-
       const groups: GroupedInstants = {};
       
-      const reversedDayKeys = [...sortedDayKeys].reverse();
+      const sortedInstants = [...instants].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      sortedDayKeys.forEach(dayKey => {
+      const dayKeysWithIndices = [...new Set(sortedInstants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
+          .map((dayKey, index, allKeys) => ({ dayKey, dayNumber: allKeys.length - index }));
+
+      dayKeysWithIndices.forEach(({ dayKey, dayNumber }) => {
           const dayDate = parseISO(dayKey);
-          const dayIndex = reversedDayKeys.indexOf(dayKey) + 1;
-
           groups[dayKey] = {
-              title: `Jour ${dayIndex} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`,
+              title: `Jour ${dayNumber} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`,
               instants: []
           };
       });
 
-      instants.forEach(instant => {
+      sortedInstants.forEach(instant => {
           const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
           if (groups[dayKey]) {
               groups[dayKey].instants.push(instant);
@@ -305,23 +301,29 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id' | 'userId'>>) => {
         if(!user) return;
-        await saveEncounter(updatedData, id);
-        const updatedEncounters = await getEncounters(user.uid);
-        setEncounters(updatedEncounters);
+        const encounterToUpdate = encounters.find(e => e.id === id);
+        if(!encounterToUpdate) return;
+        const updatedEncounter = {...encounterToUpdate, ...updatedData};
+        await saveEncounter(updatedEncounter, id);
+        setEncounters(prev => prev.map(e => e.id === id ? updatedEncounter : e));
     };
 
     const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id' | 'userId'>>) => {
         if(!user) return;
-        await saveDish(updatedData, id);
-        const updatedDishes = await getDishes(user.uid);
-        setDishes(updatedDishes);
+        const dishToUpdate = dishes.find(d => d.id === id);
+        if(!dishToUpdate) return;
+        const updatedDish = {...dishToUpdate, ...updatedData};
+        await saveDish(updatedDish, id);
+        setDishes(prev => prev.map(d => d.id === id ? updatedDish : d));
     };
 
     const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id' | 'userId'>>) => {
         if(!user) return;
-        await saveAccommodation(updatedData, id);
-        const updatedAccommodations = await getAccommodations(user.uid);
-        setAccommodations(updatedAccommodations);
+        const accommodationToUpdate = accommodations.find(a => a.id === id);
+        if(!accommodationToUpdate) return;
+        const updatedAccommodation = {...accommodationToUpdate, ...updatedData};
+        await saveAccommodation(updatedAccommodation, id);
+        setAccommodations(prev => prev.map(a => a.id === id ? updatedAccommodation : a));
     };
 
 
