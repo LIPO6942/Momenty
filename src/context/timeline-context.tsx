@@ -214,12 +214,30 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             instant.id === id ? updatedInstantForState : instant
         ));
     }
+
+    const deleteCloudinaryPhotos = async (photoUrls: string[] | null | undefined) => {
+        if (!photoUrls || photoUrls.length === 0) return;
+        try {
+            await fetch('/api/delete-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photoUrls }),
+            });
+        } catch (error) {
+            console.error("Failed to trigger photo deletion:", error);
+        }
+    }
     
 
     const deleteInstant = async (id: string) => {
         if(!user) return;
         const instantToDelete = instants.find(i => i.id === id);
         if (!instantToDelete) return;
+
+        // Delete photos from Cloudinary first
+        if (instantToDelete.photos && instantToDelete.photos.length > 0) {
+            await deleteCloudinaryPhotos(instantToDelete.photos);
+        }
     
         await deleteInstantFromDB(user.uid, id);
     
@@ -243,18 +261,30 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const deleteEncounter = async (id: string) => {
         if(!user) return;
+        const itemToDelete = encounters.find(i => i.id === id);
+        if (!itemToDelete) return;
+        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        
         await deleteEncounterFromDB(user.uid, id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
     }
     
     const deleteDish = async (id: string) => {
         if(!user) return;
+        const itemToDelete = dishes.find(i => i.id === id);
+        if (!itemToDelete) return;
+        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+
         await deleteDishFromDB(user.uid, id);
         setDishes(prev => prev.filter(dish => dish.id !== id));
     }
 
     const deleteAccommodation = async (id: string) => {
         if(!user) return;
+        const itemToDelete = accommodations.find(i => i.id === id);
+        if (!itemToDelete) return;
+        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        
         await deleteAccommodationFromDB(user.uid, id);
         setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
     }
@@ -263,9 +293,9 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if(!user) return;
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
-            await deleteInstantFromDB(user.uid, instant.id);
+            await deleteInstant(instant.id); // This will also handle photo deletion
         }
-        setInstants(prev => prev.filter(i => i.location !== locationName));
+        // No need to filter state here, as deleteInstant already does it.
     };
 
     const groupedInstants = useMemo(() => {
