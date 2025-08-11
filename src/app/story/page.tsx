@@ -214,10 +214,9 @@ export default function StoryPage() {
                 title: storyTitle,
                 story: result.story,
                 instants: allInstantsForStory.map(({ icon, color, ...rest }) => rest), // Remove runtime properties
-                userId: user.uid,
             };
 
-            await saveStory(newStory);
+            await saveStory(user.uid, newStory);
             
             const fullNewStory = {...newStory, instants: allInstantsForStory };
 
@@ -246,7 +245,7 @@ export default function StoryPage() {
              story: editText, 
         };
         
-        await saveStory(updatedStory);
+        await saveStory(user.uid, updatedStory);
 
         setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s));
         setIsEditing(null);
@@ -255,7 +254,7 @@ export default function StoryPage() {
 
     const handleDeleteStory = async (storyId: string) => {
         if(!user) return;
-        await deleteStoryFromDB(storyId);
+        await deleteStoryFromDB(user.uid, storyId);
         setStories(prev => prev.filter(s => s.id !== storyId));
         toast({ title: "Histoire supprimée." });
     };

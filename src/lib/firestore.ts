@@ -8,13 +8,11 @@ import {
     addDoc, 
     getDocs, 
     query, 
-    where, 
     doc, 
-    updateDoc, 
+    setDoc, 
     deleteDoc, 
     writeBatch,
     documentId,
-    setDoc,
     getDoc,
     orderBy
 } from "firebase/firestore";
@@ -29,82 +27,71 @@ export interface ManualLocation {
     souvenir?: string;
 }
 
-// --- Generic CRUD Functions ---
+// --- Generic CRUD Functions for user-specific subcollections ---
 
-const saveData = async <T extends { userId: string }>(collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
-    if (id) {
-        const docRef = doc(db, collectionName, id);
-        await setDoc(docRef, data, { merge: true }); // Use merge: true for updates
-        return id;
-    } else {
-        const docRef = await addDoc(collection(db, collectionName), data as any);
-        return docRef.id;
-    }
+const saveDataInSubcollection = async <T>(userId: string, collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
+    const subcollectionRef = collection(db, 'users', userId, collectionName);
+    const docRef = id ? doc(subcollectionRef, id) : doc(subcollectionRef);
+    
+    await setDoc(docRef, data, { merge: true });
+    
+    return docRef.id;
 };
 
-const getData = async <T>(collectionName: string, userId: string): Promise<(T & { id: string })[]> => {
-    // This query requires a composite index on (userId, date desc)
-    const q = query(collection(db, collectionName), where("userId", "==", userId), orderBy("date", "desc"));
+const getDataFromSubcollection = async <T>(userId: string, collectionName: string): Promise<(T & { id: string })[]> => {
+    const subcollectionRef = collection(db, 'users', userId, collectionName);
+    const q = query(subcollectionRef, orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T & { id: string }));
 };
 
-
-const deleteData = async (collectionName: string, id: string): Promise<void> => {
-    await deleteDoc(doc(db, collectionName, id));
+const deleteDataFromSubcollection = async (userId: string, collectionName: string, id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'users', userId, collectionName, id));
 };
 
 
 // --- Instant Functions ---
-export const saveInstant = (instant: Omit<Instant, 'id'>, id?: string) => saveData('instants', instant, id);
-export const getInstants = (userId: string): Promise<Instant[]> => getData<Instant>('instants', userId);
-export const deleteInstant = (id: string) => deleteData('instants', id);
-
+export const saveInstant = (userId: string, instant: Omit<Instant, 'id'>) => saveDataInSubcollection(userId, 'instants', instant, instant.id);
+export const getInstants = (userId: string): Promise<Instant[]> => getDataFromSubcollection<Instant>('instants', userId);
+export const deleteInstant = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'instants', id);
 
 // --- Encounter Functions ---
-
-export const saveEncounter = (encounter: Omit<Encounter, 'id'>, id?: string) => saveData('encounters', encounter, id);
-export const getEncounters = (userId: string): Promise<Encounter[]> => getData<Encounter>('encounters', userId);
-export const deleteEncounter = (id: string) => deleteData('encounters', id);
+export const saveEncounter = (userId: string, encounter: Omit<Encounter, 'id'>, id?: string) => saveDataInSubcollection(userId, 'encounters', encounter, id);
+export const getEncounters = (userId: string): Promise<Encounter[]> => getDataFromSubcollection<Encounter>('encounters', userId);
+export const deleteEncounter = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'encounters', id);
 
 // --- Dish Functions ---
-
-export const saveDish = (dish: Omit<Dish, 'id'>, id?: string) => saveData('dishes', dish, id);
-export const getDishes = (userId: string): Promise<Dish[]> => getData<Dish>('dishes', userId);
-export const deleteDish = (id: string) => deleteData('dishes', id);
+export const saveDish = (userId: string, dish: Omit<Dish, 'id'>, id?: string) => saveDataInSubcollection(userId, 'dishes', dish, id);
+export const getDishes = (userId: string): Promise<Dish[]> => getDataFromSubcollection<Dish>('dishes', userId);
+export const deleteDish = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'dishes', id);
 
 // --- Accommodation Functions ---
-
-export const saveAccommodation = (accommodation: Omit<Accommodation, 'id'>, id?: string) => saveData('accommodations', accommodation, id);
-export const getAccommodations = (userId: string): Promise<Accommodation[]> => getData<Accommodation>('accommodations', userId);
-export const deleteAccommodation = (id: string) => deleteData('accommodations', id);
+export const saveAccommodation = (userId: string, accommodation: Omit<Accommodation, 'id'>, id?: string) => saveDataInSubcollection(userId, 'accommodations', accommodation, id);
+export const getAccommodations = (userId: string): Promise<Accommodation[]> => getDataFromSubcollection<Accommodation>('accommodations', userId);
+export const deleteAccommodation = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'accommodations', id);
 
 // --- Story Functions ---
-
-export const saveStory = (story: GeneratedStory, id?: string) => {
+export const saveStory = (userId: string, story: GeneratedStory, id?: string) => {
     const storyForDb = { ...story };
-    // Firestore cannot store non-primitive values in arrays for query purposes
-    // So we convert the instants to an array of IDs
     // @ts-ignore
     storyForDb.instants = story.instants.map(i => i.id);
-    return saveData('stories', storyForDb, id || story.id);
+    return saveDataInSubcollection(userId, 'stories', storyForDb, id || story.id);
 };
-export const getStories = (userId: string): Promise<GeneratedStory[]> => getData<GeneratedStory>('stories', userId);
-export const deleteStory = (id: string) => deleteData('stories', id);
+export const getStories = (userId: string): Promise<GeneratedStory[]> => getDataFromSubcollection<GeneratedStory>('stories', userId);
+export const deleteStory = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'stories', id);
 
-// --- Manual Locations Functions ---
-// These are stored in a single document per user for simplicity.
+// --- Manual Locations Functions (stored under the user document) ---
 
 export const saveManualLocations = async (userId: string, locations: ManualLocation[]): Promise<void> => {
-    const docRef = doc(db, 'manualLocations', userId);
-    await setDoc(docRef, { locations });
+    const docRef = doc(db, 'users', userId);
+    await setDoc(docRef, { manualLocations: locations }, { merge: true });
 };
 
 export const getManualLocations = async (userId: string): Promise<ManualLocation[]> => {
-    const docRef = doc(db, 'manualLocations', userId);
+    const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-        return docSnap.data().locations || [];
+        return docSnap.data().manualLocations || [];
     }
     return [];
 };

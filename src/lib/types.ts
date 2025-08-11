@@ -16,7 +16,6 @@ export interface Instant {
     emotion: string | string[];
     photos?: string[] | null; // Now these will be Cloudinary URLs
     category?: string; // AI-generated category
-    userId: string; // Added userId
 }
 
 export interface Encounter {
@@ -27,7 +26,6 @@ export interface Encounter {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
-    userId: string; // Added userId
 }
 
 export interface Dish {
@@ -38,7 +36,6 @@ export interface Dish {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
-    userId: string; // Added userId
 }
 
 export interface Accommodation {
@@ -49,7 +46,6 @@ export interface Accommodation {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
-    userId: string; // Added userId
 }
 
 export interface Trip {
@@ -83,7 +79,6 @@ export interface GeneratedStory {
   title: string;
   story: string;
   instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
-  userId: string;
 }
 
 export interface LocationWithCoords extends ManualLocation {

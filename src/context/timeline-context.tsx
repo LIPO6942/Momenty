@@ -29,23 +29,23 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id' | 'userId'>) => void;
-    updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id' | 'userId'>>) => void;
+    addInstant: (instant: Omit<Instant, 'id'>) => void;
+    updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
     deleteInstantsByLocation: (locationName: string) => void;
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
     encounters: Encounter[];
-    addEncounter: (encounter: Omit<Encounter, 'id'| 'userId'>) => void;
-    updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id' | 'userId'>>) => Promise<void>;
+    addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
+    updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => Promise<void>;
     deleteEncounter: (id: string) => void;
     dishes: Dish[];
-    addDish: (dish: Omit<Dish, 'id'| 'userId'>) => void;
-    updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id' | 'userId'>>) => Promise<void>;
+    addDish: (dish: Omit<Dish, 'id'>) => void;
+    updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => Promise<void>;
     deleteDish: (id: string) => void;
     accommodations: Accommodation[];
-    addAccommodation: (accommodation: Omit<Accommodation, 'id' | 'userId'>) => void;
-    updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id' | 'userId'>>) => Promise<void>;
+    addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => void;
+    updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => Promise<void>;
     deleteAccommodation: (id: string) => void;
 }
 
@@ -144,7 +144,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         }
       }, [user]);
 
-    const addInstant = async (instantData: Omit<Instant, 'id'|'userId'>) => {
+    const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         if(!user) return;
         let category = 'Note';
         try {
@@ -157,41 +157,37 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             console.error("AI categorization failed", error);
         }
         
-        const newInstantForDb: Omit<Instant, 'id' | 'icon' | 'color'> = {
+        const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
             ...instantData,
             category: category,
-            userId: user.uid,
         };
         
-        const newId = await saveInstant(newInstantForDb);
+        const newId = await saveInstant(user.uid, newInstantForDb);
         const newInstantForState = addRuntimeAttributes({ id: newId, ...newInstantForDb });
 
         setInstants(prevInstants => [newInstantForState, ...prevInstants]);
     };
 
-    const addEncounter = async (encounterData: Omit<Encounter, 'id' | 'userId'>) => {
+    const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
         if(!user) return;
-        const encounterForDb = { ...encounterData, userId: user.uid };
-        const newId = await saveEncounter(encounterForDb);
-        setEncounters(prev => [{...encounterForDb, id: newId}, ...prev]);
+        const newId = await saveEncounter(user.uid, encounterData);
+        setEncounters(prev => [{...encounterData, id: newId}, ...prev]);
     }
 
-    const addDish = async (dishData: Omit<Dish, 'id' | 'userId'>) => {
+    const addDish = async (dishData: Omit<Dish, 'id'>) => {
         if(!user) return;
-        const dishForDb = { ...dishData, userId: user.uid };
-        const newId = await saveDish(dishForDb);
-        setDishes(prev => [{...dishForDb, id: newId}, ...prev]);
+        const newId = await saveDish(user.uid, dishData);
+        setDishes(prev => [{...dishData, id: newId}, ...prev]);
     }
 
-    const addAccommodation = async (accommodationData: Omit<Accommodation, 'id' | 'userId'>) => {
+    const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
         if(!user) return;
-        const accommodationForDb = { ...accommodationData, userId: user.uid };
-        const newId = await saveAccommodation(accommodationForDb);
-        setAccommodations(prev => [{...accommodationForDb, id: newId}, ...prev]);
+        const newId = await saveAccommodation(user.uid, accommodationData);
+        setAccommodations(prev => [{...accommodationData, id: newId}, ...prev]);
     }
 
 
-    const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'|'userId'>>) => {
+    const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
         if(!user) return;
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
@@ -210,7 +206,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
     
-        await saveInstant(updatedInstant, id);
+        await saveInstant(user.uid, updatedInstant, id);
     
         const updatedInstantForState = addRuntimeAttributes(updatedInstant);
     
@@ -225,7 +221,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const instantToDelete = instants.find(i => i.id === id);
         if (!instantToDelete) return;
     
-        await deleteInstantFromDB(id);
+        await deleteInstantFromDB(user.uid, id);
     
         const remainingInstants = instants.filter(instant => instant.id !== id);
         setInstants(remainingInstants);
@@ -238,7 +234,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             for (const story of allStories) {
                 const storyContainsDay = story.id.includes(dayKeyOfDeletedInstant);
                 if (storyContainsDay) {
-                    await deleteStoryFromDB(story.id);
+                    await deleteStory(user.uid, story.id);
                 }
             }
             window.dispatchEvent(new Event('stories-updated'));
@@ -247,19 +243,19 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const deleteEncounter = async (id: string) => {
         if(!user) return;
-        await deleteEncounterFromDB(id);
+        await deleteEncounterFromDB(user.uid, id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
     }
     
     const deleteDish = async (id: string) => {
         if(!user) return;
-        await deleteDishFromDB(id);
+        await deleteDishFromDB(user.uid, id);
         setDishes(prev => prev.filter(dish => dish.id !== id));
     }
 
     const deleteAccommodation = async (id: string) => {
         if(!user) return;
-        await deleteAccommodationFromDB(id);
+        await deleteAccommodationFromDB(user.uid, id);
         setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
     }
 
@@ -267,7 +263,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if(!user) return;
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
-            await deleteInstantFromDB(instant.id);
+            await deleteInstantFromDB(user.uid, instant.id);
         }
         setInstants(prev => prev.filter(i => i.location !== locationName));
     };
@@ -299,30 +295,30 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     }, [instants]);
 
-    const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id' | 'userId'>>) => {
+    const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => {
         if(!user) return;
         const encounterToUpdate = encounters.find(e => e.id === id);
         if(!encounterToUpdate) return;
         const updatedEncounter = {...encounterToUpdate, ...updatedData};
-        await saveEncounter(updatedEncounter, id);
+        await saveEncounter(user.uid, updatedEncounter, id);
         setEncounters(prev => prev.map(e => e.id === id ? updatedEncounter : e));
     };
 
-    const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id' | 'userId'>>) => {
+    const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => {
         if(!user) return;
         const dishToUpdate = dishes.find(d => d.id === id);
         if(!dishToUpdate) return;
         const updatedDish = {...dishToUpdate, ...updatedData};
-        await saveDish(updatedDish, id);
+        await saveDish(user.uid, updatedDish, id);
         setDishes(prev => prev.map(d => d.id === id ? updatedDish : d));
     };
 
-    const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id' | 'userId'>>) => {
+    const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => {
         if(!user) return;
         const accommodationToUpdate = accommodations.find(a => a.id === id);
         if(!accommodationToUpdate) return;
         const updatedAccommodation = {...accommodationToUpdate, ...updatedData};
-        await saveAccommodation(updatedAccommodation, id);
+        await saveAccommodation(user.uid, updatedAccommodation, id);
         setAccommodations(prev => prev.map(a => a.id === id ? updatedAccommodation : a));
     };
 
