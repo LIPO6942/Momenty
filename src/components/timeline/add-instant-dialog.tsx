@@ -74,6 +74,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [isMultiSelect, setIsMultiSelect] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (activeContext) {
@@ -235,6 +236,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setIsAccommodation(false);
     setAccommodationName("");
     setIsMultiSelect(false);
+    setIsSubmitting(false);
   }
 
   const handleGetLocation = () => {
@@ -302,100 +304,113 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
-    if (!description && photos.length === 0) {
-        toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
-        return;
-    }
-    if (!location) {
-        toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
-        return;
-    }
-
-    let uploadedPhotoUrls: string[] = [];
-    if (photos.length > 0) {
-        const fetchPromises = photos.map(async (photoDataUrl) => {
-            const formData = new FormData();
-            const blob = await (await fetch(photoDataUrl)).blob();
-            formData.append('file', blob);
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
+    try {
+        if (!description && photos.length === 0) {
+            toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
+            return;
+        }
+        if (!location) {
+            toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
+            return;
+        }
+    
+        let uploadedPhotoUrls: string[] = [];
+        if (photos.length > 0) {
+            const uploadPromises = photos.map(async (photoDataUrl) => {
+                const formData = new FormData();
+                const blob = await (await fetch(photoDataUrl)).blob();
+                formData.append('file', blob);
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`Échec du téléversement d'une image.`);
+                }
+                const result = await response.json();
+                return result.secure_url;
             });
-            const result = await response.json();
-            return result.secure_url;
-        });
-        uploadedPhotoUrls = await Promise.all(fetchPromises);
-    }
-    
-    const mainPhoto = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : null;
-    
-    if (isEncounter) {
-        if (!encounterName) {
-            toast({variant: "destructive", title: "Veuillez nommer la personne rencontrée."});
-            return;
+            uploadedPhotoUrls = await Promise.all(uploadPromises);
         }
-        const newEncounter: Omit<Encounter, 'id'> = {
-            name: encounterName,
-            description: description || "Rencontre mémorable",
-            date: new Date().toISOString(),
-            location,
-            emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: mainPhoto,
-        };
-        addEncounter(newEncounter);
-        toast({ title: "Nouvelle rencontre ajoutée !" });
-    } else if (isDish) {
-        if (!dishName) {
-            toast({variant: "destructive", title: "Veuillez nommer le plat."});
-            return;
+        
+        const mainPhoto = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : null;
+        
+        if (isEncounter) {
+            if (!encounterName) {
+                toast({variant: "destructive", title: "Veuillez nommer la personne rencontrée."});
+                return;
+            }
+            const newEncounter: Omit<Encounter, 'id'> = {
+                name: encounterName,
+                description: description || "Rencontre mémorable",
+                date: new Date().toISOString(),
+                location,
+                emotion: emotions.length > 0 ? emotions : ["Neutre"],
+                photo: mainPhoto,
+            };
+            await addEncounter(newEncounter);
+            toast({ title: "Nouvelle rencontre ajoutée !" });
+        } else if (isDish) {
+            if (!dishName) {
+                toast({variant: "destructive", title: "Veuillez nommer le plat."});
+                return;
+            }
+            const newDish: Omit<Dish, 'id'> = {
+                name: dishName,
+                description: description || "Un plat mémorable",
+                date: new Date().toISOString(),
+                location,
+                emotion: emotions.length > 0 ? emotions : ["Neutre"],
+                photo: mainPhoto,
+            };
+            await addDish(newDish);
+            toast({ title: "Nouveau plat ajouté !" });
+        } else if (isAccommodation) {
+            if (!accommodationName) {
+                toast({variant: "destructive", title: "Veuillez nommer le logement."});
+                return;
+            }
+            const newAccommodation: Omit<Accommodation, 'id'> = {
+                name: accommodationName,
+                description: description || "Un logement mémorable",
+                date: new Date().toISOString(),
+                location,
+                emotion: emotions.length > 0 ? emotions : ["Neutre"],
+                photo: mainPhoto,
+            };
+            await addAccommodation(newAccommodation);
+            toast({ title: "Nouveau logement ajouté !" });
+        } else {
+            const finalDescription = description || (photos.length > 0 ? "Collage photo" : "Note");
+            const newInstant = {
+              type: photos.length > 0 ? "photo" as const : "note" as const,
+              title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
+              description: finalDescription,
+              date: new Date().toISOString(),
+              location: location || "Lieu inconnu",
+              emotion: emotions.length > 0 ? emotions : ["Neutre"],
+              photos: uploadedPhotoUrls,
+              category: 'Note' // Default category, will be updated by context
+            };
+            await addInstant(newInstant);
+            toast({ title: "Nouvel instant ajouté !" });
         }
-        const newDish: Omit<Dish, 'id'> = {
-            name: dishName,
-            description: description || "Un plat mémorable",
-            date: new Date().toISOString(),
-            location,
-            emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: mainPhoto,
-        };
-        addDish(newDish);
-        toast({ title: "Nouveau plat ajouté !" });
-    } else if (isAccommodation) {
-        if (!accommodationName) {
-            toast({variant: "destructive", title: "Veuillez nommer le logement."});
-            return;
-        }
-        const newAccommodation: Omit<Accommodation, 'id'> = {
-            name: accommodationName,
-            description: description || "Un logement mémorable",
-            date: new Date().toISOString(),
-            location,
-            emotion: emotions.length > 0 ? emotions : ["Neutre"],
-            photo: mainPhoto,
-        };
-        addAccommodation(newAccommodation);
-        toast({ title: "Nouveau logement ajouté !" });
-    } else {
-        const finalDescription = description || (photos.length > 0 ? "Collage photo" : "Note");
-        const newInstant = {
-          type: photos.length > 0 ? "photo" as const : "note" as const,
-          title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
-          description: finalDescription,
-          date: new Date().toISOString(),
-          location: location || "Lieu inconnu",
-          emotion: emotions.length > 0 ? emotions : ["Neutre"],
-          photos: uploadedPhotoUrls,
-          category: 'Note' // Default category, will be updated by context
-        };
-        addInstant(newInstant);
-        toast({ title: "Nouvel instant ajouté !" });
-    }
 
-    setOpen(false);
-    cleanup();
+        setOpen(false);
+        cleanup();
+    } catch (error) {
+        console.error("Submission failed", error);
+        toast({variant: "destructive", title: "La publication a échoué", description: "Veuillez réessayer."});
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
-  const isLoading = isLocating || isAnalyzing || isImprovingText || isConverting;
+  const isLoading = isLocating || isAnalyzing || isImprovingText || isConverting || isSubmitting;
 
   const handleToggleEncounter = () => {
     setIsEncounter(!isEncounter);
@@ -645,8 +660,10 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
                         <Button type="button" variant="ghost">Fermer</Button>
                     </DialogClose>
                     <Button type="submit" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Publier
+                        {isSubmitting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                        ) : null}
+                        {isSubmitting ? 'Publication...' : 'Publier'}
                     </Button>
                 </div>
                 </>
