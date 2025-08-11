@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getProfile, saveProfile } from "@/lib/idb";
 import type { ProfileData } from "@/lib/idb";
 import { Edit, Save } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 type ProfileState = Omit<ProfileData, 'id'>;
 
@@ -36,6 +37,7 @@ const defaultProfile: ProfileState = {
 
 export function ProfileForm() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [profile, setProfile] = useState<ProfileState>(defaultProfile);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -114,6 +116,10 @@ export function ProfileForm() {
               <Input id="lastName" placeholder="Robinson" value={profile.lastName} onChange={handleChange} required disabled={!isEditing} />
             </div>
           </div>
+           <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={user?.email || ""} disabled />
+            </div>
           <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                   <Label htmlFor="age">Âge</Label>
