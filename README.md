@@ -10,11 +10,29 @@ Pour faire tourner le projet sur votre machine, suivez ces étapes :
     ```bash
     npm install
     ```
-2.  **Lancez le serveur de développement :**
+2.  **Configurez les variables d'environnement :**
+    Créez un fichier `.env.local` à la racine de votre projet et ajoutez-y vos clés d'API. Ce fichier ne sera pas envoyé sur GitHub.
+
+    ```
+    # Clés Firebase (disponibles dans la console Firebase > Paramètres du projet)
+    NEXT_PUBLIC_FIREBASE_API_KEY=AIz...
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+    NEXT_PUBLIC_FIREBASE_APP_ID=1:...:web:...
+
+    # Clés Cloudinary (disponibles dans le tableau de bord Cloudinary)
+    CLOUDINARY_CLOUD_NAME=...
+    CLOUDINARY_API_KEY=...
+    CLOUDINARY_API_SECRET=...
+    ```
+
+3.  **Lancez le serveur de développement :**
     ```bash
     npm run dev
     ```
-3.  Ouvrez [http://localhost:9002](http://localhost:9002) dans votre navigateur pour voir l'application.
+4.  Ouvrez [http://localhost:9002](http://localhost:9002) dans votre navigateur pour voir l'application.
 
 ---
 
@@ -96,15 +114,30 @@ Vercel est la plateforme idéale pour héberger des applications Next.js. Le dé
 
 **3. Configurez le projet**
 
-- **Framework Preset** : Vercel détectera automatiquement qu'il s'agit d'un projet Next.js. Vous n'avez rien à changer.
+- **Framework Preset** : Vercel détectera automatiquement qu'il s'agit d'un projet Next.js.
 - **Root Directory** : Laissez la valeur par défaut.
-- **Build and Output Settings** : Laissez les valeurs par défaut. Vercel sait comment construire une application Next.js.
-- **Environment Variables** : Si votre projet avait besoin de clés d'API (ce qui n'est pas le cas pour l'instant), c'est ici qu'il faudrait les ajouter.
+- **Build and Output Settings** : Laissez les valeurs par défaut.
 
-**4. Déployez !**
+**4. Ajoutez les Variables d'Environnement**
+
+- C'est l'étape la plus importante. Déroulez la section **"Environment Variables"**.
+- Vous devez ajouter ici **toutes les clés** que vous avez dans votre fichier `.env.local`. Chaque clé doit être ajoutée une par une.
+- Voici la liste des variables à ajouter :
+    - `NEXT_PUBLIC_FIREBASE_API_KEY`
+    - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+    - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+    - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+    - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+    - `NEXT_PUBLIC_FIREBASE_APP_ID`
+    - `CLOUDINARY_CLOUD_NAME`
+    - `CLOUDINARY_API_KEY`
+    - `CLOUDINARY_API_SECRET`
+- Pour chaque ligne, copiez le nom de la variable, puis collez la valeur correspondante depuis votre fichier local.
+
+**5. Déployez !**
 
 - Cliquez sur le bouton "Deploy".
-- Vercel va maintenant récupérer votre code, installer les dépendances, construire l'application et la mettre en ligne. Cela peut prendre une ou deux minutes.
+- Vercel va maintenant récupérer votre code, utiliser vos variables d'environnement, installer les dépendances, construire l'application et la mettre en ligne.
 
 Une fois le déploiement terminé, vous recevrez une URL publique pour votre application (par exemple, `momenty-app.vercel.app`). Félicitations, votre journal de voyage est en ligne !
 
