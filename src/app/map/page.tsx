@@ -238,13 +238,15 @@ export default function MapPage() {
                 toast({ variant: "destructive", title: "Erreur", description: `Le lieu "${locationName}" existe déjà.` });
                 hasError = true;
             } else {
-                newManualLocations.push({
+                const locationToAdd: ManualLocation = {
                     name: locationName,
-                    startDate: newStartDate || undefined,
-                    endDate: newEndDate || undefined,
-                    photos: newPhotos, 
-                    souvenir: newSouvenir || undefined,
-                });
+                    photos: newPhotos,
+                };
+                if (newStartDate) locationToAdd.startDate = newStartDate;
+                if (newEndDate) locationToAdd.endDate = newEndDate;
+                if (newSouvenir) locationToAdd.souvenir = newSouvenir;
+                
+                newManualLocations.push(locationToAdd);
             }
         });
 
@@ -293,16 +295,20 @@ export default function MapPage() {
 
         const currentLocations = await getManualLocations(user.uid);
 
-        const updatedLocations = currentLocations.map(loc => 
-            loc.name === editingLocation.name ? {
-                ...loc,
-                name: finalName,
-                startDate: editedStartDate || undefined,
-                endDate: editedEndDate || undefined,
-                photos: editedPhotos,
-                souvenir: editedSouvenir || undefined,
-            } : loc
-        );
+        const updatedLocations = currentLocations.map(loc => {
+            if (loc.name === editingLocation.name) {
+                 const updatedLoc: ManualLocation = {
+                    name: finalName,
+                    photos: editedPhotos,
+                 };
+                 if(editedStartDate) updatedLoc.startDate = editedStartDate;
+                 if(editedEndDate) updatedLoc.endDate = editedEndDate;
+                 if(editedSouvenir) updatedLoc.souvenir = editedSouvenir;
+                 return updatedLoc;
+            }
+            return loc;
+        });
+
 
         await saveManualLocations(user.uid, updatedLocations);
         await reloadManualLocations();
@@ -715,3 +721,6 @@ export default function MapPage() {
     </div>
   );
 }
+
+
+    
