@@ -32,7 +32,10 @@ export async function POST(request: Request) {
 
     const stream = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { resource_type: 'auto' },
+          { 
+            resource_type: 'auto',
+            quality: 'auto:best' // Conserver la meilleure qualité possible
+          },
           (error, result) => {
             if (error) {
               return reject(error);
