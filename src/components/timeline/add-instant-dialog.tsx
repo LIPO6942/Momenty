@@ -320,8 +320,8 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
     let uploadedPhotoUrls: string[] = [];
     if (photos.length > 0) {
-        const formData = new FormData();
         const fetchPromises = photos.map(async (photoDataUrl) => {
+            const formData = new FormData();
             const blob = await (await fetch(photoDataUrl)).blob();
             formData.append('file', blob);
             const response = await fetch('/api/upload', {
