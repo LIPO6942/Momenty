@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const withPWA = require('next-pwa')({
@@ -23,6 +24,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
