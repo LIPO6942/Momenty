@@ -1,0 +1,46 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can only read and write their own profile data.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Instants can only be created, read, updated, or deleted by their owner.
+    match /instants/{instantId} {
+      allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Encounters can only be managed by their owner.
+    match /encounters/{encounterId} {
+      allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Dishes can only be managed by their owner.
+    match /dishes/{dishId} {
+      allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Accommodations can only be managed by their owner.
+    match /accommodations/{accommodationId} {
+      allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Stories can only be managed by their owner.
+    match /stories/{storyId} {
+        allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+     // Manual locations are part of a user's document
+    match /manualLocations/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

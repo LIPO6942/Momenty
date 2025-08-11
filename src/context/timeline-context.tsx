@@ -7,8 +7,17 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getImage, getInstants, saveInstant, deleteInstantFromDB, saveImage, getEncounters, deleteEncounter as deleteEncounterFromDB, saveEncounter, getDishes, saveDish, deleteDish as deleteDishFromDB, getStories, saveStory, deleteStory as deleteStoryFromDB, getAccommodations, saveAccommodation, deleteAccommodation as deleteAccommodationFromDB, deleteImage } from '@/lib/idb';
+import { 
+    getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
+    getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
+    getDishes, saveDish, deleteDish as deleteDishFromDB,
+    getAccommodations, saveAccommodation, deleteAccommodation as deleteAccommodationFromDB,
+    getStories, saveStory, deleteStory as deleteStoryFromDB,
+    getManualLocations, saveManualLocations
+} from '@/lib/firestore';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
+import { useAuth } from './auth-context';
+
 
 interface GroupedInstants {
     [key: string]: {
@@ -20,23 +29,23 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id'>) => void;
-    updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
+    addInstant: (instant: Omit<Instant, 'id' | 'userId'>) => void;
+    updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id' | 'userId'>>) => void;
     deleteInstant: (id: string) => void;
     deleteInstantsByLocation: (locationName: string) => void;
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
     encounters: Encounter[];
-    addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
-    updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => Promise<void>;
+    addEncounter: (encounter: Omit<Encounter, 'id'| 'userId'>) => void;
+    updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id' | 'userId'>>) => Promise<void>;
     deleteEncounter: (id: string) => void;
     dishes: Dish[];
-    addDish: (dish: Omit<Dish, 'id'>) => void;
-    updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => Promise<void>;
+    addDish: (dish: Omit<Dish, 'id'| 'userId'>) => void;
+    updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id' | 'userId'>>) => Promise<void>;
     deleteDish: (id: string) => void;
     accommodations: Accommodation[];
-    addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => void;
-    updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => Promise<void>;
+    addAccommodation: (accommodation: Omit<Accommodation, 'id' | 'userId'>) => void;
+    updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id' | 'userId'>>) => Promise<void>;
     deleteAccommodation: (id: string) => void;
 }
 
@@ -87,6 +96,7 @@ interface TimelineProviderProps {
 }
 
 export const TimelineProvider = ({ children }: TimelineProviderProps) => {
+    const { user } = useAuth();
     const [instants, setInstants] = useState<Instant[]>([]);
     const [encounters, setEncounters] = useState<Encounter[]>([]);
     const [dishes, setDishes] = useState<Dish[]>([]);
@@ -94,52 +104,28 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
-    const getFullPhotoData = useCallback(async <T extends { id: string, photo?: string | null, photos?: string[] | null }>(item: T): Promise<T> => {
-        let finalPhoto = item.photo;
-        const photoKey = item.photo; 
-        if (photoKey && (photoKey.startsWith('local_') || photoKey.startsWith('encounter_') || photoKey.startsWith('dish_') || photoKey.startsWith('accommodation_'))) {
-            const localPhoto = await getImage(photoKey);
-            finalPhoto = localPhoto; 
-        }
-
-        let finalPhotos: string[] | undefined | null = item.photos;
-        if (item.photos && item.photos.length > 0) {
-            finalPhotos = await Promise.all(
-                item.photos.map(async (key) => {
-                    if (key.startsWith('local_')) {
-                        return await getImage(key) || key;
-                    }
-                    return key;
-                })
-            )
-        }
-
-        return { ...item, photo: finalPhoto, photos: finalPhotos };
-    }, []);
 
     useEffect(() => {
         const loadData = async () => {
-          let loadedInstants = await getInstants();
-          let loadedEncounters = await getEncounters();
-          let loadedDishes = await getDishes();
-          let loadedAccommodations = await getAccommodations();
-          
-          const processedInstants = await Promise.all(
-            loadedInstants.map(async (inst) => {
-              const instWithPhotoData = await getFullPhotoData(inst);
-              const { icon, color } = getCategoryAttributes(inst.category);
-              return { ...instWithPhotoData, icon, color };
-            })
-          );
-          
-          const processedEncounters = await Promise.all(loadedEncounters.map(e => getFullPhotoData(e)));
-          const processedDishes = await Promise.all(loadedDishes.map(d => getFullPhotoData(d)));
-          const processedAccommodations = await Promise.all(loadedAccommodations.map(a => getFullPhotoData(a)));
+          if (!user) {
+            setInstants([]);
+            setEncounters([]);
+            setDishes([]);
+            setAccommodations([]);
+            return;
+          };
 
-          setInstants(processedInstants.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setEncounters(processedEncounters.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setDishes(processedDishes.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setAccommodations(processedAccommodations.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          const loadedInstants = await getInstants(user.uid);
+          const loadedEncounters = await getEncounters(user.uid);
+          const loadedDishes = await getDishes(user.uid);
+          const loadedAccommodations = await getAccommodations(user.uid);
+          
+          const processedInstants = loadedInstants.map(addRuntimeAttributes);
+
+          setInstants(processedInstants);
+          setEncounters(loadedEncounters);
+          setDishes(loadedDishes);
+          setAccommodations(loadedAccommodations);
         };
         loadData();
 
@@ -156,9 +142,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         }
-      }, [getFullPhotoData]);
+      }, [user]);
 
-    const addInstant = async (instantData: Omit<Instant, 'id'>) => {
+    const addInstant = async (instantData: Omit<Instant, 'id'|'userId'>) => {
+        if(!user) return;
         let category = 'Note';
         try {
             const result = await categorizeInstant({
@@ -169,127 +156,47 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         } catch (error) {
             console.error("AI categorization failed", error);
         }
-
-        const newInstantId = new Date().toISOString() + Math.random();
         
-        const instantWithContext = { ...instantData };
-
-        const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
-            id: newInstantId,
-            type: instantWithContext.type,
-            title: instantWithContext.title,
-            description: instantWithContext.description,
-            date: instantWithContext.date,
-            location: instantWithContext.location,
-            emotion: instantWithContext.emotion,
-            photos: null,
+        const newInstantForDb: Omit<Instant, 'id' | 'icon' | 'color'> = {
+            ...instantData,
             category: category,
+            userId: user.uid,
         };
         
-        if (instantWithContext.photos && instantWithContext.photos.length > 0) {
-            const photoKeys = await Promise.all(
-                instantWithContext.photos.map((photo, index) => {
-                    const key = `local_${newInstantId}_${index}`;
-                    saveImage(key, photo);
-                    return key;
-                })
-            );
-            newInstantForDb.photos = photoKeys;
-        }
-        
-        await saveInstant(newInstantForDb as Instant);
-        
-        const newInstantForState = addRuntimeAttributes({
-            ...newInstantForDb,
-            photos: instantData.photos
-        } as Instant);
+        const newId = await saveInstant(newInstantForDb);
+        const newInstantForState = addRuntimeAttributes({ id: newId, ...newInstantForDb });
 
         setInstants(prevInstants => [...prevInstants, newInstantForState].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     };
 
-    const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
-        const newEncounterId = new Date().toISOString() + Math.random();
-        const encounterForDb = { id: newEncounterId, ...encounterData, photo: null };
-        const encounterForState = { id: newEncounterId, ...encounterData };
-
-        if (encounterData.photo) {
-            const photoId = `encounter_${newEncounterId}`;
-            await saveImage(photoId, encounterData.photo);
-            encounterForDb.photo = photoId;
-        }
-
-        await saveEncounter(encounterForDb as Encounter);
-        
-        setEncounters(prev => [encounterForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const addEncounter = async (encounterData: Omit<Encounter, 'id' | 'userId'>) => {
+        if(!user) return;
+        const encounterForDb = { ...encounterData, userId: user.uid };
+        const newId = await saveEncounter(encounterForDb);
+        setEncounters(prev => [{...encounterForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
-    const addDish = async (dishData: Omit<Dish, 'id'>) => {
-        const newDishId = new Date().toISOString() + Math.random();
-        const dishForDb = { id: newDishId, ...dishData, photo: null };
-        const dishForState = { id: newDishId, ...dishData };
-
-        if (dishData.photo) {
-            const photoId = `dish_${newDishId}`;
-            await saveImage(photoId, dishData.photo);
-            dishForDb.photo = photoId;
-        }
-
-        await saveDish(dishForDb as Dish);
-        
-        setDishes(prev => [dishForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const addDish = async (dishData: Omit<Dish, 'id' | 'userId'>) => {
+        if(!user) return;
+        const dishForDb = { ...dishData, userId: user.uid };
+        const newId = await saveDish(dishForDb);
+        setDishes(prev => [{...dishForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
-    const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
-        const newAccommodationId = new Date().toISOString() + Math.random();
-        const accommodationForDb = { id: newAccommodationId, ...accommodationData, photo: null };
-        const accommodationForState = { id: newAccommodationId, ...accommodationData };
-
-        if (accommodationData.photo) {
-            const photoId = `accommodation_${newAccommodationId}`;
-            await saveImage(photoId, accommodationData.photo);
-            accommodationForDb.photo = photoId;
-        }
-
-        await saveAccommodation(accommodationForDb as Accommodation);
-        
-        setAccommodations(prev => [accommodationForState, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const addAccommodation = async (accommodationData: Omit<Accommodation, 'id' | 'userId'>) => {
+        if(!user) return;
+        const accommodationForDb = { ...accommodationData, userId: user.uid };
+        const newId = await saveAccommodation(accommodationForDb);
+        setAccommodations(prev => [{...accommodationForDb, id: newId}, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
 
 
-    const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
+    const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'|'userId'>>) => {
+        if(!user) return;
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
     
         const updatedInstant = { ...originalInstant, ...updatedInstantData };
-    
-        // Handle photo updates
-        if (updatedInstantData.photos) {
-            // Delete old photos first
-            if(originalInstant.photos) {
-                for(let i=0; i < originalInstant.photos.length; i++) {
-                    await deleteImage(`local_${id}_${i}`);
-                }
-            }
-    
-            // Save new photos
-            const photoKeys = await Promise.all(
-                updatedInstantData.photos.map((photo, index) => {
-                    const key = `local_${id}_${index}`;
-                    if(photo.startsWith('data:')) {
-                        saveImage(key, photo);
-                    }
-                    return key;
-                })
-            );
-            updatedInstant.photos = photoKeys;
-        } else if (updatedInstantData.photos === null) {
-             if(originalInstant.photos) {
-                for(let i=0; i < originalInstant.photos.length; i++) {
-                    await deleteImage(`local_${id}_${i}`);
-                }
-            }
-            updatedInstant.photos = null;
-        }
     
         if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
             try {
@@ -303,24 +210,9 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
     
-        const updatedInstantForDb: Instant = {
-            id: updatedInstant.id,
-            type: updatedInstant.type,
-            title: updatedInstant.title,
-            description: updatedInstant.description,
-            date: updatedInstant.date,
-            location: updatedInstant.location,
-            emotion: updatedInstant.emotion,
-            photos: updatedInstant.photos,
-            category: updatedInstant.category
-        };
+        await saveInstant(updatedInstant, id);
     
-        await saveInstant(updatedInstantForDb);
-    
-        const updatedInstantForState = addRuntimeAttributes({
-            ...updatedInstantForDb,
-            photos: updatedInstantData.photos // keep data URLs for state
-        });
+        const updatedInstantForState = addRuntimeAttributes(updatedInstant);
     
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
@@ -329,25 +221,20 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     
 
     const deleteInstant = async (id: string) => {
+        if(!user) return;
         const instantToDelete = instants.find(i => i.id === id);
         if (!instantToDelete) return;
     
-        const dayKeyOfDeletedInstant = format(startOfDay(parseISO(instantToDelete.date)), 'yyyy-MM-dd');
-    
         await deleteInstantFromDB(id);
-        if (instantToDelete.photos) {
-            for(let i=0; i < instantToDelete.photos.length; i++) {
-                await deleteImage(`local_${id}_${i}`);
-            }
-        }
     
         const remainingInstants = instants.filter(instant => instant.id !== id);
         setInstants(remainingInstants);
     
+        const dayKeyOfDeletedInstant = format(startOfDay(parseISO(instantToDelete.date)), 'yyyy-MM-dd');
         const isLastInstantOfDay = !remainingInstants.some(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd') === dayKeyOfDeletedInstant);
     
         if (isLastInstantOfDay) {
-            const allStories = await getStories();
+            const allStories = await getStories(user.uid);
             for (const story of allStories) {
                 const storyContainsDay = story.id.includes(dayKeyOfDeletedInstant);
                 if (storyContainsDay) {
@@ -359,29 +246,28 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     };
 
     const deleteEncounter = async (id: string) => {
+        if(!user) return;
         await deleteEncounterFromDB(id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
     }
     
     const deleteDish = async (id: string) => {
+        if(!user) return;
         await deleteDishFromDB(id);
         setDishes(prev => prev.filter(dish => dish.id !== id));
     }
 
     const deleteAccommodation = async (id: string) => {
+        if(!user) return;
         await deleteAccommodationFromDB(id);
         setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
     }
 
     const deleteInstantsByLocation = async (locationName: string) => {
+        if(!user) return;
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
             await deleteInstantFromDB(instant.id);
-            if(instant.photos) {
-                for(let i=0; i < instant.photos.length; i++) {
-                    await deleteImage(`local_${instant.id}_${i}`);
-                }
-            }
         }
         setInstants(prev => prev.filter(i => i.location !== locationName));
     };
@@ -417,70 +303,25 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     }, [instants]);
 
-    const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => {
-        const originalEncounter = encounters.find(e => e.id === id);
-        if (!originalEncounter) return;
-
-        const updatedEncounter = { ...originalEncounter, ...updatedData };
-        
-        const photoKey = `encounter_${id}`;
-        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
-            await saveImage(photoKey, updatedData.photo);
-        } else if (updatedData.photo === null) {
-            await deleteImage(photoKey);
-        }
-        
-        const encounterForDb: Encounter = {
-            ...updatedEncounter,
-            photo: updatedEncounter.photo ? photoKey : null,
-        };
-        await saveEncounter(encounterForDb);
-
-        setEncounters(prev => prev.map(e => (e.id === id ? updatedEncounter : e)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id' | 'userId'>>) => {
+        if(!user) return;
+        await saveEncounter(updatedData, id);
+        const updatedEncounters = await getEncounters(user.uid);
+        setEncounters(updatedEncounters);
     };
 
-    const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => {
-        const originalDish = dishes.find(d => d.id === id);
-        if (!originalDish) return;
-        
-        const updatedDish = { ...originalDish, ...updatedData };
-        
-        const photoKey = `dish_${id}`;
-        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
-            await saveImage(photoKey, updatedData.photo);
-        } else if (updatedData.photo === null) {
-            await deleteImage(photoKey);
-        }
-        
-        const dishForDb: Dish = {
-            ...updatedDish,
-            photo: updatedDish.photo ? photoKey : null,
-        };
-        await saveDish(dishForDb);
-        
-        setDishes(prev => prev.map(d => (d.id === id ? updatedDish : d)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id' | 'userId'>>) => {
+        if(!user) return;
+        await saveDish(updatedData, id);
+        const updatedDishes = await getDishes(user.uid);
+        setDishes(updatedDishes);
     };
 
-    const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => {
-        const originalAccommodation = accommodations.find(a => a.id === id);
-        if (!originalAccommodation) return;
-        
-        const updatedAccommodation = { ...originalAccommodation, ...updatedData };
-        
-        const photoKey = `accommodation_${id}`;
-        if (updatedData.photo && updatedData.photo.startsWith('data:')) {
-            await saveImage(photoKey, updatedData.photo);
-        } else if (updatedData.photo === null) {
-            await deleteImage(photoKey);
-        }
-        
-        const accommodationForDb: Accommodation = {
-            ...updatedAccommodation,
-            photo: updatedAccommodation.photo ? photoKey : null,
-        };
-        await saveAccommodation(accommodationForDb);
-        
-        setAccommodations(prev => prev.map(a => (a.id === id ? updatedAccommodation : a)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id' | 'userId'>>) => {
+        if(!user) return;
+        await saveAccommodation(updatedData, id);
+        const updatedAccommodations = await getAccommodations(user.uid);
+        setAccommodations(updatedAccommodations);
     };
 
 

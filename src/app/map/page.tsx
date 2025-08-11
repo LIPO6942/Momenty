@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { getManualLocations, saveManualLocations, type ManualLocation, getImage } from "@/lib/idb";
+import { getManualLocations, saveManualLocations, type ManualLocation } from "@/lib/firestore";
 import dynamic from 'next/dynamic';
 import type { LocationWithCoords } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useAuth } from "@/context/auth-context";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -65,16 +66,11 @@ const toInputDate = (isoString?: string) => {
     }
 }
 
-// Extended type for client-side state
-interface ClientManualLocation extends ManualLocation {
-    photosData?: (string | null)[];
-}
-
-
 export default function MapPage() {
     const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
+    const { user } = useAuth();
     const { toast } = useToast();
-    const [manualLocations, setManualLocations] = useState<ClientManualLocation[]>([]);
+    const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
@@ -90,36 +86,34 @@ export default function MapPage() {
     const [newSouvenir, setNewSouvenir] = useState("");
     const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
-    const [isConverting, setIsConverting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     
     // State for Edit Dialog
-    const [editingLocation, setEditingLocation] = useState<ClientManualLocation | null>(null);
+    const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
     const [editedName, setEditedName] = useState("");
     const [editedStartDate, setEditedStartDate] = useState("");
     const [editedEndDate, setEditedEndDate] = useState("");
-    const [editedPhotos, setEditedPhotos] = useState<string[]>([]); // This will hold data URLs or keys
-    const [editedPhotoKeys, setEditedPhotoKeys] = useState<string[]>([]); // This will hold just keys
+    const [editedPhotos, setEditedPhotos] = useState<string[]>([]);
     const [editedSouvenir, setEditedSouvenir] = useState("");
     const editPhotoInputRef = useRef<HTMLInputElement>(null);
 
-    const reloadLocationsWithPhotos = async () => {
-        const savedManualLocations = await getManualLocations();
-        const hydratedLocations = await Promise.all(savedManualLocations.map(async (loc) => {
-            const photosData = loc.photos ? await Promise.all(loc.photos.map(key => getImage(key))) : [];
-            return { ...loc, photosData };
-        }));
-        setManualLocations(hydratedLocations);
+    const reloadManualLocations = async () => {
+        if (!user) return;
+        const savedManualLocations = await getManualLocations(user.uid);
+        setManualLocations(savedManualLocations);
     };
 
     useEffect(() => {
         setIsMounted(true);
-        reloadLocationsWithPhotos();
-    }, []);
+        if(user) {
+            reloadManualLocations();
+        }
+    }, [user]);
 
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
     const allLocations = useMemo(() => {
-        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string, photosData?: (string | null)[] }>();
+        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string }>();
 
         manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
         instantLocations.forEach(location => {
@@ -188,7 +182,6 @@ export default function MapPage() {
             grouped[country].push(location);
         });
         
-        // Ensure "Lieux non classés" is last if it exists
         const orderedGrouped: { [country: string]: LocationWithCoords[] } = {};
         Object.keys(grouped).sort((a, b) => {
             if (a === 'Lieux non classés') return 1;
@@ -223,6 +216,7 @@ export default function MapPage() {
     
 
     const handleAddLocations = async () => {
+        if (!user) return;
         const country = newCountry.trim();
         if (!country) {
             toast({ variant: "destructive", title: "Veuillez sélectionner un pays." });
@@ -248,7 +242,7 @@ export default function MapPage() {
                     name: locationName,
                     startDate: newStartDate || undefined,
                     endDate: newEndDate || undefined,
-                    photos: newPhotos, // Pass data URLs to be processed by saveManualLocations
+                    photos: newPhotos, 
                     souvenir: newSouvenir || undefined,
                 });
             }
@@ -256,15 +250,14 @@ export default function MapPage() {
 
         if (hasError) return;
         
-        const currentLocations = await getManualLocations();
+        const currentLocations = await getManualLocations(user.uid);
         const updatedManualLocations = [...currentLocations, ...newManualLocations];
         
-        await saveManualLocations(updatedManualLocations);
-        await reloadLocationsWithPhotos();
+        await saveManualLocations(user.uid, updatedManualLocations);
+        await reloadManualLocations();
 
         toast({ title: "Lieu(x) ajouté(s) !" });
         
-        // Reset form
         setNewCountry("");
         setNewCities([""]);
         setNewStartDate("");
@@ -275,18 +268,17 @@ export default function MapPage() {
     };
 
 
-    const openEditDialog = (location: ClientManualLocation) => {
+    const openEditDialog = (location: ManualLocation) => {
         setEditingLocation(location);
         setEditedName(location.name);
         setEditedStartDate(toInputDate(location.startDate));
         setEditedEndDate(toInputDate(location.endDate));
-        setEditedPhotos(location.photosData?.filter(Boolean) as string[] || []); // for display
-        setEditedPhotoKeys(location.photos || []); // for saving
+        setEditedPhotos(location.photos || []);
         setEditedSouvenir(location.souvenir || "");
     }
 
     const handleEditLocation = async () => {
-        if (!editingLocation) return;
+        if (!editingLocation || !user) return;
         
         const finalName = editedName.trim();
         if (!finalName) {
@@ -299,11 +291,7 @@ export default function MapPage() {
             return;
         }
 
-        const currentLocations = await getManualLocations();
-
-        // Create a list of photos to save. This includes existing keys and new data URLs
-        const photosToSave = editedPhotos.filter(p => p.startsWith('data:')) // new photos
-                             .concat(editedPhotoKeys); // existing photo keys
+        const currentLocations = await getManualLocations(user.uid);
 
         const updatedLocations = currentLocations.map(loc => 
             loc.name === editingLocation.name ? {
@@ -311,23 +299,24 @@ export default function MapPage() {
                 name: finalName,
                 startDate: editedStartDate || undefined,
                 endDate: editedEndDate || undefined,
-                photos: photosToSave,
+                photos: editedPhotos,
                 souvenir: editedSouvenir || undefined,
             } : loc
         );
 
-        await saveManualLocations(updatedLocations);
-        await reloadLocationsWithPhotos();
+        await saveManualLocations(user.uid, updatedLocations);
+        await reloadManualLocations();
         
         toast({ title: "Lieu mis à jour." });
         setEditingLocation(null);
     }
     
     const handleDeleteLocation = async (locationName: string) => {
-        const currentLocations = await getManualLocations();
+        if(!user) return;
+        const currentLocations = await getManualLocations(user.uid);
         const updatedManualLocations = currentLocations.filter(l => l.name !== locationName);
-        await saveManualLocations(updatedManualLocations);
-        await reloadLocationsWithPhotos();
+        await saveManualLocations(user.uid, updatedManualLocations);
+        await reloadManualLocations();
         deleteInstantsByLocation(locationName); // Also delete associated instants
         toast({title: "Lieu et souvenirs associés supprimés."});
     }
@@ -339,50 +328,29 @@ export default function MapPage() {
         const files = e.target.files;
         if (!files) return;
     
-        setIsConverting(true);
-        toast({ title: `Traitement de ${files.length} photo(s)...` });
+        setIsUploading(true);
+        toast({ title: `Téléversement de ${files.length} photo(s)...` });
     
+        const uploadedUrls = [];
         for (const file of Array.from(files)) {
-            let processingFile: File | Blob = file;
-    
-            if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-                try {
-                    const heic2any = (await import('heic2any')).default;
-                    const convertedBlob = await heic2any({
-                        blob: file,
-                        toType: 'image/jpeg',
-                        quality: 0.9,
-                    });
-                    processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-                } catch (error) {
-                    console.error('HEIC Conversion Error:', error);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Erreur de conversion',
-                        description: `Impossible de convertir ${file.name}.`,
-                    });
-                    continue; // Skip to next file
-                }
-            }
-    
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                if (typeof reader.result === 'string') {
-                    setPhotosCallback(prev => [...prev, reader.result as string]);
-                }
-            };
-            reader.onerror = () => {
-                console.error(`Erreur de lecture du fichier: ${file.name}`);
-                toast({
-                    variant: 'destructive',
-                    title: "Erreur d'importation",
-                    description: `Impossible de lire le fichier "${file.name}".`,
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
                 });
-            };
-            reader.readAsDataURL(processingFile);
+                if(!response.ok) throw new Error(`Upload failed for ${file.name}`);
+                const result = await response.json();
+                uploadedUrls.push(result.secure_url);
+            } catch (error) {
+                 console.error('Upload Error:', error);
+                 toast({ variant: "destructive", title: 'Échec du téléversement', description: `L'envoi de ${file.name} a échoué.` });
+            }
         }
     
-        setIsConverting(false);
+        setPhotosCallback(prev => [...prev, ...uploadedUrls]);
+        setIsUploading(false);
         toast({ title: 'Toutes les photos ont été traitées.' });
     
         if (e.target) {
@@ -394,23 +362,8 @@ export default function MapPage() {
         setNewPhotos(prev => prev.filter((_, i) => i !== index));
     }
 
-    const removeEditedPhoto = async (indexToRemove: number) => {
-        if (!editingLocation) return;
-    
-        const photoToRemove = editedPhotos[indexToRemove];
-    
-        if (photoToRemove.startsWith('data:')) {
-            setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
-            return;
-        }
-    
-        const originalLocationState = manualLocations.find(l => l.name === editingLocation.name);
-        const keyToRemove = originalLocationState?.photos?.[indexToRemove];
-    
-        if (keyToRemove) {
-            setEditedPhotos(prev => prev.filter((_, i) => i !== indexToRemove));
-            setEditedPhotoKeys(prev => prev.filter(k => k !== keyToRemove));
-        }
+    const removeEditedPhoto = (index: number) => {
+        setEditedPhotos(prev => prev.filter((_, i) => i !== index));
     };
     
 
@@ -418,7 +371,7 @@ export default function MapPage() {
         if (!startDate) return null;
         const start = format(parseISO(startDate), "d MMM yyyy", { locale: fr });
         if (!endDate || startDate === endDate) return `Le ${start}`;
-        const end = format(parseISO(endDate), "d MMM yyyy", { locale: fr });
+        const end = format(parseISO(endDate), "d MMMM yyyy", { locale: fr });
         return `${start} - ${end}`;
     }
 
@@ -442,7 +395,7 @@ export default function MapPage() {
        <div className="mb-8">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button>
+                    <Button disabled={!user}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un lieu
                     </Button>
@@ -560,9 +513,9 @@ export default function MapPage() {
                                     </div>
                                 ))}
                             </div>
-                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isConverting}>
-                                {isConverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
-                                {isConverting ? "Conversion..." : "Ajouter des photos"}
+                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
+                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
+                                {isUploading ? "Téléversement..." : "Ajouter des photos"}
                             </Button>
                             <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)}/>
                         </div>
@@ -582,7 +535,7 @@ export default function MapPage() {
                         <DialogClose asChild>
                             <Button variant="ghost">Annuler</Button>
                         </DialogClose>
-                        <Button onClick={handleAddLocations}>Ajouter</Button>
+                        <Button onClick={handleAddLocations} disabled={isUploading}>Ajouter</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -593,6 +546,10 @@ export default function MapPage() {
              <div className="flex justify-center items-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
              </div>
+        ) : !user ? (
+             <div className="text-center py-10">
+                <p className="text-muted-foreground">Connectez-vous pour gérer votre carte de voyage.</p>
+            </div>
         ) : allLocations.length === 0 ? (
             <div className="text-center py-10">
                 <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
@@ -627,7 +584,7 @@ export default function MapPage() {
                                                 {location.isManual && (
                                                     <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
                                                         <DialogTrigger asChild>
-                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ClientManualLocation)}>
+                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
                                                         </DialogTrigger>
@@ -668,7 +625,7 @@ export default function MapPage() {
                                                                     <Label>Photos souvenirs</Label>
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {editedPhotos.map((photo, index) => (
-                                                                            <div key={photo.substring(0,30) + index} className="relative group">
+                                                                            <div key={photo + index} className="relative group">
                                                                                 <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
                                                                                 <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
                                                                                     <Trash2 className="h-3 w-3" />
@@ -676,9 +633,9 @@ export default function MapPage() {
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isConverting}>
-                                                                        {isConverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
-                                                                        {isConverting ? "Conversion..." : "Ajouter des photos"}
+                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
+                                                                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
+                                                                        {isUploading ? "Téléversement..." : "Ajouter des photos"}
                                                                     </Button>
                                                                     <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
                                                                 </div>
@@ -696,7 +653,7 @@ export default function MapPage() {
                                                                 <DialogClose asChild>
                                                                     <Button variant="ghost">Annuler</Button>
                                                                 </DialogClose>
-                                                                <Button onClick={handleEditLocation}>Enregistrer</Button>
+                                                                <Button onClick={handleEditLocation} disabled={isUploading}>Enregistrer</Button>
                                                             </DialogFooter>
                                                         </DialogContent>
                                                     </Dialog>
@@ -731,9 +688,9 @@ export default function MapPage() {
                                             <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
                                         )}
                                         
-                                        {location.photosData && location.photosData.length > 0 && (
+                                        {location.photos && location.photos.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pt-2">
-                                                {location.photosData.map((photo, index) => (
+                                                {location.photos.map((photo, index) => (
                                                    photo && <Image
                                                         key={index}
                                                         src={photo}
@@ -758,9 +715,3 @@ export default function MapPage() {
     </div>
   );
 }
-
-    
-
-    
-
-

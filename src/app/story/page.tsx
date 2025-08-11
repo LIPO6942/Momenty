@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useContext, useMemo, useEffect } from 'react';
@@ -9,7 +10,8 @@ import { generateStory } from '@/ai/flows/generate-story-flow';
 import type { GeneratedStory, Instant } from '@/lib/types';
 import { Loader2, Wand2, Edit, Trash2, BookText, Check, ChevronsUpDown, X } from 'lucide-react';
 import Image from 'next/image';
-import { saveStory, getStories, deleteStory as deleteStoryFromDB, getProfile } from '@/lib/idb';
+import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/firestore';
+import { getProfile } from '@/lib/idb';
 import type { ProfileData } from '@/lib/idb';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -46,6 +48,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '@/context/auth-context';
 
 
 const StoryPreview = ({ story }: { story: string }) => {
@@ -116,6 +119,7 @@ const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
 
 export default function StoryPage() {
     const { groupedInstants, instants, activeTrip, activeStay } = useContext(TimelineContext);
+    const { user } = useAuth();
     const { toast } = useToast();
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [stories, setStories] = useState<GeneratedStory[]>([]);
@@ -126,38 +130,41 @@ export default function StoryPage() {
     const [userProfile, setUserProfile] = useState<Omit<ProfileData, 'id'> | null>(null);
     const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
 
+    const loadStories = async () => {
+        if(!user) return;
+        const loadedStories = await getStories(user.uid);
+        // Hydrate stories with full instant data for display
+        const hydratedStories = loadedStories.map(story => {
+            const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Instant[];
+            return {...story, instants: storyInstants};
+        })
+        setStories(hydratedStories);
+        // Open the most recent story by default
+        if (hydratedStories.length > 0) {
+            setOpenAccordionItem(hydratedStories[0].id);
+        }
+    };
+
     useEffect(() => {
-        const loadData = async () => {
-            const loadedStories = await getStories();
+        const loadProfileData = async () => {
             const profile = await getProfile();
             setUserProfile(profile);
-
-            // Hydrate stories with full instant data for display
-            const hydratedStories = loadedStories.map(story => {
-                const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Instant[];
-                return {...story, instants: storyInstants};
-            })
-            setStories(hydratedStories);
-            // Open the most recent story by default
-            if (hydratedStories.length > 0) {
-                setOpenAccordionItem(hydratedStories[0].id);
-            }
         };
+        loadProfileData();
 
-        const handleStoriesUpdated = () => {
-            loadData();
-        };
-
-        if(instants.length > 0) { // ensure instants are loaded first
-            loadData();
+        if(user && instants.length > 0) {
+            loadStories();
         }
 
-        window.addEventListener('stories-updated', handleStoriesUpdated);
+        const handleStoriesUpdated = () => {
+            if(user) loadStories();
+        };
 
+        window.addEventListener('stories-updated', handleStoriesUpdated);
         return () => {
             window.removeEventListener('stories-updated', handleStoriesUpdated);
         }
-    }, [instants]);
+    }, [user, instants]);
 
     const dayOptions = useMemo(() => {
         return Object.keys(groupedInstants).map(dayKey => ({
@@ -167,7 +174,7 @@ export default function StoryPage() {
     }, [groupedInstants]);
 
     const handleGenerateStory = async () => {
-        if (selectedDays.length === 0) return;
+        if (selectedDays.length === 0 || !user) return;
 
         setIsLoading(true);
         try {
@@ -201,19 +208,13 @@ export default function StoryPage() {
                 userGender: userProfile?.gender,
             });
             
-            const cleanInstantsForDb = allInstantsForStory.map(i => {
-                const { icon, color, ...rest } = i;
-                // Important: Ensure photos are reference strings if they exist for DB
-                const photoKeys = rest.photos?.map((_, index) => `local_${rest.id}_${index}`) || null;
-                return { ...rest, photos: photoKeys };
-            });
-            
             const newStory: GeneratedStory = {
                 id: storyId,
                 date: sortedDays[0], // Use first day for sorting purposes
                 title: storyTitle,
                 story: result.story,
-                instants: cleanInstantsForDb,
+                instants: allInstantsForStory.map(({ icon, color, ...rest }) => rest), // Remove runtime properties
+                userId: user.uid,
             };
 
             await saveStory(newStory);
@@ -238,33 +239,22 @@ export default function StoryPage() {
     };
 
     const handleSaveEdit = async () => {
-        if (!isEditing) return;
+        if (!isEditing || !user) return;
         
-        const storyWithHydratedInstants = stories.find(s => s.id === isEditing.id);
-        if (!storyWithHydratedInstants) return;
-
-        const updatedStoryForState = { ...storyWithHydratedInstants, story: editText };
-        
-        const cleanInstantsForDb = storyWithHydratedInstants.instants.map(i => {
-            const { icon, color, ...rest } = i;
-            const photoKeys = rest.photos?.map((_, index) => `local_${rest.id}_${index}`) || null;
-            return { ...rest, photos: photoKeys };
-        });
-
-        const updatedStoryForDb: GeneratedStory = {
+        const updatedStory: GeneratedStory = {
              ...isEditing, 
              story: editText, 
-             instants: cleanInstantsForDb
         };
         
-        await saveStory(updatedStoryForDb);
+        await saveStory(updatedStory);
 
-        setStories(prev => prev.map(s => s.id === updatedStoryForDb.id ? updatedStoryForState : s));
+        setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s));
         setIsEditing(null);
         toast({ title: "Histoire mise à jour." });
     };
 
     const handleDeleteStory = async (storyId: string) => {
+        if(!user) return;
         await deleteStoryFromDB(storyId);
         setStories(prev => prev.filter(s => s.id !== storyId));
         toast({ title: "Histoire supprimée." });
@@ -299,6 +289,7 @@ export default function StoryPage() {
                             role="combobox"
                             aria-expanded={isDaySelectorOpen}
                             className="w-full justify-between h-auto min-h-10"
+                            disabled={!user}
                             >
                             <div className="flex flex-wrap gap-1">
                                 {selectedDays.length === 0 && "Choisissez une ou plusieurs dates..."}
@@ -359,7 +350,7 @@ export default function StoryPage() {
                                 )}
                                  <ScrollBar orientation="horizontal" />
                             </ScrollArea>
-                             <Button onClick={handleGenerateStory} disabled={isLoading} className="w-full">
+                             <Button onClick={handleGenerateStory} disabled={isLoading || !user} className="w-full">
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
@@ -418,7 +409,7 @@ export default function StoryPage() {
                         ))}
                     </Accordion>
                 ) : (
-                    <p className="text-muted-foreground text-center py-8">Aucune histoire générée pour le moment.</p>
+                    <p className="text-muted-foreground text-center py-8">{ user ? "Aucune histoire générée pour le moment." : "Connectez-vous pour voir vos histoires."}</p>
                 )}
             </div>
 

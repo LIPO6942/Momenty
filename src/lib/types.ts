@@ -1,6 +1,6 @@
 
 
-import { type ManualLocation } from "./idb";
+import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
 
 
@@ -14,9 +14,9 @@ export interface Instant {
     color?: string;
     location: string;
     emotion: string | string[];
-    photos?: string[] | null; // Data URL for the image or a reference string like "local_..."
+    photos?: string[] | null; // Now these will be Cloudinary URLs
     category?: string; // AI-generated category
-    userId?: string;
+    userId: string; // Added userId
 }
 
 export interface Encounter {
@@ -26,8 +26,8 @@ export interface Encounter {
     date: string; // ISO String
     location: string;
     emotion: string | string[];
-    photo?: string | null;
-    userId?: string;
+    photo?: string | null; // Cloudinary URL
+    userId: string; // Added userId
 }
 
 export interface Dish {
@@ -37,8 +37,8 @@ export interface Dish {
     date: string; // ISO String
     location: string;
     emotion: string | string[];
-    photo?: string | null;
-    userId?: string;
+    photo?: string | null; // Cloudinary URL
+    userId: string; // Added userId
 }
 
 export interface Accommodation {
@@ -48,8 +48,8 @@ export interface Accommodation {
     date: string; // ISO String
     location: string;
     emotion: string | string[];
-    photo?: string | null;
-    userId?: string;
+    photo?: string | null; // Cloudinary URL
+    userId: string; // Added userId
 }
 
 export interface Trip {
@@ -83,6 +83,7 @@ export interface GeneratedStory {
   title: string;
   story: string;
   instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
+  userId: string;
 }
 
 export interface LocationWithCoords extends ManualLocation {
