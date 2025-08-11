@@ -31,10 +31,17 @@ export interface ManualLocation {
 
 // --- Generic CRUD Functions for user-specific subcollections ---
 
-const saveDataInSubcollection = async <T extends {id?: string}>(userId: string, collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
+const saveDataInSubcollection = async <T extends {id?: string, icon?: any, color?: any}>(userId: string, collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
     const subcollectionRef = collection(db, 'users', userId, collectionName);
     const docRef = id ? doc(subcollectionRef, id) : doc(subcollectionRef);
-    await setDoc(docRef, data, { merge: true });
+    
+    // Create a copy of the data and remove properties that shouldn't be in Firestore.
+    // This prevents "INTERNAL ASSERTION FAILED" errors from trying to save React components.
+    const dataToSave = { ...data };
+    delete dataToSave.icon;
+    delete dataToSave.color;
+
+    await setDoc(docRef, dataToSave, { merge: true });
     return docRef.id;
 };
 
