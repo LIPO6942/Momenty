@@ -151,6 +151,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             const result = await categorizeInstant({
                 title: instantData.title,
                 description: instantData.description,
+                location: instantData.location,
             });
             category = result.category;
         } catch (error) {
@@ -194,11 +195,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     
         const updatedInstant = { ...originalInstant, ...updatedInstantData };
     
-        if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description) {
+        if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description || updatedInstant.location !== originalInstant.location) {
             try {
                 const { category } = await categorizeInstant({
                     title: updatedInstant.title,
                     description: updatedInstant.description,
+                    location: updatedInstant.location,
                 });
                 updatedInstant.category = category;
             } catch (error) {
@@ -206,7 +208,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         }
     
-        await saveInstant(user.uid, updatedInstant, id);
+        const { icon, color, ...instantToSave } = updatedInstant;
+        await saveInstant(user.uid, instantToSave, id);
     
         const updatedInstantForState = addRuntimeAttributes(updatedInstant);
     

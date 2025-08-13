@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to categorize travel instants.
@@ -13,6 +14,7 @@ import {z} from 'zod';
 const CategorizeInstantInputSchema = z.object({
   title: z.string().describe('The title of the instant.'),
   description: z.string().describe('The description of the instant.'),
+  location: z.string().describe('The location of the instant (e.g., "Paris, France").'),
 });
 export type CategorizeInstantInput = z.infer<typeof CategorizeInstantInputSchema>;
 
@@ -29,14 +31,17 @@ const prompt = ai.definePrompt({
   name: 'categorizeInstantPrompt',
   input: {schema: CategorizeInstantInputSchema},
   output: {schema: CategorizeInstantOutputSchema},
-  prompt: `You are an expert travel journal assistant. Your task is to categorize an event based on its title and description.
+  prompt: `You are an expert travel journal assistant. Your task is to categorize an event based on its title, description, and location.
   
   Choose the most appropriate category from the following list: Gastronomie, Culture, Nature, Shopping, Art, Sport, Détente, Voyage.
 
+  **IMPORTANT RULE:** If the location is 'Tunisie' or contains 'Tunisie', it is considered a local activity or a stay ("séjour"), NOT a trip ("voyage"). In this case, you MUST NOT use the 'Voyage' category. Pick another relevant category from the list.
+
   Event Title: {{{title}}}
   Event Description: {{{description}}}
+  Event Location: {{{location}}}
   
-  Provide only the most relevant category.`,
+  Provide only the most relevant category based on all the information and rules.`,
 });
 
 const categorizeInstantFlow = ai.defineFlow(
