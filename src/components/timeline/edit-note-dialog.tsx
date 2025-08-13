@@ -77,7 +77,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [photos, setPhotos] = useState<string[]>(instantToEdit.photos || []);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
-  const [categories, setCategories] = useState(instantToEdit.category || []);
+  const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImprovingText, setIsImprovingText] = useState(false);
@@ -92,7 +92,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setPhotos(instantToEdit.photos || []);
       setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
       setDate(instantToEdit.date);
-      setCategories(instantToEdit.category || []);
+      setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
     }
   }, [open, instantToEdit]);
 
@@ -234,7 +234,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setPhotos(instantToEdit.photos || []);
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
-    setCategories(instantToEdit.category || []);
+    setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
     setIsAnalyzing(false);
     setIsImprovingText(false);
   }
