@@ -43,7 +43,7 @@ const moods = [
   { name: "Nostalgique", icon: "😢" },
 ];
 
-const categories = ['Gastronomie', 'Culture', 'Nature', 'Shopping', 'Art', 'Sport', 'Détente', 'Voyage', 'Note'];
+const categories = ['Gastronomie', 'Culture', 'Nature', 'Shopping', 'Art', 'Sport', 'Détente', 'Voyage', 'Note', 'Plage', 'Séjour'];
 
 
 // Helper to format ISO string to datetime-local string
@@ -404,4 +404,3 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       </Dialog>
   );
 }
-
