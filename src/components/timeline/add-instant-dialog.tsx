@@ -73,7 +73,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isConverting, setIsConverting] = useState(false);
-  const [isMultiSelect, setIsMultiSelect] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -234,7 +233,6 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     setDishName("");
     setIsAccommodation(false);
     setAccommodationName("");
-    setIsMultiSelect(false);
     setIsSubmitting(false);
   }
 
@@ -308,10 +306,12 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
     try {
         if (!description && photos.length === 0) {
             toast({variant: "destructive", title: "Veuillez ajouter une description ou une photo."});
+            setIsSubmitting(false);
             return;
         }
         if (!location) {
             toast({variant: "destructive", title: "Veuillez renseigner un lieu."});
+            setIsSubmitting(false);
             return;
         }
     
@@ -341,6 +341,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         if (isEncounter) {
             if (!encounterName) {
                 toast({variant: "destructive", title: "Veuillez nommer la personne rencontrée."});
+                setIsSubmitting(false);
                 return;
             }
             const newEncounter: Omit<Encounter, 'id'> = {
@@ -356,6 +357,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         } else if (isDish) {
             if (!dishName) {
                 toast({variant: "destructive", title: "Veuillez nommer le plat."});
+                setIsSubmitting(false);
                 return;
             }
             const newDish: Omit<Dish, 'id'> = {
@@ -371,6 +373,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
         } else if (isAccommodation) {
             if (!accommodationName) {
                 toast({variant: "destructive", title: "Veuillez nommer le logement."});
+                setIsSubmitting(false);
                 return;
             }
             const newAccommodation: Omit<Accommodation, 'id'> = {
@@ -393,7 +396,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
               location: location || "Lieu inconnu",
               emotion: emotions.length > 0 ? emotions : ["Neutre"],
               photos: uploadedPhotoUrls,
-              category: 'Note' // Default category, will be updated by context
+              category: ['Note'] // Default category, will be updated by context
             };
             await addInstant(newInstant);
             toast({ title: "Nouvel instant ajouté !" });

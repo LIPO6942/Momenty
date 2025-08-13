@@ -49,8 +49,12 @@ interface TimelineContextType {
     deleteAccommodation: (id: string) => void;
 }
 
-const getCategoryAttributes = (category?: string) => {
-    switch (category) {
+const getCategoryAttributes = (category?: string[]) => {
+    // For now, use the first category to determine icon and color.
+    // This could be enhanced later.
+    const primaryCategory = category && category.length > 0 ? category[0] : 'Note';
+
+    switch (primaryCategory) {
         case 'Gastronomie': return { icon: <Utensils />, color: 'bg-orange-600' };
         case 'Culture': return { icon: <Landmark />, color: 'bg-purple-700' };
         case 'Nature': return { icon: <Leaf />, color: 'bg-green-600' };
@@ -59,6 +63,8 @@ const getCategoryAttributes = (category?: string) => {
         case 'Détente': return { icon: <Heart />, color: 'bg-teal-600' };
         case 'Voyage': return { icon: <Plane />, color: 'bg-sky-600' };
         case 'Sport': return { icon: <Anchor />, color: 'bg-indigo-600' };
+        case 'Plage': return { icon: <Anchor />, color: 'bg-yellow-500' }; // Example, assuming Anchor for beach
+        case 'Séjour': return { icon: <Car />, color: 'bg-cyan-600' };
         default: return { icon: <BookText />, color: 'bg-gray-600' };
     }
 };
@@ -146,21 +152,21 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         if(!user) return;
-        let category = 'Note';
+        let categories = instantData.category || ['Note'];
         try {
             const result = await categorizeInstant({
                 title: instantData.title,
                 description: instantData.description,
                 location: instantData.location,
             });
-            category = result.category;
+            categories = result.categories;
         } catch (error) {
             console.error("AI categorization failed", error);
         }
         
         const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
             ...instantData,
-            category: category,
+            category: categories,
         };
         
         const newId = await saveInstant(user.uid, newInstantForDb);
@@ -201,12 +207,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         if (!userManuallySetCategory && (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description || updatedInstant.location !== originalInstant.location)) {
             try {
-                const { category } = await categorizeInstant({
+                const { categories } = await categorizeInstant({
                     title: updatedInstant.title,
                     description: updatedInstant.description,
                     location: updatedInstant.location,
                 });
-                updatedInstant.category = category;
+                updatedInstant.category = categories;
             } catch (error) {
                  console.error("AI categorization failed on update", error);
             }

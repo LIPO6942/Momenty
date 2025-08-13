@@ -20,13 +20,15 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images, Tag } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images, Tag, Check, ChevronsUpDown, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 
 interface EditNoteDialogProps {
@@ -43,7 +45,7 @@ const moods = [
   { name: "Nostalgique", icon: "😢" },
 ];
 
-const categories = ['Gastronomie', 'Culture', 'Nature', 'Shopping', 'Art', 'Sport', 'Détente', 'Voyage', 'Note', 'Plage', 'Séjour'];
+const allCategories = ['Gastronomie', 'Culture', 'Nature', 'Shopping', 'Art', 'Sport', 'Détente', 'Voyage', 'Note', 'Plage', 'Séjour'];
 
 
 // Helper to format ISO string to datetime-local string
@@ -75,12 +77,13 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [photos, setPhotos] = useState<string[]>(instantToEdit.photos || []);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
-  const [category, setCategory] = useState(instantToEdit.category || 'Note');
+  const [categories, setCategories] = useState(instantToEdit.category || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImprovingText, setIsImprovingText] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isMultiSelect, setIsMultiSelect] = useState(true); // Always allow multi-select in edit mode
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
 
   useEffect(() => {
     if (open && instantToEdit) {
@@ -89,7 +92,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setPhotos(instantToEdit.photos || []);
       setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
       setDate(instantToEdit.date);
-      setCategory(instantToEdit.category || 'Note');
+      setCategories(instantToEdit.category || []);
     }
   }, [open, instantToEdit]);
 
@@ -176,7 +179,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
           location,
           emotion: emotions.length > 0 ? emotions : ["Neutre"],
           date: dateToSave.toISOString(), // Ensure date is in ISO format
-          category, // Pass the manually selected category
+          category: categories, // Pass the manually selected categories
         });
 
         setOpen(false); // Close the dialog
@@ -231,7 +234,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setPhotos(instantToEdit.photos || []);
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
-    setCategory(instantToEdit.category || 'Note');
+    setCategories(instantToEdit.category || []);
     setIsAnalyzing(false);
     setIsImprovingText(false);
   }
@@ -247,6 +250,14 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const removePhoto = (indexToRemove: number) => {
     setPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
   }
+
+  const handleCategorySelect = (category: string) => {
+    setCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -321,21 +332,61 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                  
                  <div>
                     <Label className="text-muted-foreground flex items-center gap-2">
-                        Catégorie
+                        Catégories
                     </Label>
-                    <div className="flex items-center gap-1 mt-2">
-                        <Tag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                         <Select value={category} onValueChange={setCategory} disabled={isLoading}>
-                            <SelectTrigger className="border-0 focus-visible:ring-0 flex-grow">
-                                <SelectValue placeholder="Choisir une catégorie..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categories.map(cat => (
-                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
+                        <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={isCategoryPopoverOpen}
+                            className="w-full justify-between mt-2 h-auto"
+                            disabled={isLoading}
+                        >
+                            <div className="flex gap-1 flex-wrap">
+                            {categories.length > 0 ? (
+                                categories.map((category) => (
+                                    <Badge key={category} variant="secondary">
+                                    {category}
+                                    </Badge>
+                                ))
+                                ) : (
+                                "Choisir une ou plusieurs catégories..."
+                            )}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                            <CommandInput placeholder="Rechercher une catégorie..." />
+                            <CommandList>
+                                <CommandEmpty>Aucune catégorie trouvée.</CommandEmpty>
+                                <CommandGroup>
+                                    {allCategories.map((category) => (
+                                    <CommandItem
+                                        key={category}
+                                        value={category}
+                                        onSelect={() => {
+                                            handleCategorySelect(category);
+                                        }}
+                                    >
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                categories.includes(category)
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                        />
+                                        {category}
+                                    </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                        </PopoverContent>
+                    </Popover>
                  </div>
 
                  <div>

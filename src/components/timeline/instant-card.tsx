@@ -166,6 +166,8 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     const [isTextVisible, setIsTextVisible] = useState(true);
     
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
+    const categories = Array.isArray(instant.category) ? instant.category : (instant.category ? [instant.category] : []);
+
 
     if (instant.photos && instant.photos.length > 0) {
         return (
@@ -213,12 +215,12 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             <span className="font-semibold text-sm">{instant.location}</span>
                         </div>
                         <div className="flex gap-2 flex-wrap">
-                            {instant.category && (
-                                    <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
+                            {categories.map(cat => (
+                                <Badge key={cat} variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
                                     <Tag className="h-3 w-3" />
-                                    {instant.category}
+                                    {cat}
                                 </Badge>
-                            )}
+                            ))}
                             {emotions.map(emotion => (
                                 <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
                                     {emotion}
@@ -283,12 +285,12 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
                     </div>
                     <div className="flex gap-2 flex-wrap mt-3">
-                        {instant.category && (
-                            <Badge variant="secondary" className="flex items-center gap-1.5">
+                        {categories.map(cat => (
+                             <Badge key={cat} variant="secondary" className="flex items-center gap-1.5">
                                 <Tag className="h-3 w-3" />
-                                {instant.category}
+                                {cat}
                             </Badge>
-                        )}
+                        ))}
                         {emotions.map(emotion => (
                             <Badge key={emotion} variant="outline">
                                 {emotion}
