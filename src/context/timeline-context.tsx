@@ -195,7 +195,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     
         const updatedInstant = { ...originalInstant, ...updatedInstantData };
     
-        if (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description || updatedInstant.location !== originalInstant.location) {
+        // Only run AI categorization if the category was NOT manually set in the dialog.
+        // If updatedInstantData.category exists, it means the user set it manually.
+        const userManuallySetCategory = 'category' in updatedInstantData;
+
+        if (!userManuallySetCategory && (updatedInstant.title !== originalInstant.title || updatedInstant.description !== originalInstant.description || updatedInstant.location !== originalInstant.location)) {
             try {
                 const { category } = await categorizeInstant({
                     title: updatedInstant.title,
@@ -255,7 +259,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             for (const story of allStories) {
                 const storyContainsDay = story.id.includes(dayKeyOfDeletedInstant);
                 if (storyContainsDay) {
-                    await deleteStory(user.uid, story.id);
+                    await deleteStoryFromDB(user.uid, story.id);
                 }
             }
             window.dispatchEvent(new Event('stories-updated'));

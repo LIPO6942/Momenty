@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images, Tag } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 interface EditNoteDialogProps {
@@ -41,6 +42,9 @@ const moods = [
   { name: "Curieux", icon: "🤔" },
   { name: "Nostalgique", icon: "😢" },
 ];
+
+const categories = ['Gastronomie', 'Culture', 'Nature', 'Shopping', 'Art', 'Sport', 'Détente', 'Voyage', 'Note'];
+
 
 // Helper to format ISO string to datetime-local string
 const toDateTimeLocal = (isoString: string) => {
@@ -71,6 +75,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [photos, setPhotos] = useState<string[]>(instantToEdit.photos || []);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
   const [date, setDate] = useState(instantToEdit.date);
+  const [category, setCategory] = useState(instantToEdit.category || 'Note');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImprovingText, setIsImprovingText] = useState(false);
@@ -84,6 +89,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setPhotos(instantToEdit.photos || []);
       setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
       setDate(instantToEdit.date);
+      setCategory(instantToEdit.category || 'Note');
     }
   }, [open, instantToEdit]);
 
@@ -170,6 +176,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
           location,
           emotion: emotions.length > 0 ? emotions : ["Neutre"],
           date: dateToSave.toISOString(), // Ensure date is in ISO format
+          category, // Pass the manually selected category
         });
 
         setOpen(false); // Close the dialog
@@ -224,6 +231,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setPhotos(instantToEdit.photos || []);
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
+    setCategory(instantToEdit.category || 'Note');
     setIsAnalyzing(false);
     setIsImprovingText(false);
   }
@@ -310,6 +318,25 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                         disabled={isLoading}
                     />
                  </div>
+                 
+                 <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                        Catégorie
+                    </Label>
+                    <div className="flex items-center gap-1 mt-2">
+                        <Tag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                         <Select value={category} onValueChange={setCategory} disabled={isLoading}>
+                            <SelectTrigger className="border-0 focus-visible:ring-0 flex-grow">
+                                <SelectValue placeholder="Choisir une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map(cat => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                 </div>
 
                  <div>
                     <Label className="text-muted-foreground flex items-center gap-2">
@@ -377,3 +404,4 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       </Dialog>
   );
 }
+
