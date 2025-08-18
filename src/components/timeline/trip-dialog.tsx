@@ -150,23 +150,23 @@ export function TripDialog({ children }: TripDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle>Contexte du Voyage</DialogTitle>
           <DialogDescription>
             Activez ce mode pour automatiquement lier vos souvenirs à un voyage.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="shrink-0">
-            <div className="flex items-center space-x-2 py-4">
+        <div className="p-6 py-2 shrink-0">
+            <div className="flex items-center space-x-2">
               <Switch id="trip-mode" checked={isTripActive} onCheckedChange={handleToggleTrip} />
               <Label htmlFor="trip-mode">Activer le mode voyage</Label>
             </div>
         </div>
 
         {isTripActive && (
-            <ScrollArea className="flex-grow pr-6 -mr-6">
+            <div className="flex-grow overflow-y-auto px-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="location">Pays</Label>
@@ -244,10 +244,10 @@ export function TripDialog({ children }: TripDialogProps) {
                     </div>
                 )}
               </div>
-          </ScrollArea>
+          </div>
         )}
 
-        <DialogFooter className='pt-4 shrink-0'>
+        <DialogFooter className='p-6 pt-4 mt-auto shrink-0 border-t'>
             <DialogClose asChild>
                 <Button type="button" variant="ghost">Fermer</Button>
             </DialogClose>
