@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
-export const GenerateItineraryInputSchema = z.object({
+const GenerateItineraryInputSchema = z.object({
   country: z.string().describe("Le pays de destination."),
   cities: z.array(z.string()).optional().describe("Liste optionnelle des villes spécifiques à visiter."),
   startDate: z.string().describe("La date de début du voyage (format ISO 8601)."),
@@ -35,7 +35,7 @@ const DayPlanSchema = z.object({
 });
 
 
-export const GenerateItineraryOutputSchema = z.object({
+const GenerateItineraryOutputSchema = z.object({
   title: z.string().describe("Un titre global pour l'itinéraire (ex: 'Votre aventure de 10 jours en Italie')."),
   itinerary: z.array(DayPlanSchema).describe("La liste des plans journaliers pour l'itinéraire."),
 });
