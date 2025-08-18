@@ -175,14 +175,14 @@ export function TripDialog({ children }: TripDialogProps) {
                 {cities.map((city, index) => (
                     <div key={index} className="flex items-center gap-2">
                         <Input
-                            value={city.name}
+                            value={city.name || ''}
                             onChange={(e) => handleCityChange(index, 'name', e.target.value)}
                             placeholder={`Ville ${index + 1}`}
                             className="flex-grow"
                         />
                         <Input
                             type="number"
-                            value={city.days}
+                            value={city.days || 1}
                             onChange={(e) => handleCityChange(index, 'days', e.target.value)}
                             min="1"
                             className="w-20"
