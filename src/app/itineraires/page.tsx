@@ -3,10 +3,10 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
-import { getItineraries, deleteItinerary, type Itinerary } from "@/lib/firestore";
+import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,7 +28,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EditItineraryDialog } from "@/components/itinerary/edit-itinerary-dialog";
+import { EditDayPlanDialog } from "@/components/itinerary/edit-day-plan-dialog";
+import { EditActivityDialog } from "@/components/itinerary/edit-activity-dialog";
+
 
 const activityIcons: { [key: string]: React.ReactNode } = {
     Musée: <Landmark className="h-4 w-4 text-orange-500" />,
@@ -60,7 +62,19 @@ export default function SavedItinerariesPage() {
         loadItineraries();
     }, [user]);
 
-    const handleDelete = async (id: string) => {
+    const handleUpdateItinerary = async (updatedItinerary: Itinerary) => {
+        if (!user) return;
+        try {
+            await saveItinerary(user.uid, updatedItinerary, updatedItinerary.id);
+            setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
+            toast({ title: "Itinéraire mis à jour !" });
+        } catch (error) {
+            console.error("Failed to update itinerary:", error);
+            toast({ variant: "destructive", title: "La mise à jour a échoué." });
+        }
+    };
+
+    const handleDeleteItinerary = async (id: string) => {
         if (!user) return;
         try {
             await deleteItinerary(user.uid, id);
@@ -71,11 +85,45 @@ export default function SavedItinerariesPage() {
             toast({ variant: "destructive", title: "La suppression a échoué." });
         }
     };
-    
-    const onItineraryUpdated = (updatedItinerary: Itinerary) => {
-        setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
-        toast({ title: "Itinéraire mis à jour avec succès !" });
+
+    const handleUpdateDayPlan = (itineraryId: string, dayIndex: number, updatedDayPlan: DayPlan) => {
+        const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
+        if (!itineraryToUpdate) return;
+        
+        const newDayPlans = [...itineraryToUpdate.itinerary];
+        newDayPlans[dayIndex] = updatedDayPlan;
+        
+        handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
     };
+
+    const handleUpdateActivity = (itineraryId: string, dayIndex: number, activityIndex: number | null, activity: Activity) => {
+        const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
+        if (!itineraryToUpdate) return;
+
+        const newDayPlans = [...itineraryToUpdate.itinerary];
+        const newActivities = [...newDayPlans[dayIndex].activities];
+
+        if (activityIndex !== null) { // Editing existing activity
+            newActivities[activityIndex] = activity;
+        } else { // Adding new activity
+            newActivities.push(activity);
+        }
+
+        newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
+        handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
+    };
+
+    const handleDeleteActivity = (itineraryId: string, dayIndex: number, activityIndex: number) => {
+        const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
+        if (!itineraryToUpdate) return;
+        
+        const newDayPlans = [...itineraryToUpdate.itinerary];
+        const newActivities = newDayPlans[dayIndex].activities.filter((_, i) => i !== activityIndex);
+        newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
+        
+        handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
+    };
+
 
     const LoadingSkeleton = () => (
         <div className="space-y-4">
@@ -123,54 +171,71 @@ export default function SavedItinerariesPage() {
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
-                                    <div className="flex items-center gap-2">
-                                        <EditItineraryDialog 
-                                            itinerary={itinerary}
-                                            onItineraryUpdated={onItineraryUpdated}
-                                        >
-                                            <Button variant="outline" size="sm">
-                                                <Edit className="mr-2 h-4 w-4" /> Modifier
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="destructive" size="sm">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Supprimer
                                             </Button>
-                                        </EditItineraryDialog>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <Button variant="destructive" size="sm">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Cette action est irréversible.
-                                                </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(itinerary.id!)}>
-                                                    Confirmer
-                                                </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Cette action est irréversible.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>
+                                                Confirmer
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                </div>
                                <div className="space-y-4">
-                                    {itinerary.itinerary.map((dayPlan) => (
+                                    {itinerary.itinerary.map((dayPlan, dayIndex) => (
                                         <div key={dayPlan.day} className="border-t pt-4">
-                                             <h4 className="font-semibold text-lg mb-2">Jour {dayPlan.day}: {dayPlan.theme}</h4>
+                                             <div className="flex justify-between items-center mb-2">
+                                                <h4 className="font-semibold text-lg">Jour {dayPlan.day}: {dayPlan.theme}</h4>
+                                                <EditDayPlanDialog 
+                                                    dayPlan={dayPlan} 
+                                                    onSave={(updatedDayPlan) => handleUpdateDayPlan(itinerary.id!, dayIndex, updatedDayPlan)}
+                                                >
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                                </EditDayPlanDialog>
+                                             </div>
+
                                              <p className="text-sm text-muted-foreground mb-3">{dayPlan.date} - {dayPlan.city}</p>
                                              <div className="space-y-2">
                                                 {dayPlan.activities.map((activity, actIndex) => (
                                                      <div key={actIndex} className="flex items-start gap-3 p-2 rounded-md bg-secondary/50">
                                                         {activityIcons[activity.type] || <Sparkles className="h-4 w-4 text-purple-500" />}
-                                                        <div>
+                                                        <div className="flex-grow">
                                                             <p className="text-sm font-medium">{activity.description}</p>
                                                             <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                                        </div>
+                                                        <div className="flex gap-1">
+                                                            <EditActivityDialog
+                                                                activity={activity}
+                                                                onSave={(updatedActivity) => handleUpdateActivity(itinerary.id!, dayIndex, actIndex, updatedActivity)}
+                                                                trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
+                                                                />
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
                                                         </div>
                                                      </div>
                                                 ))}
                                              </div>
+                                             <EditActivityDialog
+                                                onSave={(newActivity) => handleUpdateActivity(itinerary.id!, dayIndex, null, newActivity)}
+                                                trigger={
+                                                    <Button variant="outline" size="sm" className="mt-3 w-full">
+                                                        <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une activité
+                                                    </Button>
+                                                }
+                                                />
                                         </div>
                                     ))}
                                </div>
