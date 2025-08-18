@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, type Itinerary } from "@/lib/firestore";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -24,11 +24,11 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditItineraryDialog } from "@/components/itinerary/edit-itinerary-dialog";
 
 const activityIcons: { [key: string]: React.ReactNode } = {
     Musée: <Landmark className="h-4 w-4 text-orange-500" />,
@@ -47,15 +47,16 @@ export default function SavedItinerariesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
+    const loadItineraries = async () => {
+        if (user) {
+            setIsLoading(true);
+            const savedItineraries = await getItineraries(user.uid);
+            setItineraries(savedItineraries);
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadItineraries = async () => {
-            if (user) {
-                setIsLoading(true);
-                const savedItineraries = await getItineraries(user.uid);
-                setItineraries(savedItineraries);
-                setIsLoading(false);
-            }
-        };
         loadItineraries();
     }, [user]);
 
@@ -69,6 +70,11 @@ export default function SavedItinerariesPage() {
             console.error("Failed to delete itinerary:", error);
             toast({ variant: "destructive", title: "La suppression a échoué." });
         }
+    };
+    
+    const onItineraryUpdated = (updatedItinerary: Itinerary) => {
+        setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
+        toast({ title: "Itinéraire mis à jour avec succès !" });
     };
 
     const LoadingSkeleton = () => (
@@ -117,27 +123,37 @@ export default function SavedItinerariesPage() {
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                             <Button variant="destructive" size="sm">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                    <div className="flex items-center gap-2">
+                                        <EditItineraryDialog 
+                                            itinerary={itinerary}
+                                            onItineraryUpdated={onItineraryUpdated}
+                                        >
+                                            <Button variant="outline" size="sm">
+                                                <Edit className="mr-2 h-4 w-4" /> Modifier
                                             </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Cette action est irréversible.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDelete(itinerary.id!)}>
-                                                Confirmer
-                                            </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                        </EditItineraryDialog>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                 <Button variant="destructive" size="sm">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Cette action est irréversible.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(itinerary.id!)}>
+                                                    Confirmer
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                </div>
                                <div className="space-y-4">
                                     {itinerary.itinerary.map((dayPlan) => (
