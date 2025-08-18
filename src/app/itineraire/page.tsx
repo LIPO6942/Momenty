@@ -8,10 +8,11 @@ import { generateItinerary, type GenerateItineraryOutput, type GenerateItinerary
 import type { Trip } from '@/lib/types';
 import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Timeline, TimelineItem, TimelineConnector, TimelineHeader, TimelineTitle, TimelineIcon, TimelineBody } from '@/components/ui/timeline';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
 
 const activityIcons: { [key: string]: React.ReactNode } = {
     Musée: <Landmark className="h-4 w-4" />,
@@ -45,6 +46,28 @@ const ItinerarySkeleton = () => (
     </div>
 )
 
+const Timeline = (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul {...props} className={cn("flex flex-col", props.className)} />
+);
+const TimelineItem = (props: React.HTMLAttributes<HTMLLIElement>) => (
+    <li {...props} className={cn("relative flex gap-4 pb-8", props.className)} />
+);
+const TimelineConnector = (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props} className={cn("absolute left-4 top-5 -ml-px mt-1 h-full w-0.5 bg-border", props.className)} />
+);
+const TimelineHeader = (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props} className={cn("flex items-center gap-4", props.className)} />
+);
+const TimelineIcon = (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props} className={cn("flex items-center justify-center z-10", props.className)} />
+);
+const TimelineTitle = (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h3 {...props} className={cn("font-semibold text-base", props.className)} />
+);
+const TimelineBody = (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props} className={cn("pl-[4.5rem] -mt-4", props.className)} />
+);
+
 
 export default function ItineraryPage() {
     const [trip, setTrip] = useState<Trip | null>(null);
@@ -60,7 +83,7 @@ export default function ItineraryPage() {
     }, []);
 
     const handleGenerateItinerary = async () => {
-        if (!trip?.country || !trip.startDate || !trip.endDate) {
+        if (!trip?.location || !trip.startDate || !trip.endDate) {
             toast({
                 variant: 'destructive',
                 title: 'Informations manquantes',
@@ -73,7 +96,7 @@ export default function ItineraryPage() {
         setItinerary(null);
         try {
             const input: GenerateItineraryInput = {
-                country: trip.country,
+                country: trip.location,
                 cities: trip.citiesToVisit || [],
                 startDate: trip.startDate,
                 endDate: trip.endDate,
@@ -211,28 +234,3 @@ export default function ItineraryPage() {
         </div>
     );
 }
-
-// Simple Timeline component to avoid installing a new library
-// Could be moved to its own file in components/ui if it grows
-namespace RadixUI { export type Primitive = any }
-const Timeline = (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul {...props} className={cn("flex flex-col", props.className)} />
-);
-const TimelineItem = (props: React.HTMLAttributes<HTMLLIElement>) => (
-    <li {...props} className={cn("relative flex gap-4 pb-8", props.className)} />
-);
-const TimelineConnector = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("absolute left-4 top-5 -ml-px mt-1 h-full w-0.5 bg-border", props.className)} />
-);
-const TimelineHeader = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("flex items-center gap-4", props.className)} />
-);
-const TimelineIcon = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("flex items-center justify-center z-10", props.className)} />
-);
-const TimelineTitle = (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 {...props} className={cn("font-semibold text-base", props.className)} />
-);
-const TimelineBody = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("pl-[4.5rem] -mt-4", props.className)} />
-);
