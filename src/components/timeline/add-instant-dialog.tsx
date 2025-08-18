@@ -31,6 +31,8 @@ import type heic2any from "heic2any";
 
 interface AddInstantDialogProps {
   children: ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 const moods = [
@@ -42,9 +44,8 @@ const moods = [
   { name: "Nostalgique", icon: "😢" },
 ];
 
-export function AddInstantDialog({ children }: AddInstantDialogProps) {
+export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
   const { addInstant, addEncounter, addDish, addAccommodation } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -402,7 +403,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
             toast({ title: "Nouvel instant ajouté !" });
         }
 
-        setOpen(false);
+        onOpenChange(false);
         cleanup();
     } catch (error) {
         console.error("Submission failed", error);
@@ -445,7 +446,7 @@ export function AddInstantDialog({ children }: AddInstantDialogProps) {
 
   return (
       <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen);
+        onOpenChange(isOpen);
         if (!isOpen) cleanup();
       }}>
         <DialogTrigger asChild>

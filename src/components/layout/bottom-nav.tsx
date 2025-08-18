@@ -31,6 +31,8 @@ const featureLinks = [
 export default function BottomNav() {
   const pathname = usePathname();
   const [isTripActive, setIsTripActive] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
 
   React.useEffect(() => {
     const checkTripStatus = () => {
@@ -93,16 +95,14 @@ export default function BottomNav() {
                 </Tooltip>
             )}
 
-            <AddInstantDialog>
+            <AddInstantDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
                     size="icon"
                     className="h-12 w-12 rounded-full"
-                    // Add an empty onClick handler to satisfy the TooltipTrigger's asChild prop requirement for a valid trigger element.
-                    // The actual click event is handled by the AddInstantDialog's DialogTrigger.
-                    onClick={() => {}} 
+                    onClick={() => setIsAddDialogOpen(true)}
                   >
                     <Plus className="h-5 w-5" />
                   </Button>
