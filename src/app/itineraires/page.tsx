@@ -163,12 +163,14 @@ export default function SavedItinerariesPage() {
                 <Accordion type="single" collapsible className="w-full space-y-4">
                     {itineraries.map((itinerary, idx) => (
                         <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
-                            <AccordionTrigger className="text-xl font-semibold text-left p-4 hover:no-underline">
-                                <div className="flex-grow">{itinerary.title}</div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-between p-4">
+                                <AccordionTrigger className="flex-grow text-xl font-semibold text-left p-0 hover:no-underline">
+                                    {itinerary.title}
+                                </AccordionTrigger>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </AlertDialogTrigger>
@@ -188,7 +190,7 @@ export default function SavedItinerariesPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                                 </div>
-                            </AccordionTrigger>
+                            </div>
                             <AccordionContent className="p-4 pt-0">
                                <div className="flex justify-between items-center mb-4">
                                      <p className="text-sm text-muted-foreground">
