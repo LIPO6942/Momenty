@@ -104,6 +104,8 @@ export default function ItineraryPage() {
                 cities: trip.citiesToVisit || [],
                 startDate: trip.startDate,
                 endDate: trip.endDate,
+                companionType: trip.companionType,
+                companionName: trip.companionName,
             };
             const result = await generateItinerary(input);
             setItinerary(result);

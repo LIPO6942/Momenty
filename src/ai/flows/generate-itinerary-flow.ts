@@ -21,6 +21,8 @@ const GenerateItineraryInputSchema = z.object({
   cities: z.array(CityWithDaysSchema).optional().describe("Liste optionnelle des villes spécifiques à visiter avec la durée du séjour pour chacune."),
   startDate: z.string().describe("La date de début du voyage (format ISO 8601)."),
   endDate: z.string().describe("La date de fin du voyage (format ISO 8601)."),
+  companionType: z.string().optional().describe("Le type de compagnon de voyage (ex: 'Ami(e)', 'Solo', 'Conjoint(e)', 'Parent')."),
+  companionName: z.string().optional().describe("Le nom du compagnon de voyage."),
 });
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
 
@@ -55,7 +57,7 @@ const prompt = ai.definePrompt({
   name: 'generateItineraryPrompt',
   input: {schema: GenerateItineraryInputSchema},
   output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Tu es un expert en voyages et un planificateur d'itinéraires exceptionnel. Ta mission est de créer un itinéraire de voyage optimisé, réaliste et inspirant en français.
+  prompt: `Tu es un expert en voyages et un planificateur d'itinéraires exceptionnel, doté d'une touche personnelle. Ta mission est de créer un itinéraire de voyage optimisé, réaliste et inspirant en français, en adaptant le ton au contexte du voyage.
 
 **Contexte du voyage :**
 - Destination principale : {{{country}}}
@@ -69,13 +71,25 @@ const prompt = ai.definePrompt({
 - Date de début : {{{startDate}}}
 - Date de fin : {{{endDate}}}
 
+**Contexte des voyageurs :**
+{{#if companionType}}
+- Type de voyage : Avec {{companionType}}{{#if companionName}}, nommé(e) {{companionName}}{{/if}}.
+{{else}}
+- Type de voyage : Solo
+{{/if}}
+
 **Instructions :**
 1.  Calcule la durée totale du voyage en jours.
 2.  Si une liste de villes avec des durées est fournie, respecte cette répartition. Organise le trajet de manière cohérente (ex: du nord au sud).
 3.  Pour chaque jour, définis un thème, la ville principale, et propose 2 à 3 activités (matin, après-midi, soir). Varie les types d'activités (culture, gastronomie, nature, détente, etc.).
-4.  Rédige des descriptions courtes et percutantes pour chaque activité.
-5.  Le titre général doit être engageant et mentionner la durée et le pays.
-6.  Assure-toi que le format de sortie est un JSON qui correspond parfaitement au schéma fourni.
+4.  **Adapte le ton** :
+    - Si le voyage est avec un(e) **'Conjoint(e)'**, rends le titre et les descriptions plus romantiques. Ex: "Notre escapade amoureuse en Italie", "Dîner romantique avec vue".
+    - Si le voyage est avec un **'Parent'**, utilise un ton affectueux et attentionné. Ex: "Merveilleux souvenirs en famille en Grèce", "Promenade paisible dans les jardins".
+    - Si le voyage est avec un(e) **'Ami(e)'**, utilise un ton plus fun et dynamique. Ex: "L'aventure entre amis au Japon !", "Soirée festive dans le quartier de Shibuya".
+    - Si le voyage est en **'Solo'**, utilise un ton inspirant et d'exploration personnelle. Ex: "Mon exploration en solitaire du Pérou", "Méditation face au Machu Picchu".
+5.  Le titre général doit refléter ce ton personnalisé, tout en mentionnant la durée et le pays.
+6.  Rédige des descriptions courtes et percutantes pour chaque activité.
+7.  Assure-toi que le format de sortie est un JSON qui correspond parfaitement au schéma fourni.
 `,
 });
 
