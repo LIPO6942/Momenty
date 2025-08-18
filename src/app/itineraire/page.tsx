@@ -15,13 +15,13 @@ import { cn } from '@/lib/utils';
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
-    Musée: <Landmark className="h-4 w-4" />,
-    Monument: <Landmark className="h-4 w-4" />,
-    Restaurant: <Utensils className="h-4 w-4" />,
-    Activité: <FerrisWheel className="h-4 w-4" />,
-    Parc: <Leaf className="h-4 w-4" />,
-    Shopping: <ShoppingBag className="h-4 w-4" />,
-    Autre: <Sparkles className="h-4 w-4" />,
+    Musée: <Landmark className="h-4 w-4 text-orange-500" />,
+    Monument: <Landmark className="h-4 w-4 text-orange-500" />,
+    Restaurant: <Utensils className="h-4 w-4 text-yellow-500" />,
+    Activité: <FerrisWheel className="h-4 w-4 text-rose-500" />,
+    Parc: <Leaf className="h-4 w-4 text-green-500" />,
+    Shopping: <ShoppingBag className="h-4 w-4 text-blue-500" />,
+    Autre: <Sparkles className="h-4 w-4 text-purple-500" />,
 };
 
 
@@ -216,7 +216,7 @@ export default function ItineraryPage() {
                                         {dayPlan.activities.map((activity, actIndex) => (
                                             <Card key={actIndex} className="shadow-sm">
                                                 <CardContent className="p-3 flex items-start gap-4">
-                                                    <div className="text-primary pt-1">{activityIcons[activity.type] || <Sparkles className="h-4 w-4" />}</div>
+                                                    <div className="pt-1">{activityIcons[activity.type] || <Sparkles className="h-4 w-4" />}</div>
                                                     <div>
                                                         <p className="font-semibold text-sm">{activity.description}</p>
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
