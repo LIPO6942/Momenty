@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { db } from "./firebase";
@@ -18,7 +17,7 @@ import {
     collectionGroup,
     where
 } from "firebase/firestore";
-import type { GeneratedStory, Instant, Encounter, Dish, Accommodation } from './types';
+import type { GeneratedStory, Instant, Encounter, Dish, Accommodation, Itinerary } from './types';
 
 
 export interface ManualLocation {
@@ -49,6 +48,13 @@ const saveDataInSubcollection = async <T extends {id?: string, icon?: any, color
 const getDataFromSubcollection = async <T>(userId: string, collectionName: string): Promise<(T & { id: string })[]> => {
     const subcollectionRef = collection(db, 'users', userId, collectionName);
     const q = query(subcollectionRef, orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T & { id: string }));
+};
+
+const getItinerariesFromSubcollection = async <T>(userId: string, collectionName: string): Promise<(T & { id: string })[]> => {
+    const subcollectionRef = collection(db, 'users', userId, collectionName);
+    const q = query(subcollectionRef, orderBy("createdAt", "desc")); // Order by creation date for itineraries
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T & { id: string }));
 };
@@ -104,6 +110,12 @@ export const getStories = async (userId: string): Promise<GeneratedStory[]> => {
     });
 };
 export const deleteStory = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'stories', id);
+
+
+// --- Itinerary Functions ---
+export const saveItinerary = (userId: string, itinerary: Itinerary, id?: string) => saveDataInSubcollection(userId, 'itineraries', itinerary, id);
+export const getItineraries = (userId: string): Promise<(Itinerary & {id: string})[]> => getItinerariesFromSubcollection<Itinerary>(userId, 'itineraries');
+export const deleteItinerary = (userId: string, id: string) => deleteDataFromSubcollection(userId, 'itineraries', id);
 
 
 // --- User Document Functions (for data not in subcollections) ---

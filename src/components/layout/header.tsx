@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, Settings, PlusSquare, Users, Plane, Anchor, LogOut } from "lucide-react";
+import { User, Settings, PlusSquare, Bookmark, Plane, Anchor, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,8 +37,8 @@ export default function Header() {
             </StayDialog>
 
             <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
-                <Link href="/rencontres">
-                    <Users className="h-6 w-6" />
+                <Link href="/itineraires">
+                    <Bookmark className="h-6 w-6" />
                 </Link>
             </Button>
 

@@ -5,13 +5,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateItinerary, type GenerateItineraryOutput, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
-import type { Trip, CityWithDays } from '@/lib/types';
-import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles } from 'lucide-react';
+import type { Trip, Itinerary } from '@/lib/types';
+import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { saveItinerary } from '@/lib/firestore';
+import { useAuth } from '@/context/auth-context';
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
@@ -70,9 +72,11 @@ const TimelineBody = (props: React.HTMLAttributes<HTMLDivElement>) => (
 
 
 export default function ItineraryPage() {
+    const { user } = useAuth();
     const [trip, setTrip] = useState<Trip | null>(null);
     const [itinerary, setItinerary] = useState<GenerateItineraryOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -115,6 +119,28 @@ export default function ItineraryPage() {
             setIsLoading(false);
         }
     };
+    
+    const handleSaveItinerary = async () => {
+        if (!itinerary || !trip || !user) return;
+
+        setIsSaving(true);
+        try {
+            const itineraryToSave: Itinerary = {
+                ...itinerary,
+                ...trip,
+                createdAt: new Date().toISOString(),
+                userId: user.uid,
+            };
+            await saveItinerary(user.uid, itineraryToSave);
+            toast({ title: 'Itinéraire sauvegardé !', description: 'Retrouvez-le dans "Mes Itinéraires".' });
+        } catch (error) {
+            console.error('Failed to save itinerary:', error);
+            toast({ variant: 'destructive', title: 'La sauvegarde a échoué.' });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
 
     const tripDuration = useMemo(() => {
         if (!trip?.startDate || !trip.endDate) return 0;
@@ -196,7 +222,13 @@ export default function ItineraryPage() {
                 {isLoading && <ItinerarySkeleton />}
                 {itinerary && (
                      <div className="space-y-4">
-                        <h2 className="text-2xl font-bold text-center">{itinerary.title}</h2>
+                        <div className='text-center'>
+                             <h2 className="text-2xl font-bold">{itinerary.title}</h2>
+                             <Button onClick={handleSaveItinerary} variant="outline" size="sm" className="mt-4" disabled={isSaving}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Bookmark className="mr-2 h-4 w-4"/>}
+                                {isSaving ? "Sauvegarde..." : "Sauvegarder cet itinéraire"}
+                             </Button>
+                        </div>
                         <Timeline>
                             {itinerary.itinerary.map((dayPlan, index) => (
                                 <TimelineItem key={dayPlan.day}>

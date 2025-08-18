@@ -1,7 +1,7 @@
 
-
 import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
+import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary-flow';
 
 
 export interface Instant {
@@ -61,6 +61,13 @@ export interface Trip {
     companionType?: 'Ami(e)' | 'Conjoint(e)' | 'Parent' | 'Solo' | string;
     companionName?: string;
 }
+
+export interface Itinerary extends GenerateItineraryOutput, Trip {
+    id?: string;
+    userId: string;
+    createdAt: string; // ISO String
+}
+
 
 export interface TimelineEvent {
     id: string;
