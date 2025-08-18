@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { Trip } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
+import { PlusCircle, MinusCircle } from 'lucide-react';
 
 interface TripDialogProps {
     children: ReactNode;
@@ -45,15 +46,19 @@ export function TripDialog({ children }: TripDialogProps) {
     const { toast } = useToast();
     const [trip, setTrip] = useState<Partial<Trip>>({});
     const [isTripActive, setIsTripActive] = useState(false);
+    const [cities, setCities] = useState<string[]>(['']);
 
     useEffect(() => {
         if (open) {
             const savedTrip = localStorage.getItem('activeTrip');
             if (savedTrip) {
-                setTrip(JSON.parse(savedTrip));
+                const parsedTrip = JSON.parse(savedTrip);
+                setTrip(parsedTrip);
+                setCities(parsedTrip.citiesToVisit && parsedTrip.citiesToVisit.length > 0 ? parsedTrip.citiesToVisit : ['']);
                 setIsTripActive(true);
             } else {
                 setTrip({ companionType: 'Solo' });
+                setCities(['']);
                 setIsTripActive(false);
             }
         }
@@ -70,6 +75,7 @@ export function TripDialog({ children }: TripDialogProps) {
         }
         const tripToSave: Trip = {
             location: trip.location,
+            citiesToVisit: cities.filter(c => c.trim() !== ''),
             startDate: new Date(trip.startDate).toISOString(),
             endDate: new Date(trip.endDate).toISOString(),
             companionType: trip.companionType,
@@ -86,6 +92,7 @@ export function TripDialog({ children }: TripDialogProps) {
         if (!isActive) {
             localStorage.removeItem('activeTrip');
             setTrip({ companionType: 'Solo' });
+            setCities(['']);
             toast({ title: "Mode voyage terminé." });
             window.dispatchEvent(new Event('storage'));
         }
@@ -98,6 +105,24 @@ export function TripDialog({ children }: TripDialogProps) {
     const handleSelectChange = (value: string) => {
         setTrip(prev => ({...prev, companionType: value as Trip['companionType'], companionName: '' }));
     }
+
+    const handleCityChange = (index: number, value: string) => {
+        const updatedCities = [...cities];
+        updatedCities[index] = value;
+        setCities(updatedCities);
+    };
+
+    const handleAddCity = () => {
+        setCities([...cities, ""]);
+    };
+
+    const handleRemoveCity = (index: number) => {
+        if (cities.length > 1) {
+            const updatedCities = cities.filter((_, i) => i !== index);
+            setCities(updatedCities);
+        }
+    };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -118,9 +143,37 @@ export function TripDialog({ children }: TripDialogProps) {
         {isTripActive && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="location">Lieu</Label>
-              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} placeholder="ex: Russie" />
+              <Label htmlFor="location">Pays</Label>
+              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} placeholder="ex: France" />
             </div>
+
+            <div className="space-y-2">
+                <Label>Villes à visiter (facultatif)</Label>
+                {cities.map((city, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                        <Input
+                            value={city}
+                            onChange={(e) => handleCityChange(index, e.target.value)}
+                            placeholder={`Ville ${index + 1}`}
+                        />
+                         <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleRemoveCity(index)}
+                            disabled={cities.length <= 1 && city === ''}
+                            className="text-destructive hover:text-destructive"
+                        >
+                            <MinusCircle className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={handleAddCity}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Ajouter une ville
+                </Button>
+            </div>
+
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="startDate">Début</Label>

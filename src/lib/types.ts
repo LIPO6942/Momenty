@@ -39,7 +39,7 @@ export interface Dish {
 }
 
 export interface Accommodation {
-    id: string;
+    id:string;
     name: string;
     description: string;
     date: string; // ISO String
@@ -50,6 +50,7 @@ export interface Accommodation {
 
 export interface Trip {
     location?: string;
+    citiesToVisit?: string[]; // new field
     startDate?: string; // ISO String
     endDate?: string; // ISO String
     companionType?: 'Ami(e)' | 'Conjoint(e)' | 'Parent' | 'Solo' | string;
