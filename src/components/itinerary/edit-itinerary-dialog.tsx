@@ -146,16 +146,16 @@ export function EditItineraryDialog({ children, itinerary, onItineraryUpdated }:
                         </div>
                          <Accordion type="multiple" defaultValue={editedItinerary.itinerary.map(d => String(d.day))} className="w-full space-y-2">
                            {editedItinerary.itinerary.map((dayPlan, dayIndex) => (
-                               <AccordionItem key={dayIndex} value={String(dayPlan.day)} className="border rounded-md px-4">
-                                    <AccordionTrigger>
-                                        <div className="flex items-center justify-between w-full pr-2">
+                               <AccordionItem key={dayIndex} value={String(dayPlan.day)} className="border rounded-md">
+                                    <div className="flex items-center pr-2">
+                                        <AccordionTrigger className="flex-1 px-4">
                                             <span>Jour {dayPlan.day}: {dayPlan.theme}</span>
-                                             <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => {e.stopPropagation(); removeDay(dayIndex)}}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="space-y-4 pt-2">
+                                        </AccordionTrigger>
+                                        <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive shrink-0" onClick={() => removeDay(dayIndex)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <AccordionContent className="space-y-4 pt-2 px-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <Input value={dayPlan.theme} onChange={(e) => handleDayPlanChange(dayIndex, 'theme', e.target.value)} placeholder="Thème"/>
                                             <Input value={dayPlan.city} onChange={(e) => handleDayPlanChange(dayIndex, 'city', e.target.value)} placeholder="Ville"/>
