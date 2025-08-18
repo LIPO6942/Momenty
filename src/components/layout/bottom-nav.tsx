@@ -93,22 +93,25 @@ export default function BottomNav() {
                 </Tooltip>
             )}
 
-          <AddInstantDialog>
-            <Tooltip>
+            <AddInstantDialog>
+              <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="icon"
-                      className="h-12 w-12 rounded-full"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </Button>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-12 w-12 rounded-full"
+                    // Add an empty onClick handler to satisfy the TooltipTrigger's asChild prop requirement for a valid trigger element.
+                    // The actual click event is handled by the AddInstantDialog's DialogTrigger.
+                    onClick={() => {}} 
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
                 </TooltipTrigger>
-                 <TooltipContent>
-                    <p>Ajouter un instant</p>
+                <TooltipContent>
+                  <p>Ajouter un instant</p>
                 </TooltipContent>
-            </Tooltip>
-          </AddInstantDialog>
+              </Tooltip>
+            </AddInstantDialog>
 
           {featureLinks.map((link) => {
             const isActive = pathname === link.href;
