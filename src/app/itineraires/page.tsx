@@ -209,13 +209,13 @@ export default function SavedItinerariesPage() {
                                              <p className="text-sm text-muted-foreground mb-3">{dayPlan.date} - {dayPlan.city}</p>
                                              <div className="space-y-2">
                                                 {dayPlan.activities.map((activity, actIndex) => (
-                                                     <div key={actIndex} className="flex items-start gap-3 p-2 rounded-md bg-secondary/50">
+                                                     <div key={actIndex} className="group flex items-start gap-3 p-2 rounded-md bg-secondary/50">
                                                         {activityIcons[activity.type] || <Sparkles className="h-4 w-4 text-purple-500" />}
                                                         <div className="flex-grow">
                                                             <p className="text-sm font-medium">{activity.description}</p>
                                                             <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
                                                         </div>
-                                                        <div className="flex gap-1">
+                                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <EditActivityDialog
                                                                 activity={activity}
                                                                 onSave={(updatedActivity) => handleUpdateActivity(itinerary.id!, dayIndex, actIndex, updatedActivity)}
