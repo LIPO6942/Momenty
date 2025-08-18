@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useMemo } from 'react';
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"
 import type { Trip as Stay } from '@/lib/types'; // Re-using the Trip type as "Stay"
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays, isValid } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 
 interface StayDialogProps {
@@ -58,6 +58,19 @@ export function StayDialog({ children }: StayDialogProps) {
             }
         }
     }, [open]);
+
+    const stayDuration = useMemo(() => {
+        if (stay.startDate && stay.endDate) {
+            const start = parseISO(stay.startDate);
+            const end = parseISO(stay.endDate);
+            if (isValid(start) && isValid(end) && end >= start) {
+                const nights = differenceInDays(end, start);
+                const days = nights + 1;
+                return { days, nights };
+            }
+        }
+        return null;
+    }, [stay.startDate, stay.endDate]);
 
     const handleSave = () => {
         if (!stay.location || !stay.startDate || !stay.endDate) {
@@ -131,6 +144,11 @@ export function StayDialog({ children }: StayDialogProps) {
                     <Input id="endDate" name="endDate" type="date" value={toInputDate(stay.endDate)} onChange={handleChange} />
                 </div>
             </div>
+            {stayDuration && (
+                <p className="text-xs text-center text-muted-foreground -mt-2">
+                    Soit {stayDuration.days} jour(s) et {stayDuration.nights} nuitée(s).
+                </p>
+            )}
             <div className="space-y-2">
                 <Label htmlFor="companionType">Avec qui</Label>
                 <Select value={stay.companionType} onValueChange={handleSelectChange}>

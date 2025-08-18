@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useMemo } from 'react';
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"
 import type { Trip, CityWithDays } from '@/lib/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays, isValid } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { PlusCircle, MinusCircle } from 'lucide-react';
 
@@ -63,6 +63,19 @@ export function TripDialog({ children }: TripDialogProps) {
             }
         }
     }, [open]);
+
+    const tripDuration = useMemo(() => {
+        if (trip.startDate && trip.endDate) {
+            const start = parseISO(trip.startDate);
+            const end = parseISO(trip.endDate);
+            if (isValid(start) && isValid(end) && end >= start) {
+                const nights = differenceInDays(end, start);
+                const days = nights + 1;
+                return { days, nights };
+            }
+        }
+        return null;
+    }, [trip.startDate, trip.endDate]);
 
     const handleSave = () => {
         if (!trip.location || !trip.startDate || !trip.endDate) {
@@ -202,6 +215,11 @@ export function TripDialog({ children }: TripDialogProps) {
                     <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} />
                 </div>
              </div>
+              {tripDuration && (
+                <p className="text-xs text-center text-muted-foreground -mt-2">
+                    Soit {tripDuration.days} jour(s) et {tripDuration.nights} nuitée(s).
+                </p>
+              )}
              <div className="space-y-2">
                 <Label htmlFor="companionType">Avec qui</Label>
                 <Select value={trip.companionType} onValueChange={handleSelectChange}>
