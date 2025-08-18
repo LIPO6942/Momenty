@@ -108,11 +108,14 @@ export function TripDialog({ children }: TripDialogProps) {
 
     const handleCityChange = (index: number, field: 'name' | 'days', value: string) => {
         const updatedCities = [...cities];
+        const cityToUpdate = { ...updatedCities[index] }; // Create a copy of the object
+
         if (field === 'days') {
-            updatedCities[index][field] = Number(value);
+            cityToUpdate.days = Number(value);
         } else {
-            updatedCities[index][field] = value;
+            cityToUpdate.name = value;
         }
+        updatedCities[index] = cityToUpdate;
         setCities(updatedCities);
     };
     
