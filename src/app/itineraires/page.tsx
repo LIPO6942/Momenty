@@ -162,60 +162,72 @@ export default function SavedItinerariesPage() {
             ) : (
                 <Accordion type="single" collapsible className="w-full space-y-4">
                     {itineraries.map((itinerary, idx) => (
-                        <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
+                        <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
                             <AccordionTrigger className="text-xl font-semibold text-left p-4 hover:no-underline">
-                                {itinerary.title}
+                                <div className="flex-grow">{itinerary.title}</div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Cette action est irréversible.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>
+                                            Confirmer
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                </div>
                             </AccordionTrigger>
                             <AccordionContent className="p-4 pt-0">
                                <div className="flex justify-between items-center mb-4">
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                             <Button variant="destructive" size="sm">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Supprimer
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Cette action est irréversible.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>
-                                                Confirmer
-                                            </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
                                </div>
                                <div className="space-y-4">
                                     {itinerary.itinerary.map((dayPlan, dayIndex) => (
-                                        <div key={dayPlan.day} className="border-t pt-4">
+                                        <div key={dayPlan.day} className="group/day border-t pt-4">
                                              <div className="flex justify-between items-center mb-2">
                                                 <h4 className="font-semibold text-lg">Jour {dayPlan.day}: {dayPlan.theme}</h4>
-                                                <EditDayPlanDialog 
-                                                    dayPlan={dayPlan} 
-                                                    onSave={(updatedDayPlan) => handleUpdateDayPlan(itinerary.id!, dayIndex, updatedDayPlan)}
-                                                >
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                                                </EditDayPlanDialog>
+                                                <div className="flex items-center opacity-0 group-hover/day:opacity-100 transition-opacity">
+                                                    <EditDayPlanDialog 
+                                                        dayPlan={dayPlan} 
+                                                        onSave={(updatedDayPlan) => handleUpdateDayPlan(itinerary.id!, dayIndex, updatedDayPlan)}
+                                                    >
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                                    </EditDayPlanDialog>
+                                                     <EditActivityDialog
+                                                        onSave={(newActivity) => handleUpdateActivity(itinerary.id!, dayIndex, null, newActivity)}
+                                                        trigger={
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <PlusCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        }
+                                                        />
+                                                </div>
                                              </div>
 
                                              <p className="text-sm text-muted-foreground mb-3">{dayPlan.date} - {dayPlan.city}</p>
                                              <div className="space-y-2">
                                                 {dayPlan.activities.map((activity, actIndex) => (
-                                                     <div key={actIndex} className="group flex items-start gap-3 p-2 rounded-md bg-secondary/50">
+                                                     <div key={actIndex} className="group/activity flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50">
                                                         {activityIcons[activity.type] || <Sparkles className="h-4 w-4 text-purple-500" />}
                                                         <div className="flex-grow">
                                                             <p className="text-sm font-medium">{activity.description}</p>
                                                             <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
                                                         </div>
-                                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
                                                             <EditActivityDialog
                                                                 activity={activity}
                                                                 onSave={(updatedActivity) => handleUpdateActivity(itinerary.id!, dayIndex, actIndex, updatedActivity)}
@@ -228,14 +240,6 @@ export default function SavedItinerariesPage() {
                                                      </div>
                                                 ))}
                                              </div>
-                                             <EditActivityDialog
-                                                onSave={(newActivity) => handleUpdateActivity(itinerary.id!, dayIndex, null, newActivity)}
-                                                trigger={
-                                                    <Button variant="outline" size="sm" className="mt-3 w-full">
-                                                        <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une activité
-                                                    </Button>
-                                                }
-                                                />
                                         </div>
                                     ))}
                                </div>
