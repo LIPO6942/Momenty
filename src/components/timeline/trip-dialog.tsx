@@ -27,6 +27,7 @@ import type { Trip, CityWithDays } from '@/lib/types';
 import { format, parseISO, differenceInDays, isValid } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { PlusCircle, MinusCircle } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TripDialogProps {
     children: ReactNode;
@@ -121,7 +122,7 @@ export function TripDialog({ children }: TripDialogProps) {
 
     const handleCityChange = (index: number, field: 'name' | 'days', value: string) => {
         const updatedCities = [...cities];
-        const cityToUpdate = { ...updatedCities[index] }; // Create a copy of the object
+        const cityToUpdate = { ...updatedCities[index] }; 
 
         if (field === 'days') {
             cityToUpdate.days = Number(value);
@@ -141,7 +142,6 @@ export function TripDialog({ children }: TripDialogProps) {
             const updatedCities = cities.filter((_, i) => i !== index);
             setCities(updatedCities);
         } else {
-            // If it's the last one, just clear it
             setCities([{name: '', days: 1}]);
         }
     };
@@ -150,100 +150,104 @@ export function TripDialog({ children }: TripDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Contexte du Voyage</DialogTitle>
           <DialogDescription>
             Activez ce mode pour automatiquement lier vos souvenirs à un voyage.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex items-center space-x-2 py-4">
-          <Switch id="trip-mode" checked={isTripActive} onCheckedChange={handleToggleTrip} />
-          <Label htmlFor="trip-mode">Activer le mode voyage</Label>
+        <div className="shrink-0">
+            <div className="flex items-center space-x-2 py-4">
+              <Switch id="trip-mode" checked={isTripActive} onCheckedChange={handleToggleTrip} />
+              <Label htmlFor="trip-mode">Activer le mode voyage</Label>
+            </div>
         </div>
 
         {isTripActive && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="location">Pays</Label>
-              <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} placeholder="ex: France" />
-            </div>
+            <ScrollArea className="flex-grow pr-6 -mr-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Pays</Label>
+                  <Input id="location" name="location" value={trip.location || ''} onChange={handleChange} placeholder="ex: France" />
+                </div>
 
-            <div className="space-y-2">
-                <Label>Villes à visiter (facultatif)</Label>
-                {cities.map((city, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                        <Input
-                            value={city.name || ''}
-                            onChange={(e) => handleCityChange(index, 'name', e.target.value)}
-                            placeholder={`Ville ${index + 1}`}
-                            className="flex-grow"
-                        />
-                        <Input
-                            type="number"
-                            value={city.days || 1}
-                            onChange={(e) => handleCityChange(index, 'days', e.target.value)}
-                            min="1"
-                            className="w-20"
-                            aria-label="Nombre de jours"
-                        />
-                         <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleRemoveCity(index)}
-                            className="text-destructive hover:text-destructive"
-                        >
-                            <MinusCircle className="h-4 w-4" />
-                        </Button>
+                <div className="space-y-2">
+                    <Label>Villes à visiter (facultatif)</Label>
+                    {cities.map((city, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <Input
+                                value={city.name || ''}
+                                onChange={(e) => handleCityChange(index, 'name', e.target.value)}
+                                placeholder={`Ville ${index + 1}`}
+                                className="flex-grow"
+                            />
+                            <Input
+                                type="number"
+                                value={city.days || 1}
+                                onChange={(e) => handleCityChange(index, 'days', e.target.value)}
+                                min="1"
+                                className="w-20"
+                                aria-label="Nombre de jours"
+                            />
+                             <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleRemoveCity(index)}
+                                className="text-destructive hover:text-destructive"
+                            >
+                                <MinusCircle className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddCity}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Ajouter une ville
+                    </Button>
+                </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="startDate">Début</Label>
+                        <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} />
                     </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" onClick={handleAddCity}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Ajouter une ville
-                </Button>
-            </div>
-
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="startDate">Début</Label>
-                    <Input id="startDate" name="startDate" type="date" value={toInputDate(trip.startDate)} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="endDate">Fin</Label>
-                    <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} />
-                </div>
-             </div>
-              {tripDuration && (
-                <p className="text-xs text-center text-muted-foreground -mt-2">
-                    Soit {tripDuration.days} jour(s) et {tripDuration.nights} nuitée(s).
-                </p>
-              )}
-             <div className="space-y-2">
-                <Label htmlFor="companionType">Avec qui</Label>
-                <Select value={trip.companionType} onValueChange={handleSelectChange}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Solo">Solo</SelectItem>
-                        <SelectItem value="Ami(e)">Ami(e)</SelectItem>
-                        <SelectItem value="Conjoint(e)">Conjoint(e)</SelectItem>
-                        <SelectItem value="Parent">Parent</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            {trip.companionType && trip.companionType !== 'Solo' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="endDate">Fin</Label>
+                        <Input id="endDate" name="endDate" type="date" value={toInputDate(trip.endDate)} onChange={handleChange} />
+                    </div>
+                 </div>
+                  {tripDuration && (
+                    <p className="text-xs text-center text-muted-foreground -mt-2">
+                        Soit {tripDuration.days} jour(s) et {tripDuration.nights} nuitée(s).
+                    </p>
+                  )}
                  <div className="space-y-2">
-                    <Label htmlFor="companionName">Nom du compagnon</Label>
-                    <Input id="companionName" name="companionName" value={trip.companionName || ''} onChange={handleChange} placeholder="Prénom"/>
+                    <Label htmlFor="companionType">Avec qui</Label>
+                    <Select value={trip.companionType} onValueChange={handleSelectChange}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Solo">Solo</SelectItem>
+                            <SelectItem value="Ami(e)">Ami(e)</SelectItem>
+                            <SelectItem value="Conjoint(e)">Conjoint(e)</SelectItem>
+                            <SelectItem value="Parent">Parent</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-            )}
-          </div>
+                {trip.companionType && trip.companionType !== 'Solo' && (
+                     <div className="space-y-2">
+                        <Label htmlFor="companionName">Nom du compagnon</Label>
+                        <Input id="companionName" name="companionName" value={trip.companionName || ''} onChange={handleChange} placeholder="Prénom"/>
+                    </div>
+                )}
+              </div>
+          </ScrollArea>
         )}
 
-        <DialogFooter className='pt-4'>
+        <DialogFooter className='pt-4 shrink-0'>
             <DialogClose asChild>
                 <Button type="button" variant="ghost">Fermer</Button>
             </DialogClose>
