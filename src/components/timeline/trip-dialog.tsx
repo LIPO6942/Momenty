@@ -89,7 +89,7 @@ export function TripDialog({ children }: TripDialogProps) {
         }
         const tripToSave: Trip = {
             location: trip.location,
-            citiesToVisit: cities.filter(c => c.name.trim() !== '' && c.days > 0),
+            citiesToVisit: cities.filter(c => c.name && c.name.trim() !== '' && c.days > 0),
             startDate: new Date(trip.startDate).toISOString(),
             endDate: new Date(trip.endDate).toISOString(),
             companionType: trip.companionType,
