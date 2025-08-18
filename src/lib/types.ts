@@ -48,9 +48,14 @@ export interface Accommodation {
     photo?: string | null; // Cloudinary URL
 }
 
+export interface CityWithDays {
+    name: string;
+    days: number;
+}
+
 export interface Trip {
     location?: string;
-    citiesToVisit?: string[]; // new field
+    citiesToVisit?: CityWithDays[];
     startDate?: string; // ISO String
     endDate?: string; // ISO String
     companionType?: 'Ami(e)' | 'Conjoint(e)' | 'Parent' | 'Solo' | string;

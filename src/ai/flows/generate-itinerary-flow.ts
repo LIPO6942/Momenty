@@ -11,9 +11,14 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
+const CityWithDaysSchema = z.object({
+    name: z.string().describe("Le nom de la ville."),
+    days: z.number().positive().describe("Le nombre de jours à passer dans cette ville."),
+});
+
 const GenerateItineraryInputSchema = z.object({
   country: z.string().describe("Le pays de destination."),
-  cities: z.array(z.string()).optional().describe("Liste optionnelle des villes spécifiques à visiter."),
+  cities: z.array(CityWithDaysSchema).optional().describe("Liste optionnelle des villes spécifiques à visiter avec la durée du séjour pour chacune."),
   startDate: z.string().describe("La date de début du voyage (format ISO 8601)."),
   endDate: z.string().describe("La date de fin du voyage (format ISO 8601)."),
 });
@@ -55,14 +60,18 @@ const prompt = ai.definePrompt({
 **Contexte du voyage :**
 - Destination principale : {{{country}}}
 {{#if cities}}
-- Villes spécifiques à inclure si possible : {{#each cities}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+- Villes spécifiques à inclure avec la durée souhaitée : 
+  {{#each cities}}
+  - {{name}} ({{days}} jour(s))
+  {{/each}}
+- La répartition des jours entre les villes est une contrainte forte. Tu dois la respecter.
 {{/if}}
 - Date de début : {{{startDate}}}
 - Date de fin : {{{endDate}}}
 
 **Instructions :**
 1.  Calcule la durée totale du voyage en jours.
-2.  Crée un itinéraire logique jour par jour. Si plusieurs villes sont spécifiées, organise le trajet de manière cohérente (ex: du nord au sud).
+2.  Si une liste de villes avec des durées est fournie, respecte cette répartition. Organise le trajet de manière cohérente (ex: du nord au sud).
 3.  Pour chaque jour, définis un thème, la ville principale, et propose 2 à 3 activités (matin, après-midi, soir). Varie les types d'activités (culture, gastronomie, nature, détente, etc.).
 4.  Rédige des descriptions courtes et percutantes pour chaque activité.
 5.  Le titre général doit être engageant et mentionner la durée et le pays.

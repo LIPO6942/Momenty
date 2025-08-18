@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateItinerary, type GenerateItineraryOutput, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
-import type { Trip } from '@/lib/types';
+import type { Trip, CityWithDays } from '@/lib/types';
 import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -160,7 +160,7 @@ export default function ItineraryPage() {
                                     <p className="text-sm text-muted-foreground">Villes</p>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                         {trip.citiesToVisit.map(city => (
-                                            <Badge key={city} variant="secondary">{city}</Badge>
+                                            <Badge key={city.name} variant="secondary">{city.name} ({city.days}j)</Badge>
                                         ))}
                                     </div>
                                 </div>

@@ -23,7 +23,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"
-import type { Trip } from '@/lib/types';
+import type { Trip, CityWithDays } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { PlusCircle, MinusCircle } from 'lucide-react';
@@ -46,7 +46,7 @@ export function TripDialog({ children }: TripDialogProps) {
     const { toast } = useToast();
     const [trip, setTrip] = useState<Partial<Trip>>({});
     const [isTripActive, setIsTripActive] = useState(false);
-    const [cities, setCities] = useState<string[]>(['']);
+    const [cities, setCities] = useState<CityWithDays[]>([{name: '', days: 1}]);
 
     useEffect(() => {
         if (open) {
@@ -54,11 +54,11 @@ export function TripDialog({ children }: TripDialogProps) {
             if (savedTrip) {
                 const parsedTrip = JSON.parse(savedTrip);
                 setTrip(parsedTrip);
-                setCities(parsedTrip.citiesToVisit && parsedTrip.citiesToVisit.length > 0 ? parsedTrip.citiesToVisit : ['']);
+                setCities(parsedTrip.citiesToVisit && parsedTrip.citiesToVisit.length > 0 ? parsedTrip.citiesToVisit : [{name: '', days: 1}]);
                 setIsTripActive(true);
             } else {
                 setTrip({ companionType: 'Solo' });
-                setCities(['']);
+                setCities([{name: '', days: 1}]);
                 setIsTripActive(false);
             }
         }
@@ -75,7 +75,7 @@ export function TripDialog({ children }: TripDialogProps) {
         }
         const tripToSave: Trip = {
             location: trip.location,
-            citiesToVisit: cities.filter(c => c.trim() !== ''),
+            citiesToVisit: cities.filter(c => c.name.trim() !== '' && c.days > 0),
             startDate: new Date(trip.startDate).toISOString(),
             endDate: new Date(trip.endDate).toISOString(),
             companionType: trip.companionType,
@@ -92,7 +92,7 @@ export function TripDialog({ children }: TripDialogProps) {
         if (!isActive) {
             localStorage.removeItem('activeTrip');
             setTrip({ companionType: 'Solo' });
-            setCities(['']);
+            setCities([{name: '', days: 1}]);
             toast({ title: "Mode voyage terminé." });
             window.dispatchEvent(new Event('storage'));
         }
@@ -106,20 +106,27 @@ export function TripDialog({ children }: TripDialogProps) {
         setTrip(prev => ({...prev, companionType: value as Trip['companionType'], companionName: '' }));
     }
 
-    const handleCityChange = (index: number, value: string) => {
+    const handleCityChange = (index: number, field: 'name' | 'days', value: string) => {
         const updatedCities = [...cities];
-        updatedCities[index] = value;
+        if (field === 'days') {
+            updatedCities[index][field] = Number(value);
+        } else {
+            updatedCities[index][field] = value;
+        }
         setCities(updatedCities);
     };
-
+    
     const handleAddCity = () => {
-        setCities([...cities, ""]);
+        setCities([...cities, {name: '', days: 1}]);
     };
 
     const handleRemoveCity = (index: number) => {
         if (cities.length > 1) {
             const updatedCities = cities.filter((_, i) => i !== index);
             setCities(updatedCities);
+        } else {
+            // If it's the last one, just clear it
+            setCities([{name: '', days: 1}]);
         }
     };
 
@@ -152,16 +159,24 @@ export function TripDialog({ children }: TripDialogProps) {
                 {cities.map((city, index) => (
                     <div key={index} className="flex items-center gap-2">
                         <Input
-                            value={city}
-                            onChange={(e) => handleCityChange(index, e.target.value)}
+                            value={city.name}
+                            onChange={(e) => handleCityChange(index, 'name', e.target.value)}
                             placeholder={`Ville ${index + 1}`}
+                            className="flex-grow"
+                        />
+                        <Input
+                            type="number"
+                            value={city.days}
+                            onChange={(e) => handleCityChange(index, 'days', e.target.value)}
+                            min="1"
+                            className="w-20"
+                            aria-label="Nombre de jours"
                         />
                          <Button 
                             type="button" 
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleRemoveCity(index)}
-                            disabled={cities.length <= 1 && city === ''}
                             className="text-destructive hover:text-destructive"
                         >
                             <MinusCircle className="h-4 w-4" />
