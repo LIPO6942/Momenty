@@ -108,7 +108,7 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      <div className="space-y-3 mt-3">
                         {dayPlan.activities.map((activity, actIndex) => (
                              <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <CardContent className="p-3 flex items-start gap-3">
+                                <CardContent className="p-3 flex items-start gap-4">
                                     <div className="pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                     <div className="flex-grow">
                                         <p className="text-sm font-medium">{activity.description}</p>
@@ -275,5 +275,3 @@ export default function SavedItinerariesPage() {
         </div>
     );
 }
-
-    
