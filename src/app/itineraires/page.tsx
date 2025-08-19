@@ -77,18 +77,22 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {itinerary.itinerary.map((dayPlan, dayIndex) => (
-                <div key={dayPlan.day} className="group/day relative pl-12 pb-4 border-l-2 border-border/70 last:border-l-transparent last:pb-0">
-                    <div className={cn("absolute -left-[1.35rem] top-0 font-bold text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center text-sm", cityColors[dayPlan.city] || 'bg-primary')}>
+                <div key={dayPlan.day} className="relative pl-8 sm:pl-10">
+                     <div className="absolute left-0 h-full w-0.5 bg-border/70"></div>
+                     <div className={cn(
+                        "absolute -left-2.5 sm:-left-3.5 top-1 font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
+                        cityColors[dayPlan.city] || 'bg-primary'
+                     )}>
                         {dayPlan.day}
                     </div>
-                     <div className="flex justify-between items-center -mt-1">
-                        <div>
+                     <div className="flex justify-between items-center group">
+                        <div className="space-y-1">
                             <h4 className="font-semibold text-lg">{dayPlan.theme}</h4>
                             <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
                         </div>
-                        <div className="flex items-center opacity-0 group-hover/day:opacity-100 transition-opacity">
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <EditDayPlanDialog 
                                 dayPlan={dayPlan} 
                                 onSave={(updatedDayPlan) => handleUpdateDayPlan(dayIndex, updatedDayPlan)}
@@ -105,14 +109,14 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                                 />
                         </div>
                      </div>
-                     <div className="space-y-3 mt-3">
+                     <div className="space-y-3 mt-4">
                         {dayPlan.activities.map((activity, actIndex) => (
                              <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <CardContent className="p-3 flex items-start gap-4">
-                                    <div className="pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
+                                <CardContent className="p-3 flex items-start gap-3">
+                                    <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                     <div className="flex-grow">
                                         <p className="text-sm font-medium">{activity.description}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
                                         <EditActivityDialog
@@ -257,7 +261,7 @@ export default function SavedItinerariesPage() {
                                 </div>
                             </div>
                             <AccordionContent className="p-4 pt-0">
-                               <div className="flex justify-between items-center mb-4">
+                               <div className="flex justify-between items-center mb-6">
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>

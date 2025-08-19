@@ -30,45 +30,21 @@ const activityIcons: { [key: string]: React.ReactNode } = {
 const ItinerarySkeleton = () => (
     <div className="space-y-8">
         {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 bg-muted rounded-full animate-pulse"></div>
-                    <div className="w-0.5 h-full bg-muted animate-pulse mt-2"></div>
+            <div key={i} className="relative pl-8">
+                <div className="absolute left-0 h-full w-0.5 bg-muted"></div>
+                <div className="absolute left-[-0.6rem] top-1 h-5 w-5 rounded-full bg-muted animate-pulse"></div>
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
                 </div>
-                <div className="flex-1 space-y-4 pt-2">
-                    <div className="h-6 w-3/4 bg-muted rounded animate-pulse"></div>
-                    <div className="h-4 w-1/2 bg-muted rounded animate-pulse"></div>
-                    <div className="space-y-3 pt-2">
-                        <div className="h-10 w-full bg-muted rounded animate-pulse"></div>
-                        <div className="h-10 w-full bg-muted rounded animate-pulse"></div>
-                    </div>
+                <div className="mt-4 space-y-3">
+                    <Skeleton className="h-16 w-full rounded-lg" />
+                    <Skeleton className="h-16 w-full rounded-lg" />
                 </div>
             </div>
         ))}
     </div>
 )
-
-const Timeline = (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul {...props} className={cn("flex flex-col", props.className)} />
-);
-const TimelineItem = (props: React.HTMLAttributes<HTMLLIElement>) => (
-    <li {...props} className={cn("relative flex gap-4 pb-8", props.className)} />
-);
-const TimelineConnector = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("absolute left-4 top-5 -ml-px mt-1 h-full w-0.5 bg-border", props.className)} />
-);
-const TimelineHeader = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("flex items-center gap-4", props.className)} />
-);
-const TimelineIcon = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("flex items-center justify-center z-10", props.className)} />
-);
-const TimelineTitle = (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 {...props} className={cn("font-semibold text-base", props.className)} />
-);
-const TimelineBody = (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props} className={cn("pl-[4.5rem] -mt-4", props.className)} />
-);
 
 
 export default function ItineraryPage() {
@@ -245,40 +221,36 @@ export default function ItineraryPage() {
                                 {isSaving ? "Sauvegarde..." : "Sauvegarder cet itinéraire"}
                              </Button>
                         </div>
-                        <Timeline>
-                            {itinerary.itinerary.map((dayPlan, index) => (
-                                <TimelineItem key={dayPlan.day}>
-                                    <TimelineConnector />
-                                    <TimelineHeader>
-                                        <TimelineIcon>
-                                            <div className={cn(
-                                                "font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
-                                                cityColors[dayPlan.city] || 'bg-primary'
-                                            )}>
-                                                {dayPlan.day}
-                                            </div>
-                                        </TimelineIcon>
-                                        <div className="flex flex-col">
-                                            <TimelineTitle>{dayPlan.theme}</TimelineTitle>
-                                            <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
-                                        </div>
-                                    </TimelineHeader>
-                                    <TimelineBody className="space-y-3">
+                        <div className="space-y-8 mt-6">
+                            {itinerary.itinerary.map((dayPlan) => (
+                                <div key={dayPlan.day} className="relative pl-8 sm:pl-10">
+                                    <div className="absolute left-0 h-full w-0.5 bg-border/70"></div>
+                                    <div className={cn(
+                                        "absolute -left-2.5 sm:-left-3.5 top-1 font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
+                                        cityColors[dayPlan.city] || 'bg-primary'
+                                    )}>
+                                        {dayPlan.day}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="font-semibold text-lg">{dayPlan.theme}</h3>
+                                        <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
+                                    </div>
+                                    <div className="mt-4 space-y-3">
                                         {dayPlan.activities.map((activity, actIndex) => (
                                             <Card key={actIndex} className="shadow-sm">
-                                                <CardContent className="p-3 flex items-start gap-4">
-                                                    <div className="pt-1">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
+                                                <CardContent className="p-3 flex items-start gap-3">
+                                                    <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                                     <div className="flex-grow">
-                                                        <p className="font-semibold text-sm">{activity.description}</p>
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                                        <p className="font-medium text-sm">{activity.description}</p>
+                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
                                                     </div>
                                                 </CardContent>
                                             </Card>
                                         ))}
-                                    </TimelineBody>
-                                </TimelineItem>
+                                    </div>
+                                </div>
                             ))}
-                        </Timeline>
+                        </div>
                     </div>
                 )}
             </div>
