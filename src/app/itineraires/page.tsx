@@ -117,37 +117,38 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      </div>
                      <div className="space-y-3 mt-4">
                         {dayPlan.activities.map((activity, actIndex) => (
-                             <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <div className="absolute top-1 right-1 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <EditActivityDialog
+                                        activity={activity}
+                                        onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
+                                        trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
+                                        />
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Supprimer cette activité ?</AlertDialogTitle>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
+                                                    Supprimer
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+
                                 <CardContent className="p-3 flex items-start gap-3">
                                     <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                     <div className="flex-grow space-y-1">
                                         <p className="font-medium text-sm leading-snug">{activity.description}</p>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
-                                        <EditActivityDialog
-                                            activity={activity}
-                                            onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
-                                            trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
-                                            />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Supprimer cette activité ?</AlertDialogTitle>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
-                                                        Supprimer
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
                                     </div>
                                 </CardContent>
                              </Card>
