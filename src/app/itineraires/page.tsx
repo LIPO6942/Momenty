@@ -118,13 +118,13 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      <div className="space-y-3 mt-4">
                         {dayPlan.activities.map((activity, actIndex) => (
                              <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <CardContent className="p-3 flex items-start justify-between gap-3">
+                                <CardContent className="p-3 flex items-start gap-3">
                                     <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                     <div className="flex-grow space-y-1">
-                                        <p className="text-sm font-medium leading-snug">{activity.description}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                        <p className="font-medium text-sm leading-snug">{activity.description}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
                                     </div>
-                                    <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
                                         <EditActivityDialog
                                             activity={activity}
                                             onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
@@ -164,7 +164,7 @@ export default function SavedItinerariesPage() {
     const { user } = useAuth();
     const [itineraries, setItineraries] = useState<Itinerary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isUpdating, setIsUpdating] = useState(false);
+    const [isUpdating, setIsUpdating] = useState<{[key: string]: boolean}>({});
     const { toast } = useToast();
 
     const loadItineraries = async () => {
@@ -183,8 +183,8 @@ export default function SavedItinerariesPage() {
     }, [user]);
 
     const handleUpdateItinerary = async (updatedItinerary: Itinerary) => {
-        if (!user) return;
-        setIsUpdating(true);
+        if (!user || !updatedItinerary.id) return;
+        setIsUpdating(prev => ({...prev, [updatedItinerary.id!]: true}));
         try {
             await saveItinerary(user.uid, updatedItinerary, updatedItinerary.id);
             setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
@@ -193,7 +193,7 @@ export default function SavedItinerariesPage() {
             console.error("Failed to update itinerary:", error);
             toast({ variant: "destructive", title: "La mise à jour a échoué." });
         } finally {
-            setIsUpdating(false);
+            setIsUpdating(prev => ({...prev, [updatedItinerary.id!]: false}));
         }
     };
 
@@ -296,7 +296,7 @@ export default function SavedItinerariesPage() {
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
-                                    {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                    {isUpdating[itinerary.id!] && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                                </div>
                                 <ItineraryDisplay 
                                     itinerary={itinerary} 
