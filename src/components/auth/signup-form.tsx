@@ -41,7 +41,7 @@ export function SignupForm() {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="first-name">Prénom</Label>
-              <Input id="first-name" placeholder="Max" required />
+              <Input id="first-name" placeholder="Flen" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="last-name">Nom</Label>
