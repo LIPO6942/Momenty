@@ -17,13 +17,13 @@ import { useAuth } from '@/context/auth-context';
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
-    Musée: <Landmark className="h-4 w-4 text-orange-500" />,
-    Monument: <Landmark className="h-4 w-4 text-orange-500" />,
-    Restaurant: <Utensils className="h-4 w-4 text-yellow-500" />,
-    Activité: <FerrisWheel className="h-4 w-4 text-rose-500" />,
-    Parc: <Leaf className="h-4 w-4 text-green-500" />,
-    Shopping: <ShoppingBag className="h-4 w-4 text-blue-500" />,
-    Autre: <Sparkles className="h-4 w-4 text-purple-500" />,
+    Musée: <Landmark className="h-5 w-5 text-orange-500" />,
+    Monument: <Landmark className="h-5 w-5 text-orange-500" />,
+    Restaurant: <Utensils className="h-5 w-5 text-yellow-500" />,
+    Activité: <FerrisWheel className="h-5 w-5 text-rose-500" />,
+    Parc: <Leaf className="h-5 w-5 text-green-500" />,
+    Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
+    Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 
 
@@ -149,6 +149,20 @@ export default function ItineraryPage() {
         return differenceInDays(parseISO(trip.endDate), parseISO(trip.startDate)) + 1;
     }, [trip]);
 
+    const cityColors = useMemo(() => {
+        if (!itinerary) return {};
+        const uniqueCities = [...new Set(itinerary.itinerary.map(day => day.city))];
+        const colors = ["bg-[hsl(var(--chart-1))]", "bg-[hsl(var(--chart-2))]", "bg-[hsl(var(--chart-3))]", "bg-[hsl(var(--chart-4))]", "bg-[hsl(var(--chart-5))]"];
+        const cityColorMap: { [city: string]: string } = {};
+        
+        uniqueCities.forEach((city, index) => {
+            cityColorMap[city] = colors[index % colors.length];
+        });
+        return cityColorMap;
+
+    }, [itinerary]);
+
+
     return (
         <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
             <div className="py-16 space-y-2">
@@ -237,7 +251,10 @@ export default function ItineraryPage() {
                                     <TimelineConnector />
                                     <TimelineHeader>
                                         <TimelineIcon>
-                                            <div className="font-bold bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                                            <div className={cn(
+                                                "font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
+                                                cityColors[dayPlan.city] || 'bg-primary'
+                                            )}>
                                                 {dayPlan.day}
                                             </div>
                                         </TimelineIcon>
@@ -250,7 +267,7 @@ export default function ItineraryPage() {
                                         {dayPlan.activities.map((activity, actIndex) => (
                                             <Card key={actIndex} className="shadow-sm">
                                                 <CardContent className="p-3 flex items-start gap-4">
-                                                    <div className="pt-1">{activityIcons[activity.type] || <Sparkles className="h-4 w-4" />}</div>
+                                                    <div className="pt-1">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
                                                     <div>
                                                         <p className="font-semibold text-sm">{activity.description}</p>
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
@@ -268,3 +285,5 @@ export default function ItineraryPage() {
         </div>
     );
 }
+
+    
