@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
     Accordion,
@@ -30,16 +29,108 @@ import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditDayPlanDialog } from "@/components/itinerary/edit-day-plan-dialog";
 import { EditActivityDialog } from "@/components/itinerary/edit-activity-dialog";
+import { cn } from "@/lib/utils";
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
-    Musée: <Landmark className="h-4 w-4 text-orange-500" />,
-    Monument: <Landmark className="h-4 w-4 text-orange-500" />,
-    Restaurant: <Utensils className="h-4 w-4 text-yellow-500" />,
-    Activité: <FerrisWheel className="h-4 w-4 text-rose-500" />,
-    Parc: <Leaf className="h-4 w-4 text-green-500" />,
-    Shopping: <ShoppingBag className="h-4 w-4 text-blue-500" />,
-    Autre: <Sparkles className="h-4 w-4 text-purple-500" />,
+    Musée: <Landmark className="h-5 w-5 text-orange-500" />,
+    Monument: <Landmark className="h-5 w-5 text-orange-500" />,
+    Restaurant: <Utensils className="h-5 w-5 text-yellow-500" />,
+    Activité: <FerrisWheel className="h-5 w-5 text-rose-500" />,
+    Parc: <Leaf className="h-5 w-5 text-green-500" />,
+    Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
+    Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
+};
+
+const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { itinerary: Itinerary, onUpdateItinerary: (updatedItinerary: Itinerary) => void, onDeleteActivity: (itineraryId: string, dayIndex: number, activityIndex: number) => void }) => {
+
+    const cityColors = useMemo(() => {
+        const uniqueCities = [...new Set(itinerary.itinerary.map(day => day.city))];
+        const colors = ["bg-[hsl(var(--chart-1))]", "bg-[hsl(var(--chart-2))]", "bg-[hsl(var(--chart-3))]", "bg-[hsl(var(--chart-4))]", "bg-[hsl(var(--chart-5))]"];
+        const cityColorMap: { [city: string]: string } = {};
+        
+        uniqueCities.forEach((city, index) => {
+            cityColorMap[city] = colors[index % colors.length];
+        });
+        return cityColorMap;
+    }, [itinerary]);
+
+    const handleUpdateDayPlan = (dayIndex: number, updatedDayPlan: DayPlan) => {
+        const newDayPlans = [...itinerary.itinerary];
+        newDayPlans[dayIndex] = updatedDayPlan;
+        onUpdateItinerary({ ...itinerary, itinerary: newDayPlans });
+    };
+
+    const handleUpdateActivity = (dayIndex: number, activityIndex: number | null, activity: Activity) => {
+        const newDayPlans = [...itinerary.itinerary];
+        const newActivities = [...newDayPlans[dayIndex].activities];
+
+        if (activityIndex !== null) {
+            newActivities[activityIndex] = activity;
+        } else {
+            newActivities.push(activity);
+        }
+
+        newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
+        onUpdateItinerary({ ...itinerary, itinerary: newDayPlans });
+    };
+
+    return (
+        <div className="space-y-6">
+            {itinerary.itinerary.map((dayPlan, dayIndex) => (
+                <div key={dayPlan.day} className="group/day relative pl-12 pb-4 border-l-2 border-border/70 last:border-l-transparent last:pb-0">
+                    <div className={cn("absolute -left-[1.35rem] top-0 font-bold text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center text-sm", cityColors[dayPlan.city] || 'bg-primary')}>
+                        {dayPlan.day}
+                    </div>
+                     <div className="flex justify-between items-center -mt-1">
+                        <div>
+                            <h4 className="font-semibold text-lg">{dayPlan.theme}</h4>
+                            <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
+                        </div>
+                        <div className="flex items-center opacity-0 group-hover/day:opacity-100 transition-opacity">
+                            <EditDayPlanDialog 
+                                dayPlan={dayPlan} 
+                                onSave={(updatedDayPlan) => handleUpdateDayPlan(dayIndex, updatedDayPlan)}
+                            >
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                            </EditDayPlanDialog>
+                             <EditActivityDialog
+                                onSave={(newActivity) => handleUpdateActivity(dayIndex, null, newActivity)}
+                                trigger={
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <PlusCircle className="h-4 w-4" />
+                                    </Button>
+                                }
+                                />
+                        </div>
+                     </div>
+                     <div className="space-y-3 mt-3">
+                        {dayPlan.activities.map((activity, actIndex) => (
+                             <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <CardContent className="p-3 flex items-start gap-3">
+                                    <div className="pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
+                                    <div className="flex-grow">
+                                        <p className="text-sm font-medium">{activity.description}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                    </div>
+                                    <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
+                                        <EditActivityDialog
+                                            activity={activity}
+                                            onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
+                                            trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
+                                            />
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                             </Card>
+                        ))}
+                     </div>
+                </div>
+            ))}
+       </div>
+    );
 };
 
 
@@ -84,33 +175,6 @@ export default function SavedItinerariesPage() {
             console.error("Failed to delete itinerary:", error);
             toast({ variant: "destructive", title: "La suppression a échoué." });
         }
-    };
-
-    const handleUpdateDayPlan = (itineraryId: string, dayIndex: number, updatedDayPlan: DayPlan) => {
-        const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
-        if (!itineraryToUpdate) return;
-        
-        const newDayPlans = [...itineraryToUpdate.itinerary];
-        newDayPlans[dayIndex] = updatedDayPlan;
-        
-        handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
-    };
-
-    const handleUpdateActivity = (itineraryId: string, dayIndex: number, activityIndex: number | null, activity: Activity) => {
-        const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
-        if (!itineraryToUpdate) return;
-
-        const newDayPlans = [...itineraryToUpdate.itinerary];
-        const newActivities = [...newDayPlans[dayIndex].activities];
-
-        if (activityIndex !== null) { // Editing existing activity
-            newActivities[activityIndex] = activity;
-        } else { // Adding new activity
-            newActivities.push(activity);
-        }
-
-        newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
-        handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
     };
 
     const handleDeleteActivity = (itineraryId: string, dayIndex: number, activityIndex: number) => {
@@ -163,7 +227,7 @@ export default function SavedItinerariesPage() {
                 <Accordion type="single" collapsible className="w-full space-y-4">
                     {itineraries.map((itinerary, idx) => (
                         <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
-                            <div className="flex items-center justify-between p-4">
+                           <div className="flex items-center p-4">
                                 <AccordionTrigger className="flex-grow text-xl font-semibold text-left p-0 hover:no-underline">
                                     {itinerary.title}
                                 </AccordionTrigger>
@@ -197,54 +261,11 @@ export default function SavedItinerariesPage() {
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
                                </div>
-                               <div className="space-y-4">
-                                    {itinerary.itinerary.map((dayPlan, dayIndex) => (
-                                        <div key={dayPlan.day} className="group/day border-t pt-4">
-                                             <div className="flex justify-between items-center mb-2">
-                                                <h4 className="font-semibold text-lg">Jour {dayPlan.day}: {dayPlan.theme}</h4>
-                                                <div className="flex items-center opacity-0 group-hover/day:opacity-100 transition-opacity">
-                                                    <EditDayPlanDialog 
-                                                        dayPlan={dayPlan} 
-                                                        onSave={(updatedDayPlan) => handleUpdateDayPlan(itinerary.id!, dayIndex, updatedDayPlan)}
-                                                    >
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                                                    </EditDayPlanDialog>
-                                                     <EditActivityDialog
-                                                        onSave={(newActivity) => handleUpdateActivity(itinerary.id!, dayIndex, null, newActivity)}
-                                                        trigger={
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <PlusCircle className="h-4 w-4" />
-                                                            </Button>
-                                                        }
-                                                        />
-                                                </div>
-                                             </div>
-
-                                             <p className="text-sm text-muted-foreground mb-3">{dayPlan.date} - {dayPlan.city}</p>
-                                             <div className="space-y-2">
-                                                {dayPlan.activities.map((activity, actIndex) => (
-                                                     <div key={actIndex} className="group/activity flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50">
-                                                        {activityIcons[activity.type] || <Sparkles className="h-4 w-4 text-purple-500" />}
-                                                        <div className="flex-grow">
-                                                            <p className="text-sm font-medium">{activity.description}</p>
-                                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
-                                                        </div>
-                                                        <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
-                                                            <EditActivityDialog
-                                                                activity={activity}
-                                                                onSave={(updatedActivity) => handleUpdateActivity(itinerary.id!, dayIndex, actIndex, updatedActivity)}
-                                                                trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
-                                                                />
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                     </div>
-                                                ))}
-                                             </div>
-                                        </div>
-                                    ))}
-                               </div>
+                                <ItineraryDisplay 
+                                    itinerary={itinerary} 
+                                    onUpdateItinerary={handleUpdateItinerary}
+                                    onDeleteActivity={handleDeleteActivity}
+                                />
                             </AccordionContent>
                         </AccordionItem>
                     ))}
@@ -253,3 +274,5 @@ export default function SavedItinerariesPage() {
         </div>
     );
 }
+
+    
