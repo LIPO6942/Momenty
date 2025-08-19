@@ -109,11 +109,11 @@ export function ProfileForm() {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="firstName">Prénom</Label>
-              <Input id="firstName" placeholder="Max" value={profile.firstName} onChange={handleChange} required disabled={!isEditing} />
+              <Input id="firstName" placeholder="Flen" value={profile.firstName} onChange={handleChange} required disabled={!isEditing} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="lastName">Nom</Label>
-              <Input id="lastName" placeholder="Robinson" value={profile.lastName} onChange={handleChange} required disabled={!isEditing} />
+              <Input id="lastName" placeholder="Ben Foulen" value={profile.lastName} onChange={handleChange} required disabled={!isEditing} />
             </div>
           </div>
            <div className="grid gap-2">
