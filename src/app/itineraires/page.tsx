@@ -93,7 +93,7 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      )}>
                         {dayPlan.day}
                     </div>
-                     <div className="flex justify-between items-center group">
+                     <div className="flex justify-between items-start group">
                         <div className="space-y-1">
                             <h4 className="font-semibold text-lg">{dayPlan.theme}</h4>
                             <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
@@ -119,12 +119,10 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                         {dayPlan.activities.map((activity, actIndex) => (
                              <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
                                 <CardContent className="p-3 flex items-start justify-between gap-3">
-                                    <div className="flex items-start gap-3 flex-grow">
-                                        <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
-                                        <div className="flex-grow">
-                                            <p className="text-sm font-medium">{activity.description}</p>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
-                                        </div>
+                                    <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
+                                    <div className="flex-grow space-y-1">
+                                        <p className="text-sm font-medium leading-snug">{activity.description}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
                                         <EditActivityDialog
@@ -313,3 +311,5 @@ export default function SavedItinerariesPage() {
         </div>
     );
 }
+
+    
