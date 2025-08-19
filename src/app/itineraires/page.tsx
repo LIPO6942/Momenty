@@ -229,8 +229,8 @@ export default function SavedItinerariesPage() {
                     {itineraries.map((itinerary, idx) => (
                         <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
                            <div className="flex items-center p-4">
-                                <AccordionTrigger className="flex-grow text-xl font-semibold text-left p-0 hover:no-underline">
-                                    {itinerary.title}
+                                <AccordionTrigger className="flex-grow p-0 hover:no-underline text-left">
+                                    <span className="text-xl font-semibold">{itinerary.title}</span>
                                 </AccordionTrigger>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
                                 <AlertDialog>
@@ -275,3 +275,5 @@ export default function SavedItinerariesPage() {
         </div>
     );
 }
+
+    

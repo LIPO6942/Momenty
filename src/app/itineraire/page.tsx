@@ -268,7 +268,7 @@ export default function ItineraryPage() {
                                             <Card key={actIndex} className="shadow-sm">
                                                 <CardContent className="p-3 flex items-start gap-4">
                                                     <div className="pt-1">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
-                                                    <div>
+                                                    <div className="flex-grow">
                                                         <p className="font-semibold text-sm">{activity.description}</p>
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activity.time}</p>
                                                     </div>
@@ -285,5 +285,7 @@ export default function ItineraryPage() {
         </div>
     );
 }
+
+    
 
     
