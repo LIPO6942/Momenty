@@ -14,6 +14,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { saveItinerary } from '@/lib/firestore';
 import { useAuth } from '@/context/auth-context';
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
