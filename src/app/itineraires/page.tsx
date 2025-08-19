@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -18,6 +18,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
     Accordion,
     AccordionContent,
@@ -112,11 +118,13 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      <div className="space-y-3 mt-4">
                         {dayPlan.activities.map((activity, actIndex) => (
                              <Card key={actIndex} className="group/activity shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <CardContent className="p-3 flex items-start gap-3">
-                                    <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
-                                    <div className="flex-grow">
-                                        <p className="text-sm font-medium">{activity.description}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                <CardContent className="p-3 flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 flex-grow">
+                                        <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
+                                        <div className="flex-grow">
+                                            <p className="text-sm font-medium">{activity.description}</p>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                        </div>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
                                         <EditActivityDialog
@@ -124,9 +132,24 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                                             onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
                                             trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
                                             />
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Supprimer cette activité ?</AlertDialogTitle>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
+                                                        Supprimer
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
                                 </CardContent>
                              </Card>
@@ -143,6 +166,7 @@ export default function SavedItinerariesPage() {
     const { user } = useAuth();
     const [itineraries, setItineraries] = useState<Itinerary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const { toast } = useToast();
 
     const loadItineraries = async () => {
@@ -155,11 +179,14 @@ export default function SavedItinerariesPage() {
     };
 
     useEffect(() => {
-        loadItineraries();
+        if(user){
+          loadItineraries();
+        }
     }, [user]);
 
     const handleUpdateItinerary = async (updatedItinerary: Itinerary) => {
         if (!user) return;
+        setIsUpdating(true);
         try {
             await saveItinerary(user.uid, updatedItinerary, updatedItinerary.id);
             setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
@@ -167,6 +194,8 @@ export default function SavedItinerariesPage() {
         } catch (error) {
             console.error("Failed to update itinerary:", error);
             toast({ variant: "destructive", title: "La mise à jour a échoué." });
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -236,35 +265,40 @@ export default function SavedItinerariesPage() {
                                 <AccordionTrigger className="flex-grow p-0 hover:no-underline text-left">
                                     <span className="text-xl font-semibold">{itinerary.title}</span>
                                 </AccordionTrigger>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                            <Trash2 className="h-4 w-4" />
+                                 <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
+                                            <MoreVertical className="h-5 w-5" />
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Cette action est irréversible.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>
-                                            Confirmer
-                                        </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                                </div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                     <Trash2 className="mr-2 h-4 w-4" />
+                                                     <span>Supprimer l'itinéraire</span>
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>Confirmer</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                             <AccordionContent className="p-4 pt-0">
                                <div className="flex justify-between items-center mb-6">
                                      <p className="text-sm text-muted-foreground">
                                         Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
                                     </p>
+                                    {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                                </div>
                                 <ItineraryDisplay 
                                     itinerary={itinerary} 
