@@ -55,7 +55,7 @@ export function StayDialog({ children }: StayDialogProps) {
                 setStay(JSON.parse(savedStay));
                 setIsStayActive(true);
             } else {
-                setStay({ companionType: 'Solo' });
+                setStay({ location: 'Tunisie', companionType: 'Solo' });
                 setIsStayActive(false);
             }
         }
@@ -100,7 +100,7 @@ export function StayDialog({ children }: StayDialogProps) {
         setIsStayActive(isActive);
         if (!isActive) {
             localStorage.removeItem('activeStay');
-            setStay({ companionType: 'Solo' });
+            setStay({ location: 'Tunisie', companionType: 'Solo' });
             toast({ title: "Mode séjour terminé." });
             window.dispatchEvent(new Event('storage'));
         }
