@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -47,6 +47,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Parc: <Leaf className="h-5 w-5 text-green-500" />,
     Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
     Soirée: <PartyPopper className="h-5 w-5 text-indigo-500" />,
+    Baignade: <Waves className="h-5 w-5 text-cyan-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 

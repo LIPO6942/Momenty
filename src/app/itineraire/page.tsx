@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateItinerary, type GenerateItineraryOutput, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
 import type { Trip, Itinerary } from '@/lib/types';
-import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper } from 'lucide-react';
+import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper, Waves } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -25,6 +25,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Parc: <Leaf className="h-5 w-5 text-green-500" />,
     Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
     Soirée: <PartyPopper className="h-5 w-5 text-indigo-500" />,
+    Baignade: <Waves className="h-5 w-5 text-cyan-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 
