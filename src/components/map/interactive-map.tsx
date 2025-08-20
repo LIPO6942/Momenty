@@ -4,8 +4,10 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { LocationWithCoords } from "@/lib/types";
+import type { LocationWithCoords, TravelInfo } from "@/lib/types";
 import { capitals } from "@/lib/capitals";
+import { Train, Plane, Car, Bus, Ship } from "lucide-react";
+import ReactDOMServer from 'react-dom/server';
 
 // Custom icons for capitals (red) and other cities (blue)
 const redIcon = new L.Icon({
@@ -37,6 +39,24 @@ const createNumberedIcon = (number: number) => {
     });
 };
 
+const transportIcons: { [key in TravelInfo['mode']]: string } = {
+    Train: ReactDOMServer.renderToString(<Train className="h-5 w-5" />),
+    Avion: ReactDOMServer.renderToString(<Plane className="h-5 w-5" />),
+    Voiture: ReactDOMServer.renderToString(<Car className="h-5 w-5" />),
+    Bus: ReactDOMServer.renderToString(<Bus className="h-5 w-5" />),
+    Bateau: ReactDOMServer.renderToString(<Ship className="h-5 w-5" />),
+};
+
+const createTransportIcon = (mode: TravelInfo['mode']) => {
+    const iconHtml = transportIcons[mode] || '';
+    return L.divIcon({
+      html: `<div style="background-color: white; padding: 4px; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);">${iconHtml}</div>`,
+      className: 'leaflet-transport-icon',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+};
+
 
 // Create a Set of capitals for faster lookups
 const capitalsSet = new Set(capitals.map(c => c.toLowerCase()));
@@ -44,11 +64,12 @@ const capitalsSet = new Set(capitals.map(c => c.toLowerCase()));
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
   focusedLocation: [number, number] | null;
-  showPolyline?: boolean; // New prop to control line drawing
-  isNumbered?: boolean; // New prop for numbered markers
+  showPolyline?: boolean;
+  isNumbered?: boolean;
+  travelSegments?: { start: [number, number]; end: [number, number]; mode: TravelInfo['mode'] }[];
 }
 
-export default function InteractiveMap({ locations, focusedLocation, showPolyline = false, isNumbered = false }: InteractiveMapProps) {
+export default function InteractiveMap({ locations, focusedLocation, showPolyline = false, isNumbered = false, travelSegments = [] }: InteractiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.LayerGroup | null>(null);
@@ -114,8 +135,20 @@ export default function InteractiveMap({ locations, focusedLocation, showPolylin
       }
     });
 
-    // Draw polyline if requested
-    if (showPolyline && locations.length > 1) {
+    // Draw polyline and transport icons if requested
+    if (showPolyline && travelSegments.length > 0) {
+        travelSegments.forEach(segment => {
+            const latLngs: L.LatLngExpression[] = [segment.start, segment.end];
+            const polyline = L.polyline(latLngs, { color: 'hsl(var(--primary))', weight: 3 }).addTo(markersLayer.current!);
+            
+            // Add transport icon at the midpoint
+            const midpoint = L.latLng(
+                (segment.start[0] + segment.end[0]) / 2,
+                (segment.start[1] + segment.end[1]) / 2
+            );
+            L.marker(midpoint, { icon: createTransportIcon(segment.mode) }).addTo(markersLayer.current!);
+        });
+    } else if (showPolyline && locations.length > 1) {
         const latLngs = locations.map(l => l.coords);
         const polyline = L.polyline(latLngs, { color: 'hsl(var(--primary))', weight: 3 }).addTo(markersLayer.current);
     }
@@ -128,7 +161,7 @@ export default function InteractiveMap({ locations, focusedLocation, showPolylin
         }
     }
 
-  }, [locations, focusedLocation, showPolyline, isNumbered]);
+  }, [locations, focusedLocation, showPolyline, isNumbered, travelSegments]);
 
 
   // Focus on a location when it's selected

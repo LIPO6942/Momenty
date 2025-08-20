@@ -4,9 +4,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { generateItinerary, type GenerateItineraryOutput, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
-import type { Trip, Itinerary } from '@/lib/types';
-import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper, Waves } from 'lucide-react';
+import { generateItinerary, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
+import type { Trip, Itinerary, ItineraryOutput } from '@/lib/types';
+import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper, Waves, Train, Car, Plane, Bus, Ship } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -28,6 +28,14 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Baignade: <Waves className="h-5 w-5 text-cyan-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
+
+const transportIcons: { [key: string]: React.ReactNode } = {
+    Train: <Train className="h-5 w-5" />,
+    Avion: <Plane className="h-5 w-5" />,
+    Voiture: <Car className="h-5 w-5" />,
+    Bus: <Bus className="h-5 w-5" />,
+    Bateau: <Ship className="h-5 w-5" />,
+}
 
 
 const ItinerarySkeleton = () => (
@@ -53,7 +61,7 @@ const ItinerarySkeleton = () => (
 export default function ItineraryPage() {
     const { user } = useAuth();
     const [trip, setTrip] = useState<Trip | null>(null);
-    const [itinerary, setItinerary] = useState<GenerateItineraryOutput | null>(null);
+    const [itinerary, setItinerary] = useState<ItineraryOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -250,6 +258,16 @@ export default function ItineraryPage() {
                                                 </CardContent>
                                             </Card>
                                         ))}
+                                         {dayPlan.travelInfo && (
+                                            <Card className="shadow-sm bg-secondary border-dashed">
+                                                <CardContent className="p-3 flex items-center gap-3 text-muted-foreground">
+                                                    <div className="flex-shrink-0">
+                                                        {transportIcons[dayPlan.travelInfo.mode] || <Route className="h-5 w-5"/>}
+                                                    </div>
+                                                    <p className="text-sm italic">{dayPlan.travelInfo.description}</p>
+                                                </CardContent>
+                                            </Card>
+                                        )}
                                     </div>
                                 </div>
                             ))}

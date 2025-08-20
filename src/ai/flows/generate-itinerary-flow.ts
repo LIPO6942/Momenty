@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import type { ItineraryOutput } from '@/lib/types';
+
 
 const CityWithDaysSchema = z.object({
     name: z.string().describe("Le nom de la ville."),
@@ -30,7 +32,12 @@ export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema
 const ActivitySchema = z.object({
     time: z.string().describe("Le moment de la journée (ex: Matin, Après-midi, Soir)."),
     description: z.string().describe("Description concise de l'activité (ex: Visite du Musée du Louvre)."),
-    type: z.enum(["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Autre", "Soirée", "Baignade"]).describe("Le type d'activité."),
+    type: z.enum(["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Soirée", "Baignade", "Autre"]).describe("Le type d'activité."),
+});
+
+const TravelInfoSchema = z.object({
+    mode: z.enum(["Train", "Avion", "Voiture", "Bus", "Bateau"]).describe("Le mode de transport pour se rendre à la prochaine ville."),
+    description: z.string().describe("Brève description du trajet (ex: 'Train à grande vitesse vers Florence').")
 });
 
 const DayPlanSchema = z.object({
@@ -39,6 +46,7 @@ const DayPlanSchema = z.object({
     city: z.string().describe("La ville principale pour cette journée."),
     theme: z.string().describe("Un thème ou un titre pour la journée (ex: Découverte historique, Aventure culinaire)."),
     activities: z.array(ActivitySchema).describe("La liste des activités pour la journée."),
+    travelInfo: TravelInfoSchema.optional().describe("Si c'est le dernier jour dans une ville avant de passer à la suivante, décris ici le trajet prévu."),
 });
 
 
@@ -49,7 +57,7 @@ const GenerateItineraryOutputSchema = z.object({
 export type GenerateItineraryOutput = z.infer<typeof GenerateItineraryOutputSchema>;
 
 
-export async function generateItinerary(input: GenerateItineraryInput): Promise<GenerateItineraryOutput> {
+export async function generateItinerary(input: GenerateItineraryInput): Promise<ItineraryOutput> {
   return generateItineraryFlow(input);
 }
 
@@ -82,14 +90,15 @@ const prompt = ai.definePrompt({
 1.  Calcule la durée totale du voyage en jours.
 2.  Si une liste de villes avec des durées est fournie, respecte cette répartition. Organise le trajet de manière cohérente (ex: du nord au sud).
 3.  Pour chaque jour, définis un thème, la ville principale, et propose 2 à 3 activités (matin, après-midi, soir). Varie les types d'activités (culture, gastronomie, nature, détente, etc.).
-4.  **Adapte le ton** :
+4.  **NOUVELLE INSTRUCTION IMPORTANTE :** Lorsque l'itinéraire implique de changer de ville, tu dois ajouter une information de transport. Sur la **dernière journée** passée dans une ville, remplis l'objet \`travelInfo\`. Choisis le mode de transport le plus logique (Train, Avion, Voiture, Bus, Bateau) et fournis une brève description du trajet. Par exemple, si le jour 3 est le dernier jour à Rome et que le jour 4 est à Florence, le \`travelInfo\` du jour 3 pourrait être \`{ mode: 'Train', description: 'Train à grande vitesse vers Florence' }\`. N'ajoute pas de \`travelInfo\` pour le tout dernier jour du voyage.
+5.  **Adapte le ton** :
     - Si le voyage est avec un(e) **'Conjoint(e)'**, rends le titre et les descriptions plus romantiques. Ex: "Notre escapade amoureuse en Italie", "Dîner romantique avec vue".
     - Si le voyage est avec un **'Parent'**, utilise un ton affectueux et attentionné. Ex: "Merveilleux souvenirs en famille en Grèce", "Promenade paisible dans les jardins".
     - Si le voyage est avec un(e) **'Ami(e)'**, utilise un ton plus fun et dynamique. Ex: "L'aventure entre amis au Japon !", "Soirée festive dans le quartier de Shibuya".
     - Si le voyage est en **'Solo'**, utilise un ton inspirant et d'exploration personnelle. Ex: "Mon exploration en solitaire du Pérou", "Méditation face au Machu Picchu".
-5.  Le titre général doit refléter ce ton personnalisé, tout en mentionnant la durée et le pays.
-6.  Rédige des descriptions courtes et percutantes pour chaque activité.
-7.  Assure-toi que le format de sortie est un JSON qui correspond parfaitement au schéma fourni.
+6.  Le titre général doit refléter ce ton personnalisé, tout en mentionnant la durée et le pays.
+7.  Rédige des descriptions courtes et percutantes pour chaque activité.
+8.  Assure-toi que le format de sortie est un JSON qui correspond parfaitement au schéma fourni.
 `,
 });
 
@@ -101,6 +110,6 @@ const generateItineraryFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    return output! as ItineraryOutput;
   }
 );

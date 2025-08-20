@@ -3,10 +3,11 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
-import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
+import { getItineraries, deleteItinerary, saveItinerary } from "@/lib/firestore";
+import type { Itinerary, DayPlan, Activity } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -51,6 +52,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
+import { TravelInfo } from "@/lib/types";
+
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
     ssr: false,
@@ -70,10 +73,20 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 
+const transportIcons: { [key: string]: React.ReactNode } = {
+    Train: <Train className="h-5 w-5" />,
+    Avion: <Plane className="h-5 w-5" />,
+    Voiture: <Car className="h-5 w-5" />,
+    Bus: <Bus className="h-5 w-5" />,
+    Bateau: <Ship className="h-5 w-5" />,
+}
+
+
 const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; children: React.ReactNode }) => {
     const [open, setOpen] = useState(false);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [travelSegments, setTravelSegments] = useState<{start: [number, number], end: [number, number], mode: TravelInfo['mode']}[]>([]);
 
     useEffect(() => {
         const fetchCoordinates = async () => {
@@ -106,6 +119,25 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
                     }
                 }
             }
+
+            // Create travel segments for the polyline
+            const segments: {start: [number, number], end: [number, number], mode: TravelInfo['mode']}[] = [];
+            for (let i = 0; i < itinerary.itinerary.length; i++) {
+                const day = itinerary.itinerary[i];
+                if (day.travelInfo && i + 1 < itinerary.itinerary.length) {
+                    const nextDay = itinerary.itinerary[i + 1];
+                    const startCity = newCoords.find(c => c.name === day.city);
+                    const endCity = newCoords.find(c => c.name === nextDay.city);
+                    if (startCity && endCity && startCity.name !== endCity.name) {
+                        segments.push({
+                            start: startCity.coords,
+                            end: endCity.coords,
+                            mode: day.travelInfo.mode,
+                        });
+                    }
+                }
+            }
+            setTravelSegments(segments);
             
             localStorage.setItem('coordsCache', JSON.stringify(coordsCache));
             setLocationsWithCoords(newCoords);
@@ -131,6 +163,7 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
                             focusedLocation={null} 
                             showPolyline={true} 
                             isNumbered={true}
+                            travelSegments={travelSegments}
                         />
                     )}
                 </div>
@@ -209,7 +242,7 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      <div className="mt-4 space-y-3">
                         {dayPlan.activities.map((activity, actIndex) => (
                             <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                 <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                                     <EditActivityDialog
                                         activity={activity}
                                         onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
@@ -244,6 +277,16 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                                 </CardContent>
                              </Card>
                         ))}
+                         {dayPlan.travelInfo && (
+                            <Card className="shadow-sm bg-secondary border-dashed">
+                                <CardContent className="p-3 flex items-center gap-3 text-muted-foreground">
+                                    <div className="flex-shrink-0">
+                                        {transportIcons[dayPlan.travelInfo.mode] || <Route className="h-5 w-5"/>}
+                                    </div>
+                                    <p className="text-sm italic">{dayPlan.travelInfo.description}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                      </div>
                 </div>
             ))}

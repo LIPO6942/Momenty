@@ -14,14 +14,24 @@ import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { type DayPlan } from "@/lib/types";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
+import type { DayPlan, TravelInfo } from "@/lib/types";
 import { Save } from "lucide-react";
+import { Textarea } from "../ui/textarea";
 
 interface EditDayPlanDialogProps {
   children: ReactNode;
   dayPlan: DayPlan;
   onSave: (dayPlan: DayPlan) => void;
 }
+
+const transportModes: TravelInfo['mode'][] = ["Train", "Avion", "Voiture", "Bus", "Bateau"];
 
 export function EditDayPlanDialog({ children, dayPlan, onSave }: EditDayPlanDialogProps) {
     const [open, setOpen] = useState(false);
@@ -37,6 +47,27 @@ export function EditDayPlanDialog({ children, dayPlan, onSave }: EditDayPlanDial
         onSave(editedDayPlan);
         setOpen(false);
     };
+
+    const handleTravelInfoChange = (field: keyof TravelInfo, value: string) => {
+        setEditedDayPlan(prev => ({
+            ...prev,
+            travelInfo: {
+                ...prev.travelInfo,
+                mode: prev.travelInfo?.mode || 'Voiture',
+                description: prev.travelInfo?.description || '',
+                [field]: value
+            }
+        }));
+    }
+
+    const toggleTravelInfo = (enabled: boolean) => {
+        if(enabled) {
+            setEditedDayPlan(prev => ({...prev, travelInfo: {mode: 'Voiture', description: ''}}));
+        } else {
+            const { travelInfo, ...rest } = editedDayPlan;
+            setEditedDayPlan(rest);
+        }
+    }
     
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -69,6 +100,28 @@ export function EditDayPlanDialog({ children, dayPlan, onSave }: EditDayPlanDial
                             value={editedDayPlan.date}
                             onChange={(e) => setEditedDayPlan(prev => ({...prev, date: e.target.value}))}
                         />
+                    </div>
+                    <div className="space-y-3 rounded-md border p-3">
+                        <Label className="flex items-center">
+                            <input type="checkbox" checked={!!editedDayPlan.travelInfo} onChange={(e) => toggleTravelInfo(e.target.checked)} className="mr-2"/>
+                            Transport vers la prochaine étape
+                        </Label>
+                        {editedDayPlan.travelInfo && (
+                            <div className="space-y-2 pl-2">
+                                <Select value={editedDayPlan.travelInfo.mode} onValueChange={(value) => handleTravelInfoChange('mode', value)}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        {transportModes.map(mode => <SelectItem key={mode} value={mode}>{mode}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Textarea 
+                                    value={editedDayPlan.travelInfo.description}
+                                    onChange={(e) => handleTravelInfoChange('description', e.target.value)}
+                                    placeholder="Description du trajet"
+                                    className="text-sm"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
                 <DialogFooter>

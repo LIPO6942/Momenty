@@ -1,8 +1,36 @@
 
 import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
-import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary-flow';
 
+// --- Itinerary Flow Types ---
+
+export interface Activity {
+    time: string;
+    description: string;
+    type: "Musée" | "Monument" | "Restaurant" | "Activité" | "Parc" | "Shopping" | "Soirée" | "Baignade" | "Autre";
+}
+
+export interface TravelInfo {
+    mode: "Train" | "Avion" | "Voiture" | "Bus" | "Bateau";
+    description: string;
+}
+
+export interface DayPlan {
+    day: number;
+    date: string;
+    city: string;
+    theme: string;
+    activities: Activity[];
+    travelInfo?: TravelInfo; // Optional travel info for the end of the day
+}
+
+export interface ItineraryOutput {
+  title: string;
+  itinerary: DayPlan[];
+}
+
+
+// --- Main App Types ---
 
 export interface Instant {
     id: string;
@@ -62,7 +90,7 @@ export interface Trip {
     companionName?: string;
 }
 
-export interface Itinerary extends GenerateItineraryOutput, Trip {
+export interface Itinerary extends ItineraryOutput, Trip {
     id?: string;
     userId: string;
     createdAt: string; // ISO String
