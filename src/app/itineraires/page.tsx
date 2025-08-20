@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -49,6 +49,13 @@ import { EditActivityDialog } from "@/components/itinerary/edit-activity-dialog"
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import dynamic from "next/dynamic";
+import type { LocationWithCoords } from "@/lib/types";
+
+const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-[400px] md:h-[60vh] w-full rounded-lg" />
+});
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
@@ -62,6 +69,76 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Baignade: <Waves className="h-5 w-5 text-cyan-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
+
+const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; children: React.ReactNode }) => {
+    const [open, setOpen] = useState(false);
+    const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchCoordinates = async () => {
+            if (!open) return;
+            setIsLoading(true);
+
+            // Get unique cities from itinerary
+            const cityNames = itinerary.itinerary.map(day => day.city);
+            const uniqueCities = [...new Set(cityNames)];
+
+            const coordsCache: { [key: string]: [number, number] } = JSON.parse(localStorage.getItem('coordsCache') || '{}');
+            const newCoords: LocationWithCoords[] = [];
+
+            for (const city of uniqueCities) {
+                const locationKey = city.toLowerCase();
+                if (coordsCache[locationKey]) {
+                    newCoords.push({ name: city, coords: coordsCache[locationKey], count: 0, isManual: false });
+                } else {
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            const { lat, lon } = data[0];
+                            const coords: [number, number] = [parseFloat(lat), parseFloat(lon)];
+                            coordsCache[locationKey] = coords;
+                            newCoords.push({ name: city, coords, count: 0, isManual: false });
+                        }
+                    } catch (error) {
+                        console.error(`Failed to geocode ${city}:`, error);
+                    }
+                }
+            }
+            
+            localStorage.setItem('coordsCache', JSON.stringify(coordsCache));
+            setLocationsWithCoords(newCoords);
+            setIsLoading(false);
+        };
+
+        fetchCoordinates();
+    }, [open, itinerary]);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="max-w-4xl p-0">
+                <DialogHeader className="p-6 pb-0">
+                    <DialogTitle>Carte de l'itinéraire : {itinerary.title}</DialogTitle>
+                </DialogHeader>
+                <div className="p-6 pt-2">
+                    {isLoading ? (
+                        <Skeleton className="h-[400px] md:h-[60vh] w-full rounded-lg" />
+                    ) : (
+                        <InteractiveMap 
+                            locations={locationsWithCoords} 
+                            focusedLocation={null} 
+                            showPolyline={true} 
+                            isNumbered={true}
+                        />
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { itinerary: Itinerary, onUpdateItinerary: (updatedItinerary: Itinerary) => void, onDeleteActivity: (itineraryId: string, dayIndex: number, activityIndex: number) => void }) => {
 
@@ -313,6 +390,11 @@ export default function SavedItinerariesPage() {
                                 <AccordionTrigger className="flex-grow p-0 hover:no-underline text-left">
                                     <span className="text-xl font-semibold">{itinerary.title}</span>
                                 </AccordionTrigger>
+                                 <ItineraryMapDialog itinerary={itinerary}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
+                                        <MapPin className="h-5 w-5" />
+                                    </Button>
+                                 </ItineraryMapDialog>
                                  <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">

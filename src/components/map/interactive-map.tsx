@@ -26,15 +26,29 @@ const blueIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
+// Helper for numbered icons
+const createNumberedIcon = (number: number) => {
+    return L.divIcon({
+        html: `<div style="background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid white;">${number}</div>`,
+        className: 'leaflet-numbered-icon',
+        iconSize: [25, 25],
+        iconAnchor: [12, 25],
+        popupAnchor: [0, -25]
+    });
+};
+
+
 // Create a Set of capitals for faster lookups
 const capitalsSet = new Set(capitals.map(c => c.toLowerCase()));
 
 interface InteractiveMapProps {
   locations: LocationWithCoords[];
   focusedLocation: [number, number] | null;
+  showPolyline?: boolean; // New prop to control line drawing
+  isNumbered?: boolean; // New prop for numbered markers
 }
 
-export default function InteractiveMap({ locations, focusedLocation }: InteractiveMapProps) {
+export default function InteractiveMap({ locations, focusedLocation, showPolyline = false, isNumbered = false }: InteractiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.LayerGroup | null>(null);
@@ -65,7 +79,7 @@ export default function InteractiveMap({ locations, focusedLocation }: Interacti
   useEffect(() => {
     if (!leafletMap.current || !markersLayer.current) return;
 
-    // Clear previous markers
+    // Clear previous markers and lines
     markersLayer.current.clearLayers();
 
     if (locations.length === 0) {
@@ -75,19 +89,36 @@ export default function InteractiveMap({ locations, focusedLocation }: Interacti
     }
     
     // Add new markers
-    locations.forEach((location) => {
+    locations.forEach((location, index) => {
       const cityName = location.name.split(',')[0].trim().toLowerCase();
       const isCapital = capitalsSet.has(cityName);
+      
+      let icon: L.Icon | L.DivIcon = isCapital ? redIcon : blueIcon;
+      if (isNumbered) {
+          icon = createNumberedIcon(index + 1);
+      }
 
       const marker = L.marker(location.coords, {
           title: location.name,
-          icon: isCapital ? redIcon : blueIcon
+          icon: icon
       });
-      marker.bindPopup(`${location.name} (${location.count > 0 ? `${location.count} instant(s)`: ''})`);
+
+      const popupContent = isNumbered
+        ? `Étape ${index + 1}: ${location.name}`
+        : `${location.name} (${location.count > 0 ? `${location.count} instant(s)`: ''})`;
+      
+      marker.bindPopup(popupContent);
+
       if (markersLayer.current) {
         marker.addTo(markersLayer.current);
       }
     });
+
+    // Draw polyline if requested
+    if (showPolyline && locations.length > 1) {
+        const latLngs = locations.map(l => l.coords);
+        const polyline = L.polyline(latLngs, { color: 'hsl(var(--primary))', weight: 3 }).addTo(markersLayer.current);
+    }
 
     // Adjust map view to fit all markers only if not focusing on a specific one
     if(!focusedLocation) {
@@ -97,7 +128,7 @@ export default function InteractiveMap({ locations, focusedLocation }: Interacti
         }
     }
 
-  }, [locations, focusedLocation]);
+  }, [locations, focusedLocation, showPolyline, isNumbered]);
 
 
   // Focus on a location when it's selected
@@ -114,9 +145,7 @@ export default function InteractiveMap({ locations, focusedLocation }: Interacti
   return (
     <div
       ref={mapRef}
-      className="w-full h-[400px] rounded-lg z-0"
+      className="w-full h-[400px] md:h-[60vh] rounded-lg z-0"
     />
   );
 }
-
-    
