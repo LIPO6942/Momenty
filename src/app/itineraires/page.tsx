@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,10 +19,20 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+    DialogClose,
+  } from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
     Accordion,
@@ -37,6 +47,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EditDayPlanDialog } from "@/components/itinerary/edit-day-plan-dialog";
 import { EditActivityDialog } from "@/components/itinerary/edit-activity-dialog";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
@@ -162,6 +174,41 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
     );
 };
 
+const EditTitleDialog = ({ itinerary, onUpdateItinerary, children }: { itinerary: Itinerary, onUpdateItinerary: (itinerary: Itinerary) => void, children: React.ReactNode }) => {
+    const [open, setOpen] = useState(false);
+    const [title, setTitle] = useState(itinerary.title);
+
+    useEffect(() => {
+        if (open) {
+            setTitle(itinerary.title);
+        }
+    }, [open, itinerary.title]);
+
+    const handleSave = () => {
+        onUpdateItinerary({ ...itinerary, title });
+        setOpen(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Modifier le titre de l'itinéraire</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <Label htmlFor="title">Titre</Label>
+                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost">Annuler</Button></DialogClose>
+                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Enregistrer</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function SavedItinerariesPage() {
     const { user } = useAuth();
@@ -273,6 +320,13 @@ export default function SavedItinerariesPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                        <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                <span>Renommer</span>
+                                            </DropdownMenuItem>
+                                        </EditTitleDialog>
+                                        <DropdownMenuSeparator />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
