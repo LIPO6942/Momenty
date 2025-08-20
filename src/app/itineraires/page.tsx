@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary, type Itinerary, type DayPlan, type Activity } from "@/lib/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -46,6 +46,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Activité: <FerrisWheel className="h-5 w-5 text-rose-500" />,
     Parc: <Leaf className="h-5 w-5 text-green-500" />,
     Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
+    Soirée: <PartyPopper className="h-5 w-5 text-indigo-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 
@@ -115,15 +116,15 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                                 />
                         </div>
                      </div>
-                     <div className="space-y-3 mt-4">
+                     <div className="mt-4 space-y-3">
                         {dayPlan.activities.map((activity, actIndex) => (
                             <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <div className="absolute top-1 right-1 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                                     <EditActivityDialog
                                         activity={activity}
                                         onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
                                         trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
-                                        />
+                                    />
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">

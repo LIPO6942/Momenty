@@ -30,7 +30,7 @@ interface EditActivityDialogProps {
   onSave: (activity: Activity) => void;
 }
 
-const activityTypes = ["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Autre"];
+const activityTypes = ["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Soirée", "Autre"];
 const defaultActivity: Activity = { time: 'Matin', description: '', type: 'Autre' };
 
 export function EditActivityDialog({ trigger, activity, onSave }: EditActivityDialogProps) {

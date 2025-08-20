@@ -30,7 +30,7 @@ export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema
 const ActivitySchema = z.object({
     time: z.string().describe("Le moment de la journée (ex: Matin, Après-midi, Soir)."),
     description: z.string().describe("Description concise de l'activité (ex: Visite du Musée du Louvre)."),
-    type: z.enum(["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Autre"]).describe("Le type d'activité."),
+    type: z.enum(["Musée", "Monument", "Restaurant", "Activité", "Parc", "Shopping", "Autre", "Soirée"]).describe("Le type d'activité."),
 });
 
 const DayPlanSchema = z.object({

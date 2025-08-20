@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateItinerary, type GenerateItineraryOutput, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
 import type { Trip, Itinerary } from '@/lib/types';
-import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark } from 'lucide-react';
+import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -24,6 +24,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
     Activité: <FerrisWheel className="h-5 w-5 text-rose-500" />,
     Parc: <Leaf className="h-5 w-5 text-green-500" />,
     Shopping: <ShoppingBag className="h-5 w-5 text-blue-500" />,
+    Soirée: <PartyPopper className="h-5 w-5 text-indigo-500" />,
     Autre: <Sparkles className="h-5 w-5 text-purple-500" />,
 };
 
@@ -241,8 +242,8 @@ export default function ItineraryPage() {
                                             <Card key={actIndex} className="shadow-sm">
                                                 <CardContent className="p-3 flex items-start gap-3">
                                                     <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
-                                                    <div className="flex-grow">
-                                                        <p className="font-medium text-sm">{activity.description}</p>
+                                                    <div className="flex-grow space-y-1">
+                                                        <p className="font-medium text-sm leading-snug">{activity.description}</p>
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
                                                     </div>
                                                 </CardContent>
