@@ -434,13 +434,13 @@ export default function SavedItinerariesPage() {
                                     <span className="text-xl font-semibold">{itinerary.title}</span>
                                 </AccordionTrigger>
                                  <ItineraryMapDialog itinerary={itinerary}>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 ml-2">
                                         <MapPin className="h-5 w-5" />
                                     </Button>
                                  </ItineraryMapDialog>
                                  <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 ml-2 text-red-500 hover:bg-red-500/10 hover:text-red-600">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive">
                                             <MoreVertical className="h-5 w-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
