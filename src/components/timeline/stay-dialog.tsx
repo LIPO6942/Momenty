@@ -34,7 +34,9 @@ interface StayDialogProps {
 const toInputDate = (isoString?: string) => {
     if (!isoString) return '';
     try {
-        return format(parseISO(isoString), 'yyyy-MM-dd');
+        const date = parseISO(isoString);
+        if (!isValid(date)) return '';
+        return format(date, 'yyyy-MM-dd');
     } catch {
         return '';
     }
