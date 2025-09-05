@@ -33,10 +33,12 @@ export async function POST(request: Request) {
     const stream = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           { 
-            resource_type: 'auto',
-            quality: 'auto:best',
-            // Prevent auto-rotation based on EXIF data which can fail for selfies
-            transformation: [{ angle: 0 }] 
+            // Use a smart pipeline for transformations to handle all cases
+            transformation: [
+              { angle: "auto_right" }, // Reliable auto-rotation
+              { quality: "auto:best" }, // Best quality
+              { fetch_format: "auto" } // Automatic format selection
+            ]
           },
           (error, result) => {
             if (error) {
