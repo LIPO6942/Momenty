@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
@@ -43,6 +42,9 @@ const moods = [
   { name: "Curieux", icon: "🤔" },
   { name: "Nostalgique", icon: "😢" },
 ];
+
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_WIDTH = 1920; // Max width for compression
 
 export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDialogProps) {
   const { toast } = useToast();
@@ -165,6 +167,40 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     }
   }
 
+  const compressImage = (file: File | Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = document.createElement('img');
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                if (file.size < MAX_IMAGE_SIZE_MB * 1024 * 1024 && img.width <= MAX_IMAGE_WIDTH) {
+                    // No compression needed
+                    return resolve(img.src);
+                }
+
+                toast({ title: "Compression d'une image volumineuse..." });
+                const canvas = document.createElement('canvas');
+                const scaleFactor = MAX_IMAGE_WIDTH / img.width;
+                const newWidth = img.width > MAX_IMAGE_WIDTH ? MAX_IMAGE_WIDTH : img.width;
+                const newHeight = img.width > MAX_IMAGE_WIDTH ? img.height * scaleFactor : img.height;
+
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject('Could not get canvas context');
+
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                resolve(canvas.toDataURL('image/jpeg', 0.8)); // Compress to JPEG with 80% quality
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
+  }
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -188,25 +224,21 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         } catch (error) {
           console.error('HEIC Conversion Error:', error);
           toast({ variant: "destructive", title: "Erreur de conversion", description: `Impossible de convertir ${file.name}.` });
-          continue; // Skip this file and move to the next
+          continue; 
         }
       }
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setPhotos(prev => [...prev, reader.result as string]);
-        }
-      };
-      reader.onerror = () => {
-        console.error(`Erreur de lecture du fichier: ${file.name}`);
-        toast({
-          variant: "destructive",
-          title: "Erreur d'importation",
-          description: `Impossible de lire le fichier "${file.name}".`
-        });
-      };
-      reader.readAsDataURL(processingFile);
+      try {
+        const compressedDataUrl = await compressImage(processingFile);
+        setPhotos(prev => [...prev, compressedDataUrl]);
+      } catch (error) {
+          console.error(`Erreur de traitement du fichier: ${file.name}`, error);
+          toast({
+            variant: "destructive",
+            title: "Erreur d'importation",
+            description: `Impossible de traiter le fichier "${file.name}".`
+          });
+      }
     }
     
     // This needs a slight delay to allow all file readers to complete
@@ -681,3 +713,4 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
       </Dialog>
   );
 }
+
