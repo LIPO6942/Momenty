@@ -9,6 +9,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Increase the body size limit for this specific API route
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '10mb',
+        },
+    },
+};
+
 async function buffer(readable: NodeJS.ReadableStream) {
     const chunks = [];
     for await (const chunk of readable) {
