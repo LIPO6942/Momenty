@@ -176,24 +176,25 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
       let processingFile: File | Blob = file;
     
       if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        toast({ title: 'Conversion d\'une image HEIC...', description: 'Cela peut prendre un instant.' });
         try {
           const heic2any = (await import('heic2any')).default;
           const convertedBlob = await heic2any({
             blob: file,
             toType: "image/jpeg",
+            quality: 0.9,
           });
           processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
         } catch (error) {
           console.error('HEIC Conversion Error:', error);
-          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
-          continue;
+          toast({ variant: "destructive", title: "Erreur de conversion", description: `Impossible de convertir ${file.name}.` });
+          continue; // Skip this file and move to the next
         }
       }
       
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          // Always add to the list of photos (multi-select is default)
           setPhotos(prev => [...prev, reader.result as string]);
         }
       };
@@ -208,11 +209,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
       reader.readAsDataURL(processingFile);
     }
     
-    setIsConverting(false);
-    toast({ title: 'Toutes les photos ont été traitées.' });
+    // This needs a slight delay to allow all file readers to complete
+    setTimeout(() => {
+        setIsConverting(false);
+        toast({ title: 'Toutes les photos ont été traitées.' });
+    }, 100 * files.length); // Rough estimate
   
     if (e.target) {
-      e.target.value = '';
+      e.target.value = ''; // Reset input
     }
   };
 

@@ -29,7 +29,7 @@ export default function TimelinePage() {
   const { groupedInstants, instants } = useContext(TimelineContext);
   const [firstName, setFirstName] = useState<string | null>(null);
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
   const [openDays, setOpenDays] = useState<string[]>([]);
@@ -76,27 +76,22 @@ export default function TimelinePage() {
   }, [instants]);
   
   useEffect(() => {
-      if (instants.length > 0 && !hasSetInitialFilter) {
-          const mostRecentInstantDate = parseISO(instants[0].date);
-          const currentMonthHasInstants = instants.some(i => {
-              const d = parseISO(i.date);
-              return getYear(d) === selectedYear && getMonth(d) === selectedMonth;
-          });
-
-          if (!currentMonthHasInstants) {
-              setSelectedYear(getYear(mostRecentInstantDate));
-              setSelectedMonth(getMonth(mostRecentInstantDate));
-          }
-          setHasSetInitialFilter(true);
-      }
-  }, [instants, selectedYear, selectedMonth, hasSetInitialFilter]);
+    if (instants.length > 0 && !hasSetInitialFilter) {
+      const mostRecentInstantDate = parseISO(instants[0].date);
+      setSelectedYear(getYear(mostRecentInstantDate));
+      setSelectedMonth(-1); // Default to "Voir tout"
+      setHasSetInitialFilter(true);
+    }
+  }, [instants, hasSetInitialFilter]);
 
 
   const filteredGroupedInstants = useMemo(() => {
     return Object.entries(groupedInstants)
       .filter(([dayKey]) => {
         const date = parseISO(dayKey);
-        return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+        const isYearMatch = getYear(date) === selectedYear;
+        const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
+        return isYearMatch && isMonthMatch;
       })
       .reduce((acc, [dayKey, dayData]) => {
         acc[dayKey] = dayData;
@@ -147,11 +142,7 @@ export default function TimelinePage() {
             onValueChange={(val) => {
                 const newYear = Number(val);
                 setSelectedYear(newYear);
-                // Reset month to the most recent one available for the new year
-                if (availableFilters.months[newYear]) {
-                    const mostRecentMonth = Math.max(...Array.from(availableFilters.months[newYear]));
-                    setSelectedMonth(mostRecentMonth);
-                }
+                setSelectedMonth(-1); // Reset to "Voir tout" when year changes
             }}
             disabled={availableFilters.years.length === 0}
         >
@@ -174,6 +165,7 @@ export default function TimelinePage() {
                 <SelectValue placeholder="Mois" />
             </SelectTrigger>
             <SelectContent>
+                <SelectItem value={String(-1)}>Voir tout</SelectItem>
                 {availableFilters.months[selectedYear] && 
                  Array.from(availableFilters.months[selectedYear]).sort((a,b) => b-a).map(month => (
                     <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>
@@ -201,8 +193,8 @@ export default function TimelinePage() {
         </Accordion>
       ) : (
         <div className="text-center py-10 text-muted-foreground">
-            <p>Aucun souvenir trouvé pour {monthNames[selectedMonth]} {selectedYear}.</p>
-            <p className="text-sm mt-1">Essayez de sélectionner un autre mois ou une autre année.</p>
+            <p>Aucun souvenir trouvé pour {selectedMonth === -1 ? selectedYear : `${monthNames[selectedMonth]} ${selectedYear}`}.</p>
+            <p className="text-sm mt-1">Essayez de sélectionner une autre période.</p>
         </div>
       )}
     </div>
