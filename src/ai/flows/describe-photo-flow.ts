@@ -48,6 +48,26 @@ const prompt = ai.definePrompt({
   Identifie également le lieu (ville, pays) où la photo a pu être prise. Intègre-le dans ta narration si possible. Si tu n'es pas sûr, laisse le champ "location" vide.
 
   Photo: {{media url=photoDataUri}}`,
+  config: {
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_HATE_SPEECH',
+        threshold: 'BLOCK_ONLY_HIGH',
+      },
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_ONLY_HIGH',
+      },
+      {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_ONLY_HIGH',
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_ONLY_HIGH',
+      },
+    ],
+  },
 });
 
 const describePhotoFlow = ai.defineFlow(
