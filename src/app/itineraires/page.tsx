@@ -53,6 +53,8 @@ import { Label } from "@/components/ui/label";
 import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
 import { TravelInfo } from "@/lib/types";
+import { db } from "@/lib/firebase";
+import { collectionGroup, getDocs, query as fsQuery, where } from "firebase/firestore";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -404,15 +406,28 @@ export default function SavedItinerariesPage() {
                 const u = new URL(raw);
                 const parts = u.pathname.split('/').filter(Boolean);
                 const tokenIdx = parts.findIndex(p => p === 'itinerary');
-                if (tokenIdx !== -1 && parts[tokenIdx + 1]) token = parts[tokenIdx + 1];
+                if (tokenIdx !== -1 && parts[tokenIdx + 1]) {
+                    token = parts[tokenIdx + 1];
+                } else {
+                    // fallback: last non-empty segment
+                    token = parts[parts.length - 1] || token;
+                }
                 const spToken = u.searchParams.get('token');
                 if (spToken) token = spToken;
             } catch {}
 
-            const res = await fetch(`/api/itineraries/resolve?token=${encodeURIComponent(token)}`);
-            if (!res.ok) throw new Error('resolve failed');
-            const data = await res.json();
-            const itinerary: Itinerary = data.itinerary;
+            // Resolve token client-side using collectionGroup
+            const q = fsQuery(
+                collectionGroup(db, 'itineraries'),
+                where('shareEnabled', '==', true),
+                where('shareToken', '==', token)
+            );
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                throw new Error('Lien invalide ou révoqué.');
+            }
+            const data = snap.docs[0].data();
+            const itinerary: Itinerary = { ...(data as any), id: snap.docs[0].id };
             const copy: Itinerary = {
                 ...itinerary,
                 id: undefined,
@@ -426,8 +441,8 @@ export default function SavedItinerariesPage() {
             toast({ title: 'Itinéraire importé dans votre compte.' });
             setImportInput("");
             await loadItineraries();
-        } catch (e) {
-            toast({ variant: 'destructive', title: "Échec de l'import depuis le lien." });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Échec de l'import depuis le lien.", description: e?.message?.slice(0, 140) });
         } finally {
             setImportLoading(false);
         }
