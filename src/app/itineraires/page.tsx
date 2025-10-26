@@ -337,6 +337,8 @@ export default function SavedItinerariesPage() {
     const [isUpdating, setIsUpdating] = useState<{[key: string]: boolean}>({});
     const { toast } = useToast();
     const [shareLoading, setShareLoading] = useState<{[key: string]: boolean}>({});
+    const [importInput, setImportInput] = useState("");
+    const [importLoading, setImportLoading] = useState(false);
 
     const loadItineraries = async () => {
         if (user) {
@@ -389,6 +391,46 @@ export default function SavedItinerariesPage() {
         newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
         
         handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
+    };
+
+    const handleImportByLink = async () => {
+        if (!user) return;
+        const raw = importInput.trim();
+        if (!raw) return;
+        setImportLoading(true);
+        try {
+            let token = raw;
+            try {
+                const u = new URL(raw);
+                const parts = u.pathname.split('/').filter(Boolean);
+                const tokenIdx = parts.findIndex(p => p === 'itinerary');
+                if (tokenIdx !== -1 && parts[tokenIdx + 1]) token = parts[tokenIdx + 1];
+                const spToken = u.searchParams.get('token');
+                if (spToken) token = spToken;
+            } catch {}
+
+            const res = await fetch(`/api/itineraries/resolve?token=${encodeURIComponent(token)}`);
+            if (!res.ok) throw new Error('resolve failed');
+            const data = await res.json();
+            const itinerary: Itinerary = data.itinerary;
+            const copy: Itinerary = {
+                ...itinerary,
+                id: undefined,
+                userId: user.uid,
+                createdAt: new Date().toISOString(),
+                shareEnabled: false,
+                shareToken: undefined,
+                sharedAt: undefined,
+            } as any;
+            await saveItinerary(user.uid, copy);
+            toast({ title: 'Itinéraire importé dans votre compte.' });
+            setImportInput("");
+            await loadItineraries();
+        } catch (e) {
+            toast({ variant: 'destructive', title: "Échec de l'import depuis le lien." });
+        } finally {
+            setImportLoading(false);
+        }
     };
 
     const handleShare = async (itinerary: Itinerary) => {
@@ -450,6 +492,12 @@ export default function SavedItinerariesPage() {
                     Mes Itinéraires
                 </h1>
                 <p className="text-muted-foreground">Retrouvez tous vos voyages planifiés.</p>
+                <div className="mt-4 flex gap-2">
+                    <Input placeholder="Coller un lien de partage ou un token" value={importInput} onChange={(e) => setImportInput(e.target.value)} />
+                    <Button onClick={handleImportByLink} disabled={!user || importLoading || !importInput.trim()}>
+                        {importLoading ? 'Import…' : 'Importer par lien'}
+                    </Button>
+                </div>
             </div>
 
             {isLoading ? (
