@@ -53,7 +53,6 @@ import { Label } from "@/components/ui/label";
 import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
 import { TravelInfo } from "@/lib/types";
-import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
