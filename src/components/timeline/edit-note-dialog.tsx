@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import type { DisplayTransform } from "@/lib/types";
 
 
 interface EditNoteDialogProps {
@@ -84,6 +85,9 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [isConverting, setIsConverting] = useState(false);
   const [isMultiSelect, setIsMultiSelect] = useState(true); // Always allow multi-select in edit mode
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
+  const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
 
   useEffect(() => {
     if (open && instantToEdit) {
@@ -93,6 +97,9 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
       setDate(instantToEdit.date);
       setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
+      setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
+      setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fill');
+      setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, instantToEdit]);
 
@@ -180,6 +187,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
           emotion: emotions.length > 0 ? emotions : ["Neutre"],
           date: dateToSave.toISOString(), // Ensure date is in ISO format
           category: categories, // Pass the manually selected categories
+          displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
         });
 
         setOpen(false); // Close the dialog
@@ -235,6 +243,9 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setEmotions(Array.isArray(instantToEdit.emotion) ? instantToEdit.emotion : (instantToEdit.emotion ? [instantToEdit.emotion] : []));
     setDate(instantToEdit.date);
     setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
+    setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
+    setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fill');
+    setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
     setIsAnalyzing(false);
     setIsImprovingText(false);
   }
@@ -311,6 +322,34 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                  </div>
                  
                  <Separator />
+
+                <div>
+                   <Label className="text-muted-foreground flex items-center gap-2">Affichage (persistant)</Label>
+                   <div className="grid grid-cols-3 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Format</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayPreset} onChange={(e) => setDisplayPreset(e.target.value as any)} disabled={isLoading}>
+                          <option value="landscape">Paysage</option>
+                          <option value="portrait">Portrait</option>
+                          <option value="square">Carré</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Recadrage</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayCrop} onChange={(e) => setDisplayCrop(e.target.value as any)} disabled={isLoading}>
+                          <option value="fill">Remplir</option>
+                          <option value="fit">Ajuster</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Gravité</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
+                          <option value="auto">Auto</option>
+                          <option value="center">Centre</option>
+                        </select>
+                      </div>
+                   </div>
+                </div>
 
                  <div>
                     <Label htmlFor="description" className="text-muted-foreground flex items-center justify-between">

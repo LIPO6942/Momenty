@@ -19,7 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import type { Accommodation } from "@/lib/types";
+import type { Accommodation, DisplayTransform } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
@@ -68,6 +68,9 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
   const [photo, setPhoto] = useState<string | null | undefined>(accommodationToEdit.photo);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
   const [date, setDate] = useState(accommodationToEdit.date);
+  const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
@@ -80,6 +83,9 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
         setPhoto(accommodationToEdit.photo);
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
+        setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
+        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, accommodationToEdit]);
 
@@ -119,6 +125,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
             date: dateToSave.toISOString(),
+            displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
         });
         
         setOpen(false);
@@ -173,6 +180,9 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
         setPhoto(accommodationToEdit.photo);
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
+        setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
+        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
     }
     setIsLoading(false);
   }
@@ -221,6 +231,33 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
                  </div>
                  
                  <Separator />
+                 <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">Affichage (persistant)</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Format</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayPreset} onChange={(e) => setDisplayPreset(e.target.value as any)} disabled={isLoading}>
+                          <option value="landscape">Paysage</option>
+                          <option value="portrait">Portrait</option>
+                          <option value="square">Carré</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Recadrage</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayCrop} onChange={(e) => setDisplayCrop(e.target.value as any)} disabled={isLoading}>
+                          <option value="fill">Remplir</option>
+                          <option value="fit">Ajuster</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Gravité</Label>
+                        <select className="w-full border rounded-md h-9 px-2" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
+                          <option value="auto">Auto</option>
+                          <option value="center">Centre</option>
+                        </select>
+                      </div>
+                    </div>
+                 </div>
                 
                  <div className="space-y-2">
                     <Label htmlFor="name">Nom du logement</Label>

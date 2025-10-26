@@ -8,9 +8,7 @@
  * - DescribePhotoOutput - The return type for the describePhoto function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import {googleAI} from '@genkit-ai/googleai';
 
 const DescribePhotoInputSchema = z.object({
   photoDataUri: z
@@ -27,57 +25,81 @@ const DescribePhotoOutputSchema = z.object({
 });
 export type DescribePhotoOutput = z.infer<typeof DescribePhotoOutputSchema>;
 
-export async function describePhoto(input: DescribePhotoInput): Promise<DescribePhotoOutput> {
-  return describePhotoFlow(input);
+async function callOllama(prompt: string, model = 'llama3.1:8b'): Promise<string> {
+  const res = await fetch('http://127.0.0.1:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, prompt, stream: false })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Ollama error ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  return (data.response ?? '').toString();
 }
 
-const prompt = ai.definePrompt({
-  name: 'describePhotoPrompt',
-  input: {schema: DescribePhotoInputSchema},
-  output: {schema: DescribePhotoOutputSchema},
-  model: googleAI.model('gemini-1.5-flash-latest'),
-  prompt: `Tu es un influenceur voyage talentueux. Ta tâche est d'analyser la photo fournie et de générer une légende courte et percutante en français pour un post sur les réseaux sociaux.
-
-  La légende doit être poétique et capturer l'essence du moment en 1 ou 2 phrases maximum.
-
-  Exemples de style :
-  - "Un moment de calme capturé dans une ruelle silencieuse. Les murs bleus reflètent la douceur de l’après-midi."
-  - "Perdu dans les souks, où chaque couleur raconte une histoire."
-  - "Le silence du désert, juste avant que le soleil ne se couche. Magique."
-
-  Identifie également le lieu (ville, pays) où la photo a pu être prise. Intègre-le dans ta narration si possible. Si tu n'es pas sûr, laisse le champ "location" vide.
-
-  Photo: {{media url=photoDataUri}}`,
-  config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-    ],
-  },
-});
-
-const describePhotoFlow = ai.defineFlow(
-  {
-    name: 'describePhotoFlow',
-    inputSchema: DescribePhotoInputSchema,
-    outputSchema: DescribePhotoOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+async function callGroq(prompt: string, model = 'llama-3.1-8b-instant'): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY manquant.');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: "Tu rédiges des légendes de voyage poétiques et concises en français." },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      stream: false,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Groq error ${res.status}: ${text}`);
   }
-);
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content ?? '';
+  return content.toString();
+}
+
+function renderPrompt(_: DescribePhotoInput): string {
+  // Option 1 (pas de vision réelle): on génère une légende générique guidée
+  return `Tu ne peux PAS voir la photo transmise. Écris néanmoins une légende courte (1 à 2 phrases), poétique et évocatrice en français, adaptée à un post réseaux sociaux de voyage. Si tu devais deviner un lieu plausible (ville, pays), propose-le, sinon laisse vide.
+
+Réponds UNIQUEMENT en JSON valide au format exact suivant:
+{
+  "description": string,
+  "location": string
+}`;
+}
+
+function extractJson(text: string): any {
+  const fence = text.match(/```json[\s\S]*?```/i) || text.match(/```[\s\S]*?```/);
+  const candidate = fence ? fence[0].replace(/```json|```/gi, '').trim() : text.trim();
+  const first = candidate.indexOf('{');
+  const last = candidate.lastIndexOf('}');
+  const jsonText = (first !== -1 && last !== -1 && last > first) ? candidate.slice(first, last + 1) : candidate;
+  return JSON.parse(jsonText);
+}
+
+export async function describePhoto(input: DescribePhotoInput): Promise<DescribePhotoOutput> {
+  DescribePhotoInputSchema.parse(input);
+  const prompt = renderPrompt(input);
+  const useGroq = !!process.env.GROQ_API_KEY;
+  const model = useGroq ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : 'llama3.1:8b';
+  const raw = useGroq ? await callGroq(prompt, model) : await callOllama(prompt, model);
+  let parsed: unknown;
+  try {
+    parsed = extractJson(raw);
+  } catch {
+    // Fallback: retourner tout le texte comme description
+    parsed = { description: raw.trim(), location: '' };
+  }
+  const validated = DescribePhotoOutputSchema.parse(parsed);
+  return validated;
+}

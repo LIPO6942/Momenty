@@ -8,7 +8,6 @@
  * - CategorizeInstantOutput - The return type for the categorizeInstant function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
 const CategorizeInstantInputSchema = z.object({
@@ -23,35 +22,55 @@ const CategorizeInstantOutputSchema = z.object({
 });
 export type CategorizeInstantOutput = z.infer<typeof CategorizeInstantOutputSchema>;
 
-export async function categorizeInstant(input: CategorizeInstantInput): Promise<CategorizeInstantOutput> {
-  return categorizeInstantFlow(input);
+function renderPrompt(input: CategorizeInstantInput): string {
+  return `Tu es un assistant de journal de voyage. Catégorise l'événement ci-dessous avec jusqu'à 3 catégories pertinentes parmi: Gastronomie, Culture, Nature, Shopping, Art, Sport, Détente, Voyage, Plage, Séjour.
+
+RÈGLE IMPORTANTE: Si la location contient 'Tunisie', considère cela comme local/séjour et N'UTILISE PAS la catégorie 'Voyage'.
+
+Titre: ${input.title}
+Description: ${input.description}
+Lieu: ${input.location}
+
+Réponds UNIQUEMENT en JSON valide du format exact:
+{ "categories": string[] }`;
 }
 
-const prompt = ai.definePrompt({
-  name: 'categorizeInstantPrompt',
-  input: {schema: CategorizeInstantInputSchema},
-  output: {schema: CategorizeInstantOutputSchema},
-  prompt: `You are an expert travel journal assistant. Your task is to categorize an event based on its title, description, and location.
-  
-  Choose up to 3 of the most appropriate categories from the following list: Gastronomie, Culture, Nature, Shopping, Art, Sport, Détente, Voyage, Plage, Séjour.
+async function callOllama(prompt: string, model = 'llama3.1:8b'): Promise<string> {
+  const res = await fetch('http://127.0.0.1:11434/api/generate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, prompt, stream: false })
+  });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Ollama error ${res.status}: ${t}`);} 
+  const data = await res.json();
+  return (data.response ?? '').toString();
+}
 
-  **IMPORTANT RULE:** If the location is 'Tunisie' or contains 'Tunisie', it is considered a local activity or a stay ("séjour"), NOT a trip ("voyage"). In this case, you MUST NOT use the 'Voyage' category. Pick other relevant categories from the list.
+async function callGroq(prompt: string, model = 'llama-3.1-8b-instant'): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY; if (!apiKey) throw new Error('GROQ_API_KEY manquant.');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model, messages: [ { role: 'system', content: "Tu rends des catégories claires en français, format JSON." }, { role: 'user', content: prompt } ], temperature: 0.2, stream: false })
+  });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Groq error ${res.status}: ${t}`);} 
+  const data = await res.json();
+  return (data?.choices?.[0]?.message?.content ?? '').toString();
+}
 
-  Event Title: {{{title}}}
-  Event Description: {{{description}}}
-  Event Location: {{{location}}}
-  
-  Provide a list of the most relevant categories based on all the information and rules.`,
-});
+function extractJson(text: string): any {
+  const fence = text.match(/```json[\s\S]*?```/i) || text.match(/```[\s\S]*?```/);
+  const candidate = fence ? fence[0].replace(/```json|```/gi, '').trim() : text.trim();
+  const first = candidate.indexOf('{'); const last = candidate.lastIndexOf('}');
+  const jsonText = (first !== -1 && last !== -1 && last > first) ? candidate.slice(first, last + 1) : candidate;
+  return JSON.parse(jsonText);
+}
 
-const categorizeInstantFlow = ai.defineFlow(
-  {
-    name: 'categorizeInstantFlow',
-    inputSchema: CategorizeInstantInputSchema,
-    outputSchema: CategorizeInstantOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+export async function categorizeInstant(input: CategorizeInstantInput): Promise<CategorizeInstantOutput> {
+  CategorizeInstantInputSchema.parse(input);
+  const prompt = renderPrompt(input);
+  const useGroq = !!process.env.GROQ_API_KEY;
+  const model = useGroq ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : 'llama3.1:8b';
+  const raw = useGroq ? await callGroq(prompt, model) : await callOllama(prompt, model);
+  let parsed: unknown;
+  try { parsed = extractJson(raw); } catch { parsed = { categories: ['Note'] }; }
+  const validated = CategorizeInstantOutputSchema.parse(parsed);
+  return validated;
+}

@@ -2,6 +2,12 @@
 import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
 
+export interface DisplayTransform {
+    preset?: 'landscape' | 'portrait' | 'square';
+    crop?: 'fill' | 'fit';
+    gravity?: 'auto' | 'center';
+}
+
 // --- Itinerary Flow Types ---
 
 export interface Activity {
@@ -44,6 +50,7 @@ export interface Instant {
     emotion: string | string[];
     photos?: string[] | null; // Now these will be Cloudinary URLs
     category?: string[]; // AI-generated category, now an array
+    displayTransform?: DisplayTransform; // Optional persisted display settings
 }
 
 export interface Encounter {
@@ -54,6 +61,7 @@ export interface Encounter {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    displayTransform?: DisplayTransform; // Optional persisted display settings
 }
 
 export interface Dish {
@@ -64,6 +72,7 @@ export interface Dish {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    displayTransform?: DisplayTransform; // Optional persisted display settings
 }
 
 export interface Accommodation {
@@ -74,6 +83,7 @@ export interface Accommodation {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    displayTransform?: DisplayTransform; // Optional persisted display settings
 }
 
 export interface CityWithDays {

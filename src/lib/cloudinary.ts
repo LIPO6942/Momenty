@@ -32,3 +32,25 @@ export function clTransform(
     return url;
   }
 }
+
+// Helpers to map persisted display preferences to Cloudinary transforms
+export type DisplayTransform = {
+  preset?: 'landscape' | 'portrait' | 'square';
+  crop?: 'fill' | 'fit';
+  gravity?: 'auto' | 'center';
+};
+
+export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: 'auto' | 'center' } {
+  const preset = dt?.preset ?? 'landscape';
+  const crop = (dt?.crop ?? 'fill') as 'fill' | 'fit';
+  const gravity = (dt?.gravity ?? 'auto') as 'auto' | 'center';
+  switch (preset) {
+    case 'portrait':
+      return { w: 900, h: 1200, c: crop, g: gravity };
+    case 'square':
+      return { w: 1000, h: 1000, c: crop, g: gravity };
+    case 'landscape':
+    default:
+      return { w: 1200, h: 900, c: crop, g: gravity };
+  }
+}
