@@ -30,7 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { EditDishDialog } from "@/components/timeline/edit-dish-dialog";
-import { clTransform } from "@/lib/cloudinary";
+import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 
 export default function PlatsPage() {
   const { dishes, deleteDish } = useContext(TimelineContext);
@@ -70,14 +70,16 @@ export default function PlatsPage() {
             <Card key={dish.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 {dish.photo ? (
                     <>
-                        <Image
-                            src={clTransform(dish.photo, { w: 1200, h: 800, c: 'fill', g: 'auto' })}
+                        {(() => { const t = buildTransformFromDisplay(dish.displayTransform); return (
+                          <Image
+                            src={clTransform(dish.photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                             alt={`Photo de ${dish.name}`}
-                            width={1200}
-                            height={800}
+                            width={t.w}
+                            height={t.h}
                             className="w-full h-[400px] object-cover"
                             data-ai-hint="food dish"
-                        />
+                          />
+                        )})()}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
                         <div className="absolute top-2 right-2 flex gap-2">

@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { EditEncounterDialog } from "@/components/timeline/edit-encounter-dialog";
-import { clTransform } from "@/lib/cloudinary";
+import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 
 export default function EncountersPage() {
   const { encounters, deleteEncounter } = useContext(TimelineContext);
@@ -59,16 +59,15 @@ export default function EncountersPage() {
         <div className="grid md:grid-cols-1 gap-8">
           {encounters.map((encounter) => (
             <Card key={encounter.id} className="overflow-hidden">
-                 {encounter.photo && (
+                 {encounter.photo && (() => { const t = buildTransformFromDisplay(encounter.displayTransform); return (
                     <Image
-                        src={clTransform(encounter.photo, { w: 1200, h: 480, c: 'fill', g: 'auto' })}
+                        src={clTransform(encounter.photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                         alt={`Photo liée à ${encounter.name}`}
-                        width={1200}
-                        height={480}
+                        width={t.w}
+                        height={t.h}
                         className="w-full h-48 object-cover"
                         data-ai-hint="person portrait"
-                    />
-                 )}
+                    />)})()}
                  <CardHeader className="flex flex-row items-center gap-4">
                     <Avatar className="h-16 w-16">
                         {encounter.photo && <AvatarImage src={clTransform(encounter.photo, { w: 160, h: 160, c: 'fill', g: 'auto' })} alt={encounter.name} />}
