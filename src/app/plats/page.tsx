@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { EditDishDialog } from "@/components/timeline/edit-dish-dialog";
+import { clTransform } from "@/lib/cloudinary";
 
 export default function PlatsPage() {
   const { dishes, deleteDish } = useContext(TimelineContext);
@@ -70,10 +71,10 @@ export default function PlatsPage() {
                 {dish.photo ? (
                     <>
                         <Image
-                            src={dish.photo}
+                            src={clTransform(dish.photo, { w: 1200, h: 800, c: 'fill', g: 'auto' })}
                             alt={`Photo de ${dish.name}`}
-                            width={600}
-                            height={400}
+                            width={1200}
+                            height={800}
                             className="w-full h-[400px] object-cover"
                             data-ai-hint="food dish"
                         />

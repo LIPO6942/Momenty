@@ -25,6 +25,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { clTransform } from "@/lib/cloudinary";
 
 const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) => {
     const photoCount = photos.length;
@@ -34,10 +35,10 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
             case 1:
                 return (
                     <Image
-                        src={photos[0]}
+                        src={clTransform(photos[0], { w: 1200, h: 900, c: 'fill', g: 'auto' })}
                         alt={title}
-                        width={500}
-                        height={500}
+                        width={1200}
+                        height={900}
                         className="w-full h-full object-cover"
                         data-ai-hint="travel photo"
                     />
@@ -48,10 +49,10 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                         {photos.map((photo, index) => (
                              <Image
                                 key={index}
-                                src={photo}
+                                src={clTransform(photo, { w: 800, h: 900, c: 'fill', g: 'auto' })}
                                 alt={`${title} ${index + 1}`}
-                                width={300}
-                                height={400}
+                                width={800}
+                                height={900}
                                 className="w-full h-full object-cover first:rounded-l-xl last:rounded-r-xl"
                                 data-ai-hint="travel photo"
                             />
@@ -63,30 +64,30 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                      <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
                              <Image
-                                src={photos[0]}
+                                src={clTransform(photos[0], { w: 900, h: 1200, c: 'fill', g: 'auto' })}
                                 alt={`${title} 1`}
-                                width={400}
-                                height={600}
+                                width={900}
+                                height={1200}
                                 className="w-full h-full object-cover rounded-l-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
                         <div className="col-span-1 row-span-1">
                              <Image
-                                src={photos[1]}
+                                src={clTransform(photos[1], { w: 900, h: 600, c: 'fill', g: 'auto' })}
                                 alt={`${title} 2`}
-                                width={300}
-                                height={300}
+                                width={900}
+                                height={600}
                                 className="w-full h-full object-cover rounded-tr-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
                          <div className="col-span-1 row-span-1">
                              <Image
-                                src={photos[2]}
+                                src={clTransform(photos[2], { w: 900, h: 600, c: 'fill', g: 'auto' })}
                                 alt={`${title} 3`}
-                                width={300}
-                                height={300}
+                                width={900}
+                                height={600}
                                 className="w-full h-full object-cover rounded-br-xl"
                                 data-ai-hint="travel photo"
                             />
@@ -99,10 +100,10 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                        {photos.map((photo, index) => (
                              <Image
                                 key={index}
-                                src={photo}
+                                src={clTransform(photo, { w: 900, h: 900, c: 'fill', g: 'auto' })}
                                 alt={`${title} ${index + 1}`}
-                                width={300}
-                                height={300}
+                                width={900}
+                                height={900}
                                 className={cn("w-full h-full object-cover",
                                     index === 0 && "rounded-tl-xl",
                                     index === 1 && "rounded-tr-xl",
@@ -119,30 +120,30 @@ const PhotoCollage = ({ photos, title }: { photos: string[], title: string }) =>
                      <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
                              <Image
-                                src={photos[0]}
+                                src={clTransform(photos[0], { w: 900, h: 1200, c: 'fill', g: 'auto' })}
                                 alt={`${title} 1`}
-                                width={400}
-                                height={600}
+                                width={900}
+                                height={1200}
                                 className="w-full h-full object-cover rounded-l-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
                         <div className="col-span-1 row-span-1 relative">
                              <Image
-                                src={photos[1]}
+                                src={clTransform(photos[1], { w: 900, h: 600, c: 'fill', g: 'auto' })}
                                 alt={`${title} 2`}
-                                width={300}
-                                height={300}
+                                width={900}
+                                height={600}
                                 className="w-full h-full object-cover rounded-tr-xl"
                                 data-ai-hint="travel photo"
                             />
                         </div>
                          <div className="col-span-1 row-span-1 relative">
                              <Image
-                                src={photos[2]}
+                                src={clTransform(photos[2], { w: 900, h: 600, c: 'fill', g: 'auto' })}
                                 alt={`${title} 3`}
-                                width={300}
-                                height={300}
+                                width={900}
+                                height={600}
                                 className="w-full h-full object-cover rounded-br-xl"
                                 data-ai-hint="travel photo"
                             />

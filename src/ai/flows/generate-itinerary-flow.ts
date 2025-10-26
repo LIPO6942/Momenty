@@ -8,7 +8,6 @@
  * - GenerateItineraryOutput - The return type for the generateItinerary function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import type { ItineraryOutput } from '@/lib/types';
 
@@ -57,59 +56,117 @@ const GenerateItineraryOutputSchema = z.object({
 export type GenerateItineraryOutput = z.infer<typeof GenerateItineraryOutputSchema>;
 
 
-export async function generateItinerary(input: GenerateItineraryInput): Promise<ItineraryOutput> {
-  return generateItineraryFlow(input);
+function renderItineraryPrompt(input: GenerateItineraryInput): string {
+  const citiesBlock = input.cities && input.cities.length
+    ? `- Villes spécifiques à inclure avec la durée souhaitée:\n${input.cities.map((c: { name: string; days: number }) => `  - ${c.name} (${c.days} jour(s))`).join('\n')}\n- La répartition des jours entre les villes est une contrainte forte. Tu dois la respecter.`
+    : '- Aucune ville spécifique imposée. Répartis intelligemment les jours.';
+
+  const traveler = input.companionType
+    ? `- Type de voyage: Avec ${input.companionType}${input.companionName ? `, nommé(e) ${input.companionName}` : ''}.`
+    : '- Type de voyage: Solo';
+
+  return `Tu es un expert en voyages et un planificateur d'itinéraires exceptionnel, doté d'une touche personnelle. Ta mission est de créer un itinéraire de voyage optimisé, réaliste et inspirant en français, en adaptant le ton au contexte du voyage.
+
+Contexte du voyage:
+- Destination principale: ${input.country}
+${citiesBlock}
+- Date de début: ${input.startDate}
+- Date de fin: ${input.endDate}
+
+Contexte des voyageurs:
+${traveler}
+
+Instructions:
+1. Calcule la durée totale du voyage en jours.
+2. Si une liste de villes avec des durées est fournie, respecte cette répartition. Organise le trajet de manière cohérente (ex: du nord au sud).
+3. Pour chaque jour, définis un thème, la ville principale, et propose 2 à 3 activités (matin, après-midi, soir). Varie les types d'activités (culture, gastronomie, nature, détente, etc.).
+4. Lorsque l'itinéraire implique de changer de ville, ajoute une information de transport. Sur la dernière journée passée dans une ville, remplis l'objet travelInfo { mode: "Train"|"Avion"|"Voiture"|"Bus"|"Bateau", description: string }. N'ajoute pas de travelInfo pour le tout dernier jour.
+5. Adapte le ton au type de voyage (Romantique si Conjoint(e), Familial si Parent, Dynamique si Ami(e), Introspectif si Solo). Le titre global doit refléter ce ton, mentionner la durée et le pays.
+6. Les descriptions des activités doivent être courtes et percutantes.
+7. Retourne UNIQUEMENT un JSON valide correspondant exactement au schéma suivant:
+{
+  "title": string,
+  "itinerary": [
+    {
+      "day": number,
+      "date": string,
+      "city": string,
+      "theme": string,
+      "activities": [ { "time": string, "description": string, "type": "Musée"|"Monument"|"Restaurant"|"Activité"|"Parc"|"Shopping"|"Soirée"|"Baignade"|"Autre" } ],
+      "travelInfo"?: { "mode": "Train"|"Avion"|"Voiture"|"Bus"|"Bateau", "description": string }
+    }
+  ]
+}`;
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateItineraryPrompt',
-  input: {schema: GenerateItineraryInputSchema},
-  output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Tu es un expert en voyages et un planificateur d'itinéraires exceptionnel, doté d'une touche personnelle. Ta mission est de créer un itinéraire de voyage optimisé, réaliste et inspirant en français, en adaptant le ton au contexte du voyage.
-
-**Contexte du voyage :**
-- Destination principale : {{{country}}}
-{{#if cities}}
-- Villes spécifiques à inclure avec la durée souhaitée : 
-  {{#each cities}}
-  - {{name}} ({{days}} jour(s))
-  {{/each}}
-- La répartition des jours entre les villes est une contrainte forte. Tu dois la respecter.
-{{/if}}
-- Date de début : {{{startDate}}}
-- Date de fin : {{{endDate}}}
-
-**Contexte des voyageurs :**
-{{#if companionType}}
-- Type de voyage : Avec {{companionType}}{{#if companionName}}, nommé(e) {{companionName}}{{/if}}.
-{{else}}
-- Type de voyage : Solo
-{{/if}}
-
-**Instructions :**
-1.  Calcule la durée totale du voyage en jours.
-2.  Si une liste de villes avec des durées est fournie, respecte cette répartition. Organise le trajet de manière cohérente (ex: du nord au sud).
-3.  Pour chaque jour, définis un thème, la ville principale, et propose 2 à 3 activités (matin, après-midi, soir). Varie les types d'activités (culture, gastronomie, nature, détente, etc.).
-4.  **NOUVELLE INSTRUCTION IMPORTANTE :** Lorsque l'itinéraire implique de changer de ville, tu dois ajouter une information de transport. Sur la **dernière journée** passée dans une ville, remplis l'objet \`travelInfo\`. Choisis le mode de transport le plus logique (Train, Avion, Voiture, Bus, Bateau) et fournis une brève description du trajet. Par exemple, si le jour 3 est le dernier jour à Rome et que le jour 4 est à Florence, le \`travelInfo\` du jour 3 pourrait être \`{ mode: 'Train', description: 'Train à grande vitesse vers Florence' }\`. N'ajoute pas de \`travelInfo\` pour le tout dernier jour du voyage.
-5.  **Adapte le ton** :
-    - Si le voyage est avec un(e) **'Conjoint(e)'**, rends le titre et les descriptions plus romantiques. Ex: "Notre escapade amoureuse en Italie", "Dîner romantique avec vue".
-    - Si le voyage est avec un **'Parent'**, utilise un ton affectueux et attentionné. Ex: "Merveilleux souvenirs en famille en Grèce", "Promenade paisible dans les jardins".
-    - Si le voyage est avec un(e) **'Ami(e)'**, utilise un ton plus fun et dynamique. Ex: "L'aventure entre amis au Japon !", "Soirée festive dans le quartier de Shibuya".
-    - Si le voyage est en **'Solo'**, utilise un ton inspirant et d'exploration personnelle. Ex: "Mon exploration en solitaire du Pérou", "Méditation face au Machu Picchu".
-6.  Le titre général doit refléter ce ton personnalisé, tout en mentionnant la durée et le pays.
-7.  Rédige des descriptions courtes et percutantes pour chaque activité.
-8.  Assure-toi que le format de sortie est un JSON qui correspond parfaitement au schéma fourni.
-`,
-});
-
-const generateItineraryFlow = ai.defineFlow(
-  {
-    name: 'generateItineraryFlow',
-    inputSchema: GenerateItineraryInputSchema,
-    outputSchema: GenerateItineraryOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output! as ItineraryOutput;
+async function callOllama(prompt: string, model = 'llama3.1:8b'): Promise<string> {
+  const res = await fetch('http://127.0.0.1:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, prompt, stream: false })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Ollama error ${res.status}: ${text}`);
   }
-);
+  const data = await res.json();
+  return (data.response ?? '').toString();
+}
+
+async function callGroq(prompt: string, model = 'llama-3.1-8b-instant'): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY manquant.');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: "Tu es un expert en voyages et un planificateur d'itinéraires exceptionnel." },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.4,
+      stream: false,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Groq error ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content ?? '';
+  return content.toString();
+}
+
+function extractJson(text: string): any {
+  // Try to extract the first JSON object in the response
+  const fenceMatch = text.match(/```json[\s\S]*?```/i) || text.match(/```[\s\S]*?```/);
+  const candidate = fenceMatch ? fenceMatch[0].replace(/```json|```/gi, '').trim() : text.trim();
+  // Find first and last braces heuristically if needed
+  let jsonText = candidate;
+  const first = candidate.indexOf('{');
+  const last = candidate.lastIndexOf('}');
+  if (first !== -1 && last !== -1 && last > first) {
+    jsonText = candidate.slice(first, last + 1);
+  }
+  return JSON.parse(jsonText);
+}
+
+export async function generateItinerary(input: GenerateItineraryInput): Promise<ItineraryOutput> {
+  GenerateItineraryInputSchema.parse(input);
+  const prompt = renderItineraryPrompt(input);
+  const useGroq = !!process.env.GROQ_API_KEY;
+  const model = useGroq ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : 'llama3.1:8b';
+  const raw = useGroq ? await callGroq(prompt, model) : await callOllama(prompt, model);
+  let parsed: unknown;
+  try {
+    parsed = extractJson(raw);
+  } catch (e) {
+    throw new Error('Réponse du modèle invalide. Impossible de parser le JSON.');
+  }
+  const validated = GenerateItineraryOutputSchema.parse(parsed);
+  return validated as ItineraryOutput;
+}
