@@ -144,44 +144,6 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
             setIsLoading(false);
         };
 
-    const handleShare = async (itinerary: Itinerary) => {
-        if (!user || !itinerary.id) return;
-        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
-        try {
-            const token = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
-                ? (crypto as any).randomUUID()
-                : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-            const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
-            await saveItinerary(user.uid, updated, itinerary.id);
-            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
-            const link = `${window.location.origin}/share/itinerary/${token}`;
-            await navigator.clipboard.writeText(link).catch(() => {});
-            toast({ title: 'Lien de partage généré', description: 'Le lien a été copié dans le presse-papiers.' });
-        } catch (e) {
-            toast({ variant: 'destructive', title: 'Échec du partage' });
-        } finally {
-            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
-        }
-    };
-
-    const handleUnshare = async (itinerary: Itinerary) => {
-        if (!user || !itinerary.id) return;
-        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
-        try {
-            const updated = { ...itinerary, shareEnabled: false } as Itinerary;
-            // Remove token and date on revoke
-            delete (updated as any).shareToken;
-            delete (updated as any).sharedAt;
-            await saveItinerary(user.uid, updated, itinerary.id);
-            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
-            toast({ title: 'Partage révoqué' });
-        } catch (e) {
-            toast({ variant: 'destructive', title: 'Échec de la révocation' });
-        } finally {
-            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
-        }
-    };
-
         fetchCoordinates();
     }, [open, itinerary]);
 
@@ -427,6 +389,43 @@ export default function SavedItinerariesPage() {
         newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
         
         handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
+    };
+
+    const handleShare = async (itinerary: Itinerary) => {
+        if (!user || !itinerary.id) return;
+        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        try {
+            const token = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+                ? (crypto as any).randomUUID()
+                : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+            const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
+            await saveItinerary(user.uid, updated, itinerary.id);
+            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            const link = `${window.location.origin}/share/itinerary/${token}`;
+            await navigator.clipboard.writeText(link).catch(() => {});
+            toast({ title: 'Lien de partage généré', description: 'Le lien a été copié dans le presse-papiers.' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Échec du partage' });
+        } finally {
+            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+        }
+    };
+
+    const handleUnshare = async (itinerary: Itinerary) => {
+        if (!user || !itinerary.id) return;
+        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        try {
+            const updated = { ...itinerary, shareEnabled: false } as Itinerary;
+            delete (updated as any).shareToken;
+            delete (updated as any).sharedAt;
+            await saveItinerary(user.uid, updated, itinerary.id);
+            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            toast({ title: 'Partage révoqué' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Échec de la révocation' });
+        } finally {
+            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+        }
     };
 
 
