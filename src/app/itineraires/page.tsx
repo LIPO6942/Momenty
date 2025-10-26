@@ -148,16 +148,13 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
         if (!user || !itinerary.id) return;
         setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
         try {
-            const res = await fetch('/api/itineraries/share', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid, itineraryId: itinerary.id })
-            });
-            if (!res.ok) throw new Error('share failed');
-            const data = await res.json();
-            const updated = { ...itinerary, shareEnabled: true, shareToken: data.token, sharedAt: new Date().toISOString() } as Itinerary;
+            const token = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+                ? (crypto as any).randomUUID()
+                : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+            const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
+            await saveItinerary(user.uid, updated, itinerary.id);
             setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
-            const link = `${window.location.origin}/share/itinerary/${data.token}`;
+            const link = `${window.location.origin}/share/itinerary/${token}`;
             await navigator.clipboard.writeText(link).catch(() => {});
             toast({ title: 'Lien de partage généré', description: 'Le lien a été copié dans le presse-papiers.' });
         } catch (e) {
@@ -171,13 +168,11 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
         if (!user || !itinerary.id) return;
         setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
         try {
-            const res = await fetch('/api/itineraries/unshare', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid, itineraryId: itinerary.id })
-            });
-            if (!res.ok) throw new Error('unshare failed');
-            const updated = { ...itinerary, shareEnabled: false, shareToken: undefined, sharedAt: undefined } as Itinerary;
+            const updated = { ...itinerary, shareEnabled: false } as Itinerary;
+            // Remove token and date on revoke
+            delete (updated as any).shareToken;
+            delete (updated as any).sharedAt;
+            await saveItinerary(user.uid, updated, itinerary.id);
             setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
             toast({ title: 'Partage révoqué' });
         } catch (e) {
