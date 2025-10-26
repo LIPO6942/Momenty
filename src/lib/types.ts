@@ -104,6 +104,9 @@ export interface Itinerary extends ItineraryOutput, Trip {
     id?: string;
     userId: string;
     createdAt: string; // ISO String
+    shareEnabled?: boolean;
+    shareToken?: string;
+    sharedAt?: string; // ISO String
 }
 
 

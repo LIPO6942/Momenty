@@ -53,6 +53,7 @@ import { Label } from "@/components/ui/label";
 import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
 import { TravelInfo } from "@/lib/types";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -143,6 +144,49 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
             setLocationsWithCoords(newCoords);
             setIsLoading(false);
         };
+
+    const handleShare = async (itinerary: Itinerary) => {
+        if (!user || !itinerary.id) return;
+        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        try {
+            const res = await fetch('/api/itineraries/share', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, itineraryId: itinerary.id })
+            });
+            if (!res.ok) throw new Error('share failed');
+            const data = await res.json();
+            const updated = { ...itinerary, shareEnabled: true, shareToken: data.token, sharedAt: new Date().toISOString() } as Itinerary;
+            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            const link = `${window.location.origin}/share/itinerary/${data.token}`;
+            await navigator.clipboard.writeText(link).catch(() => {});
+            toast({ title: 'Lien de partage généré', description: 'Le lien a été copié dans le presse-papiers.' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Échec du partage' });
+        } finally {
+            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+        }
+    };
+
+    const handleUnshare = async (itinerary: Itinerary) => {
+        if (!user || !itinerary.id) return;
+        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        try {
+            const res = await fetch('/api/itineraries/unshare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, itineraryId: itinerary.id })
+            });
+            if (!res.ok) throw new Error('unshare failed');
+            const updated = { ...itinerary, shareEnabled: false, shareToken: undefined, sharedAt: undefined } as Itinerary;
+            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            toast({ title: 'Partage révoqué' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Échec de la révocation' });
+        } finally {
+            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+        }
+    };
 
         fetchCoordinates();
     }, [open, itinerary]);
@@ -336,6 +380,7 @@ export default function SavedItinerariesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState<{[key: string]: boolean}>({});
     const { toast } = useToast();
+    const [shareLoading, setShareLoading] = useState<{[key: string]: boolean}>({});
 
     const loadItineraries = async () => {
         if (user) {
@@ -451,6 +496,24 @@ export default function SavedItinerariesPage() {
                                                 <span>Renommer</span>
                                             </DropdownMenuItem>
                                         </EditTitleDialog>
+                                        <DropdownMenuSeparator />
+                                        {itinerary.shareEnabled && itinerary.shareToken ? (
+                                            <>
+                                                <DropdownMenuItem onSelect={async (e) => { e.preventDefault(); try { await navigator.clipboard.writeText(`${window.location.origin}/share/itinerary/${itinerary.shareToken}`); toast({ title: 'Lien copié' }); } catch {} }}>
+                                                    <Sparkles className="mr-2 h-4 w-4" />
+                                                    <span>Copier le lien</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleUnshare(itinerary); }} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    <span>{shareLoading[itinerary.id!] ? 'Révocation…' : 'Révoquer le partage'}</span>
+                                                </DropdownMenuItem>
+                                            </>
+                                        ) : (
+                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleShare(itinerary); }}>
+                                                <Sparkles className="mr-2 h-4 w-4" />
+                                                <span>{shareLoading[itinerary.id!] ? 'Génération…' : 'Partager (générer le lien)'}</span>
+                                            </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuSeparator />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
