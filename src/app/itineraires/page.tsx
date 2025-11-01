@@ -54,7 +54,7 @@ import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
 import { TravelInfo } from "@/lib/types";
 import { db } from "@/lib/firebase";
-import { collectionGroup, getDocs, query as fsQuery, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -416,18 +416,19 @@ export default function SavedItinerariesPage() {
                 if (spToken) token = spToken;
             } catch {}
 
-            // Resolve token client-side using collectionGroup
-            const q = fsQuery(
-                collectionGroup(db, 'itineraries'),
-                where('shareEnabled', '==', true),
-                where('shareToken', '==', token)
-            );
-            const snap = await getDocs(q);
-            if (snap.empty) {
+            // Resolve token via mapping document: /shared_itineraries/{token}
+            const mapRef = doc(db, 'shared_itineraries', token);
+            const mapSnap = await getDoc(mapRef);
+            if (!mapSnap.exists()) {
                 throw new Error('Lien invalide ou révoqué.');
             }
-            const data = snap.docs[0].data();
-            const itinerary: Itinerary = { ...(data as any), id: snap.docs[0].id };
+            const { userId: ownerId, itineraryId } = mapSnap.data() as { userId: string; itineraryId: string };
+            const srcRef = doc(db, 'users', ownerId, 'itineraries', itineraryId);
+            const srcSnap = await getDoc(srcRef);
+            if (!srcSnap.exists()) {
+                throw new Error("Itinéraire source introuvable.");
+            }
+            const itinerary = srcSnap.data() as Itinerary;
             const copy: Itinerary = {
                 ...itinerary,
                 id: undefined,
@@ -457,6 +458,12 @@ export default function SavedItinerariesPage() {
                 : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
             const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
             await saveItinerary(user.uid, updated, itinerary.id);
+            // Write mapping for public resolution
+            await setDoc(doc(db, 'shared_itineraries', token), {
+                userId: user.uid,
+                itineraryId: itinerary.id,
+                sharedAt: new Date().toISOString(),
+            });
             setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
             const link = `${window.location.origin}/share/itinerary/${token}`;
             await navigator.clipboard.writeText(link).catch(() => {});
@@ -472,10 +479,14 @@ export default function SavedItinerariesPage() {
         if (!user || !itinerary.id) return;
         setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
         try {
+            const token = itinerary.shareToken;
             const updated = { ...itinerary, shareEnabled: false } as Itinerary;
             delete (updated as any).shareToken;
             delete (updated as any).sharedAt;
             await saveItinerary(user.uid, updated, itinerary.id);
+            if (token) {
+                await deleteDoc(doc(db, 'shared_itineraries', token));
+            }
             setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
             toast({ title: 'Partage révoqué' });
         } catch (e) {
