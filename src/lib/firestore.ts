@@ -33,14 +33,19 @@ export interface ManualLocation {
 const saveDataInSubcollection = async <T extends {id?: string, icon?: any, color?: any}>(userId: string, collectionName: string, data: Omit<T, 'id'>, id?: string): Promise<string> => {
     const subcollectionRef = collection(db, 'users', userId, collectionName);
     const docRef = id ? doc(subcollectionRef, id) : doc(subcollectionRef);
-    
-    // Create a copy of the data and remove properties that shouldn't be in Firestore.
-    // This prevents "INTERNAL ASSERTION FAILED" errors from trying to save React components.
-    const dataToSave = { ...data };
-    delete dataToSave.icon;
-    delete dataToSave.color;
 
-    await setDoc(docRef, dataToSave, { merge: true });
+    // Create a copy of the data and remove properties that shouldn't be in Firestore.
+    // This prevents "INTERNAL ASSERTION FAILED" errors from trying to save React components or undefined values.
+    const raw = { ...data } as any;
+    delete raw.icon;
+    delete raw.color;
+    delete raw.id;
+    // Remove undefined fields (Firestore does not allow undefined)
+    const dataToSave = Object.fromEntries(
+        Object.entries(raw).filter(([_, v]) => v !== undefined)
+    );
+
+    await setDoc(docRef, dataToSave as any, { merge: true });
     return docRef.id;
 };
 

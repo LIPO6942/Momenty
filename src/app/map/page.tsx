@@ -49,6 +49,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useAuth } from "@/context/auth-context";
+import { ImageModal } from "@/components/ui/image-modal";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -87,6 +88,8 @@ export default function MapPage() {
     const [isCountryPopoverOpen, setIsCountryPopoverOpen] = useState(false);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
     
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
@@ -380,6 +383,16 @@ export default function MapPage() {
         const end = format(parseISO(endDate), "d MMMM yyyy", { locale: fr });
         return `${start} - ${end}`;
     }
+
+    const openImageModal = (images: string[], index: number) => {
+        setSelectedImages(images);
+        setSelectedImageIndex(index);
+    };
+
+    const closeImageModal = () => {
+        setSelectedImageIndex(null);
+        setSelectedImages([]);
+    };
 
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -697,14 +710,26 @@ export default function MapPage() {
                                         {location.photos && location.photos.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pt-2">
                                                 {location.photos.map((photo, index) => (
-                                                   photo && <Image
-                                                        key={index}
-                                                        src={photo}
-                                                        alt={`Miniature du lieu ${index + 1}`}
-                                                        width={100}
-                                                        height={100}
-                                                        className="rounded-md object-cover h-24 w-24"
-                                                    />
+                                                   photo && (
+                                                       <button 
+                                                           key={index}
+                                                           onClick={() => openImageModal(location.photos || [], index)}
+                                                           className="relative group"
+                                                       >
+                                                           <Image
+                                                               src={photo}
+                                                               alt={`Miniature du lieu ${index + 1}`}
+                                                               width={100}
+                                                               height={100}
+                                                               className="rounded-md object-cover h-24 w-24 hover:opacity-90 transition-opacity"
+                                                           />
+                                                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 rounded-md transition-opacity flex items-center justify-center">
+                                                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white">
+                                                                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                                               </svg>
+                                                           </div>
+                                                       </button>
+                                                   )
                                                 ))}
                                             </div>
                                         )}
@@ -718,6 +743,14 @@ export default function MapPage() {
             </Accordion>
         )}
         </div>
-    </div>
+        
+        {/* Image Modal */}
+        <ImageModal 
+            isOpen={selectedImageIndex !== null && selectedImages.length > 0}
+            onClose={closeImageModal}
+            images={selectedImages}
+            initialIndex={selectedImageIndex || 0}
+        />
+      </div>
   );
 }
