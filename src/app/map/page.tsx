@@ -394,16 +394,6 @@ export default function MapPage() {
         return `${start} - ${end}`;
     }
 
-    const openImageModal = (images: string[], index: number) => {
-        setSelectedImages(images);
-        setSelectedImageIndex(index);
-    };
-
-    const closeImageModal = () => {
-        setSelectedImageIndex(null);
-        setSelectedImages([]);
-    };
-
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="py-16 space-y-2">
