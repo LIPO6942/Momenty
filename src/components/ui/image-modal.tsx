@@ -32,9 +32,9 @@ export function ImageModal({ isOpen, onClose, images, initialIndex = 0 }: ImageM
   if (!isOpen || !images.length) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-transparent border-none shadow-none">
-        <div className="relative w-full h-full flex items-center justify-center">
+    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DialogContent className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black/80">
+        <div className="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
@@ -78,8 +78,9 @@ export function ImageModal({ isOpen, onClose, images, initialIndex = 0 }: ImageM
             <Image
               src={images[currentIndex]}
               alt={`Image ${currentIndex + 1}`}
-              fill
-              className="object-contain p-4"
+              width={1200}
+              height={800}
+              className="object-contain max-w-full max-h-full p-4"
               priority
             />
           </div>

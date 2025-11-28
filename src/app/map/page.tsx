@@ -90,6 +90,16 @@ export default function MapPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+    const openImageModal = (images: string[], index: number) => {
+        setSelectedImages(images);
+        setSelectedImageIndex(index);
+    };
+
+    const closeImageModal = () => {
+        setSelectedImageIndex(null);
+        setSelectedImages([]);
+    };
     
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
