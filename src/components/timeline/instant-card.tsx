@@ -41,7 +41,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         alt={title}
                         width={t.w}
                         height={t.h}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-t-xl"
                         data-ai-hint="travel photo"
                     />
                 );
@@ -160,7 +160,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
         }
     };
     
-    return <div className="h-[450px]">{renderGrid()}</div>
+    return <div className="h-[450px] w-full">{renderGrid()}</div>
 }
 
 
