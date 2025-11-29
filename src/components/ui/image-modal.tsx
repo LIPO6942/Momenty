@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import Image from "next/image";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ImageModalProps = {
   isOpen: boolean;
@@ -32,9 +33,11 @@ export function ImageModal({ isOpen, onClose, images, initialIndex = 0 }: ImageM
   if (!isOpen || !images.length) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black/80 m-0 h-screen w-screen">
-        <div className="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center m-auto">
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-[90vw] max-h-[90vh] translate-x-[-50%] translate-y-[-50%] overflow-auto border-0 bg-transparent p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
+          <div className="relative flex h-full w-full items-center justify-center">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
@@ -84,8 +87,9 @@ export function ImageModal({ isOpen, onClose, images, initialIndex = 0 }: ImageM
               priority
             />
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
