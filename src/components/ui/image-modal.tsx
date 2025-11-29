@@ -33,8 +33,8 @@ export function ImageModal({ isOpen, onClose, images, initialIndex = 0 }: ImageM
 
   return (
     <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black/80">
-        <div className="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+      <DialogContent className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black/80 m-0 h-screen w-screen">
+        <div className="relative w-full h-full max-w-[90vw] max-h-[90vh] flex items-center justify-center m-auto">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
