@@ -267,15 +267,20 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </DropdownMenu>
                     </div>
                 </CardHeader>
+
+                {/* Zone de toggle toujours accessible */}
                 <div
-                    className="absolute bottom-0 left-0 w-full pointer-events-none"
-                >
+                    className="absolute bottom-0 left-0 w-full h-20 cursor-pointer pointer-events-auto z-20"
+                    onClick={() => setIsTextVisible(prev => !prev)}
+                    title={isTextVisible ? "Cliquer pour masquer" : "Cliquer pour afficher"}
+                />
+
+                {/* Conteneur du texte */}
+                <div className="absolute bottom-0 left-0 w-full pointer-events-none">
                     <div className={cn(
-                        "p-4 space-y-3 transition-transform duration-300 ease-in-out cursor-pointer pointer-events-auto",
+                        "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
-                    )}
-                        onClick={() => setIsTextVisible(prev => !prev)}
-                    >
+                    )}>
                         <h3 className="font-bold text-lg">{instant.title}</h3>
                         {instant.description && (
                             <p className="text-sm text-white/80">{instant.description}</p>
