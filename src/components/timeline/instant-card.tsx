@@ -266,13 +266,14 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                 </CardHeader>
                 <div
-                    className="absolute bottom-0 left-0 w-full cursor-pointer"
-                    onClick={() => setIsTextVisible(prev => !prev)}
+                    className="absolute bottom-0 left-0 w-full pointer-events-none"
                 >
                     <div className={cn(
-                        "p-4 space-y-3 transition-transform duration-300 ease-in-out",
+                        "p-4 space-y-3 transition-transform duration-300 ease-in-out cursor-pointer pointer-events-auto",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
-                    )}>
+                    )}
+                        onClick={() => setIsTextVisible(prev => !prev)}
+                    >
                         <h3 className="font-bold text-lg">{instant.title}</h3>
                         {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
                             <p className="text-sm text-white/80">{instant.description}</p>
