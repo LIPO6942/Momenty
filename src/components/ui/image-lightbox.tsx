@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ImageLightboxProps {
   src: string;
@@ -15,19 +16,19 @@ interface ImageLightboxProps {
   children?: React.ReactNode;
 }
 
-export function ImageLightbox({ 
-  src, 
-  alt, 
-  width, 
-  height, 
+export function ImageLightbox({
+  src,
+  alt,
+  width,
+  height,
   className,
-  children 
+  children
 }: ImageLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <div 
+      <div
         className="relative group cursor-zoom-in"
         onClick={(e) => {
           e.stopPropagation();
@@ -43,7 +44,7 @@ export function ImageLightbox({
             className={className}
           />
         )}
-        
+
         {/* Overlay avec icône de zoom au survol */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="bg-white/90 rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300">
@@ -55,6 +56,10 @@ export function ImageLightbox({
       {/* Dialog pour l'image agrandie */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none overflow-hidden">
+          <VisuallyHidden>
+            <DialogTitle>{alt}</DialogTitle>
+          </VisuallyHidden>
+
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Bouton de fermeture personnalisé */}
             <Button
