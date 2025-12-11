@@ -29,7 +29,7 @@ export function ImageLightbox({
   return (
     <>
       <div
-        className="relative group cursor-zoom-in"
+        className="relative group cursor-zoom-in h-full w-full"
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(true);
