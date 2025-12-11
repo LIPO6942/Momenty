@@ -57,15 +57,22 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 return (
                     <div className="grid grid-cols-2 gap-1 h-full">
                         {photos.map((photo, index) => (
-                            <Image
+                            <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
-                                className="w-full h-full object-cover first:rounded-l-xl last:rounded-r-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                    alt={`${title} ${index + 1}`}
+                                    width={t.w}
+                                    height={t.h}
+                                    className="w-full h-full object-cover first:rounded-l-xl last:rounded-r-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         ))}
                     </div>
                 );
@@ -73,34 +80,55 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} 1`}
                                 width={t.w}
                                 height={t.h}
-                                className="w-full h-full object-cover rounded-l-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                    alt={`${title} 1`}
+                                    width={t.w}
+                                    height={t.h}
+                                    className="w-full h-full object-cover rounded-l-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         </div>
                         <div className="col-span-1 row-span-1">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
-                                className="w-full h-full object-cover rounded-tr-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                    alt={`${title} 2`}
+                                    width={t.w}
+                                    height={Math.round(t.h * 0.66)}
+                                    className="w-full h-full object-cover rounded-tr-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         </div>
                         <div className="col-span-1 row-span-1">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
-                                className="w-full h-full object-cover rounded-br-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                    alt={`${title} 3`}
+                                    width={t.w}
+                                    height={Math.round(t.h * 0.66)}
+                                    className="w-full h-full object-cover rounded-br-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         </div>
                     </div>
                 );
@@ -108,20 +136,27 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         {photos.map((photo, index) => (
-                            <Image
+                            <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
-                                className={cn("w-full h-full object-cover",
-                                    index === 0 && "rounded-tl-xl",
-                                    index === 1 && "rounded-tr-xl",
-                                    index === 2 && "rounded-bl-xl",
-                                    index === 3 && "rounded-br-xl",
-                                )}
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                    alt={`${title} ${index + 1}`}
+                                    width={t.w}
+                                    height={t.h}
+                                    className={cn("w-full h-full object-cover",
+                                        index === 0 && "rounded-tl-xl",
+                                        index === 1 && "rounded-tr-xl",
+                                        index === 2 && "rounded-bl-xl",
+                                        index === 3 && "rounded-br-xl",
+                                    )}
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         ))}
                     </div>
                 );
@@ -129,36 +164,57 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} 1`}
                                 width={t.w}
                                 height={t.h}
-                                className="w-full h-full object-cover rounded-l-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                    alt={`${title} 1`}
+                                    width={t.w}
+                                    height={t.h}
+                                    className="w-full h-full object-cover rounded-l-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         </div>
                         <div className="col-span-1 row-span-1 relative">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
-                                className="w-full h-full object-cover rounded-tr-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                    alt={`${title} 2`}
+                                    width={t.w}
+                                    height={Math.round(t.h * 0.66)}
+                                    className="w-full h-full object-cover rounded-tr-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                         </div>
                         <div className="col-span-1 row-span-1 relative">
-                            <Image
+                            <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
-                                className="w-full h-full object-cover rounded-br-xl"
-                                data-ai-hint="travel photo"
-                            />
+                            >
+                                <Image
+                                    src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                    alt={`${title} 3`}
+                                    width={t.w}
+                                    height={Math.round(t.h * 0.66)}
+                                    className="w-full h-full object-cover rounded-br-xl"
+                                    data-ai-hint="travel photo"
+                                />
+                            </ImageLightbox>
                             {photos.length > 3 && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-br-xl">
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-br-xl pointer-events-none">
                                     <span className="text-white text-2xl font-bold">+{photos.length - 3}</span>
                                 </div>
                             )}

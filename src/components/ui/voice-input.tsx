@@ -35,21 +35,16 @@ export function VoiceInput({
 
             const recognitionInstance = new SpeechRecognition();
             recognitionInstance.continuous = true;
-            recognitionInstance.interimResults = true;
+            recognitionInstance.interimResults = false; // Only final results to avoid duplicates
             recognitionInstance.lang = 'fr-FR'; // French language
 
             recognitionInstance.onresult = (event: any) => {
-                let finalTranscript = '';
+                // Get the last result (most recent transcription)
+                const lastResultIndex = event.results.length - 1;
+                const transcript = event.results[lastResultIndex][0].transcript;
 
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                    }
-                }
-
-                if (finalTranscript) {
-                    onTranscript(finalTranscript.trim());
+                if (transcript && transcript.trim()) {
+                    onTranscript(transcript.trim());
                 }
             };
 
