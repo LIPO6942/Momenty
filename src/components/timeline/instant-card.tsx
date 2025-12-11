@@ -7,16 +7,16 @@ import Image from "next/image";
 import { MoreVertical, Edit, Trash2, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
 } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
@@ -27,6 +27,7 @@ import type { Instant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import type { DisplayTransform } from "@/lib/types";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 
 const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], title: string, displayTransform?: DisplayTransform }) => {
     const photoCount = photos.length;
@@ -36,20 +37,27 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
         switch (photoCount) {
             case 1:
                 return (
-                    <Image
+                    <ImageLightbox
                         src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
                         alt={title}
                         width={t.w}
                         height={t.h}
-                        className="w-full h-full object-cover rounded-t-xl"
-                        data-ai-hint="travel photo"
-                    />
+                    >
+                        <Image
+                            src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                            alt={title}
+                            width={t.w}
+                            height={t.h}
+                            className="w-full h-full object-cover rounded-t-xl"
+                            data-ai-hint="travel photo"
+                        />
+                    </ImageLightbox>
                 );
             case 2:
                 return (
                     <div className="grid grid-cols-2 gap-1 h-full">
                         {photos.map((photo, index) => (
-                             <Image
+                            <Image
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} ${index + 1}`}
@@ -63,9 +71,9 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
             case 3:
                 return (
-                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
-                             <Image
+                            <Image
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} 1`}
                                 width={t.w}
@@ -75,7 +83,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                             />
                         </div>
                         <div className="col-span-1 row-span-1">
-                             <Image
+                            <Image
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 2`}
                                 width={t.w}
@@ -84,8 +92,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                 data-ai-hint="travel photo"
                             />
                         </div>
-                         <div className="col-span-1 row-span-1">
-                             <Image
+                        <div className="col-span-1 row-span-1">
+                            <Image
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 3`}
                                 width={t.w}
@@ -99,8 +107,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
             case 4:
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
-                       {photos.map((photo, index) => (
-                             <Image
+                        {photos.map((photo, index) => (
+                            <Image
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} ${index + 1}`}
@@ -119,9 +127,9 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
             default: // 5+ photos
                 return (
-                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
                         <div className="col-span-1 row-span-2">
-                             <Image
+                            <Image
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
                                 alt={`${title} 1`}
                                 width={t.w}
@@ -131,7 +139,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                             />
                         </div>
                         <div className="col-span-1 row-span-1 relative">
-                             <Image
+                            <Image
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 2`}
                                 width={t.w}
@@ -141,7 +149,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                             />
                         </div>
                         <div className="col-span-1 row-span-1 relative">
-                             <Image
+                            <Image
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
                                 alt={`${title} 3`}
                                 width={t.w}
@@ -149,7 +157,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                 className="w-full h-full object-cover rounded-br-xl"
                                 data-ai-hint="travel photo"
                             />
-                             {photos.length > 3 && (
+                            {photos.length > 3 && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-br-xl">
                                     <span className="text-white text-2xl font-bold">+{photos.length - 3}</span>
                                 </div>
@@ -159,7 +167,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
         }
     };
-    
+
     return <div className="h-[450px] w-full">{renderGrid()}</div>
 }
 
@@ -167,7 +175,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
     const [isTextVisible, setIsTextVisible] = useState(true);
-    
+
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
     const categories = Array.isArray(instant.category) ? instant.category : (instant.category ? [instant.category] : []);
 
@@ -175,7 +183,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     if (instant.photos && instant.photos.length > 0) {
         return (
             <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
-                 <CardHeader className="p-0 relative">
+                <CardHeader className="p-0 relative">
                     <PhotoCollage photos={instant.photos} title={instant.title} displayTransform={instant.displayTransform} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
@@ -200,17 +208,17 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
-                 </CardHeader>
-                <div 
+                </CardHeader>
+                <div
                     className="absolute bottom-0 left-0 w-full cursor-pointer"
                     onClick={() => setIsTextVisible(prev => !prev)}
                 >
-                     <div className={cn(
+                    <div className={cn(
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
-                     )}>
+                    )}>
                         <h3 className="font-bold text-lg">{instant.title}</h3>
-                         {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
                             <p className="text-sm text-white/80">{instant.description}</p>
                         )}
                         <div className="flex items-center gap-1.5">
@@ -269,13 +277,13 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>
-            
+
             <CardContent className="p-4">
-              <div className="space-y-4 ml-14 -mt-2">
-                {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
-                    <p className="text-sm text-muted-foreground">{instant.description}</p>
-                )}
-              </div>
+                <div className="space-y-4 ml-14 -mt-2">
+                    {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                        <p className="text-sm text-muted-foreground">{instant.description}</p>
+                    )}
+                </div>
             </CardContent>
 
             <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
@@ -289,7 +297,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                     <div className="flex gap-2 flex-wrap mt-3">
                         {categories.map(cat => (
-                             <Badge key={cat} variant="secondary" className="flex items-center gap-1.5">
+                            <Badge key={cat} variant="secondary" className="flex items-center gap-1.5">
                                 <Tag className="h-3 w-3" />
                                 {cat}
                             </Badge>
