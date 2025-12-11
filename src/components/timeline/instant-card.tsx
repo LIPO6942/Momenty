@@ -235,12 +235,14 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
     const categories = Array.isArray(instant.category) ? instant.category : (instant.category ? [instant.category] : []);
 
+    // Filter out invalid photo URLs (empty strings, null, undefined)
+    const validPhotos = instant.photos?.filter(photo => photo && photo.trim().length > 0) || [];
 
-    if (instant.photos && instant.photos.length > 0) {
+    if (validPhotos.length > 0) {
         return (
             <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 <CardHeader className="p-0 relative">
-                    <PhotoCollage photos={instant.photos} title={instant.title} displayTransform={instant.displayTransform} />
+                    <PhotoCollage photos={validPhotos} title={instant.title} displayTransform={instant.displayTransform} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
                     <div className="absolute top-2 right-2 z-10">
@@ -275,7 +277,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         onClick={() => setIsTextVisible(prev => !prev)}
                     >
                         <h3 className="font-bold text-lg">{instant.title}</h3>
-                        {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                        {instant.description && (
                             <p className="text-sm text-white/80">{instant.description}</p>
                         )}
                         <div className="flex items-center gap-1.5">
@@ -337,7 +339,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
             <CardContent className="p-4">
                 <div className="space-y-4 ml-14 -mt-2">
-                    {instant.description && instant.title.toLowerCase() !== instant.description.toLowerCase() && (
+                    {instant.description && (
                         <p className="text-sm text-muted-foreground">{instant.description}</p>
                     )}
                 </div>
