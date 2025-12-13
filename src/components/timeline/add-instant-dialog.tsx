@@ -23,7 +23,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
 import { Separator } from "../ui/separator";
-import { saveEncounter, saveImage, type Encounter, type Dish, type Accommodation } from "@/lib/idb";
+import type { Encounter, Dish, Accommodation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type heic2any from "heic2any";
 import { VoiceInput } from "@/components/ui/voice-input";
@@ -133,10 +133,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 setDescription(prev => prev ? `${prev}\n\n${result.description}` : result.description);
             }
             if (result.location) {
-                const [resultCity, resultCountry] = result.location.split(',').map(s => s.trim());
-                setCity(resultCity || '');
-                if (!(activeTrip || activeStay)) {
-                    setCountry(resultCountry || '');
+                const parts = result.location.split(',').map(s => s.trim()).filter(Boolean);
+                const resultCountry = parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || '');
+                const resultCity = parts.length >= 2 ? parts[0] : '';
+
+                if (resultCity) {
+                    setCity(resultCity);
+                }
+                if (!(activeTrip || activeStay) && resultCountry) {
+                    setCountry(resultCountry);
                 }
             }
             toast({ title: "Analyse IA terminée." });
@@ -287,7 +292,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                     const data = await response.json();
                     if (data.address) {
-                        const foundCity = data.address.city || data.address.town || data.address.village || '';
+                        const foundCity = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.suburb || data.address.hamlet || data.address.locality || '';
                         const foundCountry = data.address.country || '';
                         setCity(foundCity);
                         if (!(activeTrip || activeStay)) {

@@ -110,6 +110,40 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
 
+    const isTripExpired = useCallback((trip: Trip) => {
+        if (!trip?.endDate) return false;
+        try {
+            const end = startOfDay(parseISO(trip.endDate));
+            const today = startOfDay(new Date());
+            return today.getTime() > end.getTime();
+        } catch {
+            return false;
+        }
+    }, []);
+
+    const syncActiveContextsFromStorage = useCallback(() => {
+        const savedTrip = localStorage.getItem('activeTrip');
+        if (savedTrip) {
+            try {
+                const parsedTrip = JSON.parse(savedTrip) as Trip;
+                if (isTripExpired(parsedTrip)) {
+                    localStorage.removeItem('activeTrip');
+                    setActiveTrip(null);
+                } else {
+                    setActiveTrip(parsedTrip);
+                }
+            } catch {
+                localStorage.removeItem('activeTrip');
+                setActiveTrip(null);
+            }
+        } else {
+            setActiveTrip(null);
+        }
+
+        const savedStay = localStorage.getItem('activeStay');
+        setActiveStay(savedStay ? JSON.parse(savedStay) : null);
+    }, [isTripExpired]);
+
 
     useEffect(() => {
         const loadData = async () => {
@@ -136,19 +170,29 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         loadData();
 
         const handleStorageChange = () => {
-            const savedTrip = localStorage.getItem('activeTrip');
-            setActiveTrip(savedTrip ? JSON.parse(savedTrip) : null);
-            const savedStay = localStorage.getItem('activeStay');
-            setActiveStay(savedStay ? JSON.parse(savedStay) : null);
+            syncActiveContextsFromStorage();
+        };
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                syncActiveContextsFromStorage();
+            }
         };
         
-        handleStorageChange(); // Initial load
+        syncActiveContextsFromStorage(); // Initial load
         window.addEventListener('storage', handleStorageChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        const intervalId = window.setInterval(() => {
+            syncActiveContextsFromStorage();
+        }, 60 * 60 * 1000);
 
         return () => {
             window.removeEventListener('storage', handleStorageChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.clearInterval(intervalId);
         }
-      }, [user]);
+      }, [user, syncActiveContextsFromStorage]);
 
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         if(!user) return;
@@ -164,13 +208,13 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             console.error("AI categorization failed", error);
         }
         
-        const newInstantForDb: Omit<Instant, 'icon' | 'color'> = {
+        const newInstantForDb: Omit<Instant, 'id' | 'icon' | 'color'> = {
             ...instantData,
             category: categories,
         };
         
         const newId = await saveInstant(user.uid, newInstantForDb);
-        const newInstantForState = addRuntimeAttributes({ id: newId, ...newInstantForDb });
+        const newInstantForState = addRuntimeAttributes({ ...newInstantForDb, id: newId });
 
         setInstants(prevInstants => [newInstantForState, ...prevInstants]);
     };
