@@ -715,132 +715,134 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     )}
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="location" className="flex items-center gap-2">
-                                            Où étiez-vous ?
-                                            {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
-                                        </Label>
+                                    {isDish && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="location" className="flex items-center gap-2">
+                                                Où étiez-vous ?
+                                                {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
+                                            </Label>
 
-                                        {showPlacesCombobox ? (
-                                            <div className="flex flex-col gap-2">
-                                                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            role="combobox"
-                                                            aria-expanded={openCombobox}
-                                                            className="w-full justify-between"
-                                                            disabled={isLoading || isFetchingPlaces}
-                                                        >
-                                                            {isFetchingPlaces
-                                                                ? "Chargement des restaurants..."
-                                                                : location
-                                                                    ? location
-                                                                    : "Sélectionner un restaurant..."}
-                                                            {isFetchingPlaces ? <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" /> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-[300px] p-0" align="start">
-                                                        <Command>
-                                                            <CommandInput placeholder="Rechercher un restaurant..." />
-                                                            <CommandList>
-                                                                <CommandEmpty>Aucun restaurant trouvé.</CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {places.map((place) => (
-                                                                        <CommandItem
-                                                                            key={`${place.label}-${place.zone}`}
-                                                                            value={place.label}
-                                                                            onSelect={handleSelectPlace}
-                                                                        >
-                                                                            <Check
-                                                                                className={cn(
-                                                                                    "mr-2 h-4 w-4",
-                                                                                    location === place.label ? "opacity-100" : "opacity-0"
-                                                                                )}
-                                                                            />
-                                                                            <div className="flex flex-col">
-                                                                                <span>{place.label}</span>
-                                                                                <span className="text-xs text-muted-foreground">{place.zone}</span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ))}
-                                                                </CommandGroup>
-                                                            </CommandList>
-                                                        </Command>
-                                                    </PopoverContent>
-                                                </Popover>
+                                            {showPlacesCombobox ? (
+                                                <div className="flex flex-col gap-2">
+                                                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                role="combobox"
+                                                                aria-expanded={openCombobox}
+                                                                className="w-full justify-between"
+                                                                disabled={isLoading || isFetchingPlaces}
+                                                            >
+                                                                {isFetchingPlaces
+                                                                    ? "Chargement des restaurants..."
+                                                                    : location
+                                                                        ? location
+                                                                        : "Sélectionner un restaurant..."}
+                                                                {isFetchingPlaces ? <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" /> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[300px] p-0 z-[100]" align="start">
+                                                            <Command>
+                                                                <CommandInput placeholder="Rechercher un restaurant..." />
+                                                                <CommandList>
+                                                                    <CommandEmpty>Aucun restaurant trouvé.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                        {places.map((place) => (
+                                                                            <CommandItem
+                                                                                key={`${place.label}-${place.zone}`}
+                                                                                value={place.label}
+                                                                                onSelect={handleSelectPlace}
+                                                                            >
+                                                                                <Check
+                                                                                    className={cn(
+                                                                                        "mr-2 h-4 w-4",
+                                                                                        location === place.label ? "opacity-100" : "opacity-0"
+                                                                                    )}
+                                                                                />
+                                                                                <div className="flex flex-col">
+                                                                                    <span>{place.label}</span>
+                                                                                    <span className="text-xs text-muted-foreground">{place.zone}</span>
+                                                                                </div>
+                                                                            </CommandItem>
+                                                                        ))}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-grow space-y-2">
+                                                            <div className="flex items-center gap-1 border rounded-md bg-muted/50">
+                                                                <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                                <Input
+                                                                    id="city"
+                                                                    name="city"
+                                                                    placeholder="Ville (Zone)"
+                                                                    className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
+                                                                    value={city}
+                                                                    readOnly
+                                                                    disabled
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="link"
+                                                        className="h-auto p-0 text-xs text-muted-foreground self-start"
+                                                        onClick={() => {
+                                                            // Fallback to manual entry
+                                                            setPlaces([]);
+                                                        }}
+                                                    >
+                                                        Je ne trouve pas mon restaurant (Saisie manuelle)
+                                                    </Button>
+                                                </div>
+                                            ) : (
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex-grow space-y-2">
-                                                        <div className="flex items-center gap-1 border rounded-md bg-muted/50">
-                                                            <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                        <div className="flex items-center gap-1 border rounded-md">
+                                                            <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                            <Input
+                                                                id="location"
+                                                                placeholder="Nom du lieu"
+                                                                className="border-0 focus-visible:ring-0 flex-grow"
+                                                                value={location}
+                                                                onChange={(e) => setLocation(e.target.value)}
+                                                                disabled={isLoading}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1 border rounded-md">
+                                                            <Building className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
                                                             <Input
                                                                 id="city"
                                                                 name="city"
-                                                                placeholder="Ville (Zone)"
-                                                                className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
+                                                                placeholder="Ville"
+                                                                className="border-0 focus-visible:ring-0 flex-grow"
                                                                 value={city}
-                                                                readOnly
-                                                                disabled
+                                                                onChange={(e) => setCity(e.target.value)}
+                                                                disabled={isLoading}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1 border rounded-md">
+                                                            <Globe className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
+                                                            <Input
+                                                                id="country"
+                                                                name="country"
+                                                                placeholder="Pays"
+                                                                className="border-0 focus-visible:ring-0 flex-grow"
+                                                                value={country}
+                                                                onChange={(e) => setCountry(e.target.value)}
+                                                                disabled={isLoading || !!activeContext}
                                                             />
                                                         </div>
                                                     </div>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
+                                                        <LocateFixed className="h-5 w-5" />
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    variant="link"
-                                                    className="h-auto p-0 text-xs text-muted-foreground self-start"
-                                                    onClick={() => {
-                                                        // Fallback to manual entry
-                                                        setPlaces([]);
-                                                    }}
-                                                >
-                                                    Je ne trouve pas mon restaurant (Saisie manuelle)
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-grow space-y-2">
-                                                    <div className="flex items-center gap-1 border rounded-md">
-                                                        <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                        <Input
-                                                            id="location"
-                                                            placeholder="Nom du lieu"
-                                                            className="border-0 focus-visible:ring-0 flex-grow"
-                                                            value={location}
-                                                            onChange={(e) => setLocation(e.target.value)}
-                                                            disabled={isLoading}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-1 border rounded-md">
-                                                        <Building className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
-                                                        <Input
-                                                            id="city"
-                                                            name="city"
-                                                            placeholder="Ville"
-                                                            className="border-0 focus-visible:ring-0 flex-grow"
-                                                            value={city}
-                                                            onChange={(e) => setCity(e.target.value)}
-                                                            disabled={isLoading}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-1 border rounded-md">
-                                                        <Globe className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
-                                                        <Input
-                                                            id="country"
-                                                            name="country"
-                                                            placeholder="Pays"
-                                                            className="border-0 focus-visible:ring-0 flex-grow"
-                                                            value={country}
-                                                            onChange={(e) => setCountry(e.target.value)}
-                                                            disabled={isLoading || !!activeContext}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
-                                                    <LocateFixed className="h-5 w-5" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
                                         <Label>Quelle était votre humeur ?</Label>
                                         <div className="flex flex-wrap gap-2 pt-2">
