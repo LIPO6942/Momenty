@@ -158,7 +158,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         }
     };
 
-    const showPlacesCombobox = isDish && places.length > 0;
+    const showPlacesCombobox = isDish && (places.length > 0 || isFetchingPlaces);
 
 
     useEffect(() => {
@@ -730,12 +730,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                             role="combobox"
                                                             aria-expanded={openCombobox}
                                                             className="w-full justify-between"
-                                                            disabled={isLoading}
+                                                            disabled={isLoading || isFetchingPlaces}
                                                         >
-                                                            {location
-                                                                ? location
-                                                                : "Sélectionner un restaurant..."}
-                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                            {isFetchingPlaces
+                                                                ? "Chargement des restaurants..."
+                                                                : location
+                                                                    ? location
+                                                                    : "Sélectionner un restaurant..."}
+                                                            {isFetchingPlaces ? <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" /> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                                                         </Button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-[300px] p-0" align="start">
