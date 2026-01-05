@@ -285,10 +285,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         {instant.description && (
                             <p className="text-sm text-white/80">{instant.description}</p>
                         )}
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4 text-white/90" />
-                            <span className="font-semibold text-sm">{instant.location}</span>
-                        </div>
+
                         <div className="flex gap-2 flex-wrap">
                             {categories.map(cat => (
                                 <Badge key={cat} variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">

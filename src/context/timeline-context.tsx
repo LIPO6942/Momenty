@@ -7,7 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
+import {
     getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
     getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
     getDishes, saveDish, deleteDish as deleteDishFromDB,
@@ -77,24 +77,24 @@ const addRuntimeAttributes = (instant: Instant): Instant => {
 export const TimelineContext = createContext<TimelineContextType>({
     instants: [],
     groupedInstants: {},
-    addInstant: () => {},
-    updateInstant: () => {},
-    deleteInstant: () => {},
-    deleteInstantsByLocation: () => {},
+    addInstant: () => { },
+    updateInstant: () => { },
+    deleteInstant: () => { },
+    deleteInstantsByLocation: () => { },
     activeTrip: null,
     activeStay: null,
     encounters: [],
-    addEncounter: () => {},
-    updateEncounter: async () => {},
-    deleteEncounter: () => {},
+    addEncounter: () => { },
+    updateEncounter: async () => { },
+    deleteEncounter: () => { },
     dishes: [],
-    addDish: () => {},
-    updateDish: async () => {},
-    deleteDish: () => {},
+    addDish: () => { },
+    updateDish: async () => { },
+    deleteDish: () => { },
     accommodations: [],
-    addAccommodation: () => {},
-    updateAccommodation: async () => {},
-    deleteAccommodation: () => {},
+    addAccommodation: () => { },
+    updateAccommodation: async () => { },
+    deleteAccommodation: () => { },
 });
 
 interface TimelineProviderProps {
@@ -147,25 +147,25 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
     useEffect(() => {
         const loadData = async () => {
-          if (!user) {
-            setInstants([]);
-            setEncounters([]);
-            setDishes([]);
-            setAccommodations([]);
-            return;
-          };
+            if (!user) {
+                setInstants([]);
+                setEncounters([]);
+                setDishes([]);
+                setAccommodations([]);
+                return;
+            };
 
-          const loadedInstants = await getInstants(user.uid);
-          const loadedEncounters = await getEncounters(user.uid);
-          const loadedDishes = await getDishes(user.uid);
-          const loadedAccommodations = await getAccommodations(user.uid);
-          
-          const processedInstants = loadedInstants.map(addRuntimeAttributes);
+            const loadedInstants = await getInstants(user.uid);
+            const loadedEncounters = await getEncounters(user.uid);
+            const loadedDishes = await getDishes(user.uid);
+            const loadedAccommodations = await getAccommodations(user.uid);
 
-          setInstants(processedInstants);
-          setEncounters(loadedEncounters);
-          setDishes(loadedDishes);
-          setAccommodations(loadedAccommodations);
+            const processedInstants = loadedInstants.map(addRuntimeAttributes);
+
+            setInstants(processedInstants);
+            setEncounters(loadedEncounters);
+            setDishes(loadedDishes);
+            setAccommodations(loadedAccommodations);
         };
         loadData();
 
@@ -178,7 +178,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                 syncActiveContextsFromStorage();
             }
         };
-        
+
         syncActiveContextsFromStorage(); // Initial load
         window.addEventListener('storage', handleStorageChange);
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -192,10 +192,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.clearInterval(intervalId);
         }
-      }, [user, syncActiveContextsFromStorage]);
+    }, [user, syncActiveContextsFromStorage]);
 
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
-        if(!user) return;
+        if (!user) return;
         let categories = instantData.category || ['Note'];
         try {
             const result = await categorizeInstant({
@@ -207,12 +207,12 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         } catch (error) {
             console.error("AI categorization failed", error);
         }
-        
+
         const newInstantForDb: Omit<Instant, 'id' | 'icon' | 'color'> = {
             ...instantData,
             category: categories,
         };
-        
+
         const newId = await saveInstant(user.uid, newInstantForDb);
         const newInstantForState = addRuntimeAttributes({ ...newInstantForDb, id: newId });
 
@@ -220,31 +220,31 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     };
 
     const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
-        if(!user) return;
+        if (!user) return;
         const newId = await saveEncounter(user.uid, encounterData);
-        setEncounters(prev => [{...encounterData, id: newId}, ...prev]);
+        setEncounters(prev => [{ ...encounterData, id: newId }, ...prev]);
     }
 
     const addDish = async (dishData: Omit<Dish, 'id'>) => {
-        if(!user) return;
+        if (!user) return;
         const newId = await saveDish(user.uid, dishData);
-        setDishes(prev => [{...dishData, id: newId}, ...prev]);
+        setDishes(prev => [{ ...dishData, id: newId }, ...prev]);
     }
 
     const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
-        if(!user) return;
+        if (!user) return;
         const newId = await saveAccommodation(user.uid, accommodationData);
-        setAccommodations(prev => [{...accommodationData, id: newId}, ...prev]);
+        setAccommodations(prev => [{ ...accommodationData, id: newId }, ...prev]);
     }
 
 
     const updateInstant = async (id: string, updatedInstantData: Partial<Omit<Instant, 'id'>>) => {
-        if(!user) return;
+        if (!user) return;
         const originalInstant = instants.find(inst => inst.id === id);
         if (!originalInstant) return;
-    
+
         const updatedInstant = { ...originalInstant, ...updatedInstantData };
-    
+
         // Only run AI categorization if the category was NOT manually set in the dialog.
         // If updatedInstantData.category exists, it means the user set it manually.
         const userManuallySetCategory = 'category' in updatedInstantData;
@@ -258,15 +258,15 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                 });
                 updatedInstant.category = categories;
             } catch (error) {
-                 console.error("AI categorization failed on update", error);
+                console.error("AI categorization failed on update", error);
             }
         }
-    
+
         const { icon, color, ...instantToSave } = updatedInstant;
         await saveInstant(user.uid, instantToSave, id);
-    
+
         const updatedInstantForState = addRuntimeAttributes(updatedInstant);
-    
+
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
         ));
@@ -284,10 +284,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             console.error("Failed to trigger photo deletion:", error);
         }
     }
-    
+
 
     const deleteInstant = async (id: string) => {
-        if(!user) return;
+        if (!user) return;
         const instantToDelete = instants.find(i => i.id === id);
         if (!instantToDelete) return;
 
@@ -295,15 +295,15 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (instantToDelete.photos && instantToDelete.photos.length > 0) {
             await deleteCloudinaryPhotos(instantToDelete.photos);
         }
-    
+
         await deleteInstantFromDB(user.uid, id);
-    
+
         const remainingInstants = instants.filter(instant => instant.id !== id);
         setInstants(remainingInstants);
-    
+
         const dayKeyOfDeletedInstant = format(startOfDay(parseISO(instantToDelete.date)), 'yyyy-MM-dd');
         const isLastInstantOfDay = !remainingInstants.some(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd') === dayKeyOfDeletedInstant);
-    
+
         if (isLastInstantOfDay) {
             const allStories = await getStories(user.uid);
             for (const story of allStories) {
@@ -317,37 +317,37 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     };
 
     const deleteEncounter = async (id: string) => {
-        if(!user) return;
+        if (!user) return;
         const itemToDelete = encounters.find(i => i.id === id);
         if (!itemToDelete) return;
-        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
-        
+        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+
         await deleteEncounterFromDB(user.uid, id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
     }
-    
+
     const deleteDish = async (id: string) => {
-        if(!user) return;
+        if (!user) return;
         const itemToDelete = dishes.find(i => i.id === id);
         if (!itemToDelete) return;
-        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
 
         await deleteDishFromDB(user.uid, id);
         setDishes(prev => prev.filter(dish => dish.id !== id));
     }
 
     const deleteAccommodation = async (id: string) => {
-        if(!user) return;
+        if (!user) return;
         const itemToDelete = accommodations.find(i => i.id === id);
         if (!itemToDelete) return;
-        if(itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
-        
+        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+
         await deleteAccommodationFromDB(user.uid, id);
         setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
     }
 
     const deleteInstantsByLocation = async (locationName: string) => {
-        if(!user) return;
+        if (!user) return;
         const instantsToDelete = instants.filter(i => i.location === locationName);
         for (const instant of instantsToDelete) {
             await deleteInstant(instant.id); // This will also handle photo deletion
@@ -356,55 +356,61 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     };
 
     const groupedInstants = useMemo(() => {
-      const groups: GroupedInstants = {};
-      
-      const sortedInstants = [...instants].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const groups: GroupedInstants = {};
 
-      const dayKeysWithIndices = [...new Set(sortedInstants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
-          .map((dayKey, index, allKeys) => ({ dayKey, dayNumber: allKeys.length - index }));
+        const sortedInstants = [...instants].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      dayKeysWithIndices.forEach(({ dayKey, dayNumber }) => {
-          const dayDate = parseISO(dayKey);
-          groups[dayKey] = {
-              title: `Jour ${dayNumber} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`,
-              instants: []
-          };
-      });
+        // First, group everything by day
+        sortedInstants.forEach(instant => {
+            const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
+            if (!groups[dayKey]) {
+                groups[dayKey] = {
+                    title: '', // Will be filled later
+                    instants: []
+                };
+            }
+            groups[dayKey].instants.push(instant);
+        });
 
-      sortedInstants.forEach(instant => {
-          const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
-          if (groups[dayKey]) {
-              groups[dayKey].instants.push(instant);
-          }
-      });
-      
-      return groups;
+        // Then, generate titles for each day based on locations
+        Object.keys(groups).forEach(dayKey => {
+            const dayInstants = groups[dayKey].instants;
+            const locations = new Set(dayInstants.map(i => i.location).filter(Boolean));
+            const locationString = locations.size > 0
+                ? Array.from(locations).join(', ')
+                : 'Journée sans lieu'; // Fallback if no location
+
+            const dayDate = parseISO(dayKey);
+            groups[dayKey].title = `${locationString} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`;
+        });
+
+        return groups;
 
     }, [instants]);
 
     const updateEncounter = async (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => {
-        if(!user) return;
+        if (!user) return;
         const encounterToUpdate = encounters.find(e => e.id === id);
-        if(!encounterToUpdate) return;
-        const updatedEncounter = {...encounterToUpdate, ...updatedData};
+        if (!encounterToUpdate) return;
+        const updatedEncounter = { ...encounterToUpdate, ...updatedData };
         await saveEncounter(user.uid, updatedEncounter, id);
         setEncounters(prev => prev.map(e => e.id === id ? updatedEncounter : e));
     };
 
     const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => {
-        if(!user) return;
+        if (!user) return;
         const dishToUpdate = dishes.find(d => d.id === id);
-        if(!dishToUpdate) return;
-        const updatedDish = {...dishToUpdate, ...updatedData};
+        if (!dishToUpdate) return;
+        const updatedDish = { ...dishToUpdate, ...updatedData };
         await saveDish(user.uid, updatedDish, id);
         setDishes(prev => prev.map(d => d.id === id ? updatedDish : d));
     };
 
     const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => {
-        if(!user) return;
+        if (!user) return;
         const accommodationToUpdate = accommodations.find(a => a.id === id);
-        if(!accommodationToUpdate) return;
-        const updatedAccommodation = {...accommodationToUpdate, ...updatedData};
+        if (!accommodationToUpdate) return;
+        const updatedAccommodation = { ...accommodationToUpdate, ...updatedData };
         await saveAccommodation(user.uid, updatedAccommodation, id);
         setAccommodations(prev => prev.map(a => a.id === id ? updatedAccommodation : a));
     };
