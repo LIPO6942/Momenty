@@ -145,12 +145,16 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     }, []);
 
     const handleSelectPlace = (currentValue: string) => {
-        const selectedPlace = places.find(place => place.label === currentValue);
+        // cmdk passes the value in lowercase, so we need case-insensitive matching
+        const selectedPlace = places.find(
+            place => place.label.toLowerCase() === currentValue.toLowerCase()
+        );
         if (selectedPlace) {
-            // setDishName(selectedPlace.label); 
             setLocation(selectedPlace.label);
             setCity(selectedPlace.zone);
             setOpenCombobox(false);
+        } else {
+            console.warn('[Kol Youm] No match found for:', currentValue);
         }
     };
 
