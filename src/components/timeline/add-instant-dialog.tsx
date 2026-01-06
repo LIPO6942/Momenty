@@ -110,74 +110,32 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         }
     }, [activeContext, city, country]);
 
-    // Fetch places from Kol Youm API
+    // Fetch places from local API proxy (bypasses CORS)
     useEffect(() => {
         const fetchPlaces = async () => {
             setIsFetchingPlaces(true);
             try {
-                const response = await fetch('https://kol-youm-app.vercel.app/api/places-database-firestore');
+                console.log('[Kol Youm] Fetching places from local API proxy...');
+                const response = await fetch('/api/kol-youm-places');
                 const result = await response.json();
 
-                if (result.success && result.data && Array.isArray(result.data.zones)) {
-                    const flatList: { label: string; zone: string }[] = [];
+                console.log('[Kol Youm] API Response:', result);
+
+                if (result.success && Array.isArray(result.places)) {
+                    console.log(`[Kol Youm] Loaded ${result.places.length} places`);
+                    setPlaces(result.places);
+
+                    // Build the map for zone lookups
                     const map = new Map<string, string>();
-
-                    result.data.zones.forEach((zoneItem: any) => {
-                        const zoneName = zoneItem.zone;
-                        const categories = zoneItem.categories;
-
-                        if (categories) {
-                            // Include restaurants
-                            if (categories.restaurants && Array.isArray(categories.restaurants)) {
-                                categories.restaurants.forEach((place: string) => {
-                                    if (place && !map.has(place)) {
-                                        flatList.push({ label: place, zone: zoneName });
-                                        map.set(place, zoneName);
-                                    }
-                                });
-                            }
-                            // Include cafés
-                            if (categories.cafes && Array.isArray(categories.cafes)) {
-                                categories.cafes.forEach((place: string) => {
-                                    if (place && !map.has(place)) {
-                                        flatList.push({ label: place, zone: zoneName });
-                                        map.set(place, zoneName);
-                                    }
-                                });
-                            }
-                            // Include fast-foods
-                            if (categories.fastFoods && Array.isArray(categories.fastFoods)) {
-                                categories.fastFoods.forEach((place: string) => {
-                                    if (place && !map.has(place)) {
-                                        flatList.push({ label: place, zone: zoneName });
-                                        map.set(place, zoneName);
-                                    }
-                                });
-                            }
-                            // Include brunch spots
-                            if (categories.brunch && Array.isArray(categories.brunch)) {
-                                categories.brunch.forEach((place: string) => {
-                                    if (place && !map.has(place)) {
-                                        flatList.push({ label: place, zone: zoneName });
-                                        map.set(place, zoneName);
-                                    }
-                                });
-                            }
-                        }
+                    result.places.forEach((place: { label: string; zone: string }) => {
+                        map.set(place.label, place.zone);
                     });
-
-                    // Sort alphabetically
-                    flatList.sort((a, b) => a.label.localeCompare(b.label));
-
-                    console.log(`[Kol Youm API] Loaded ${flatList.length} places from ${result.data.zones.length} zones`);
-
-                    setPlaces(flatList);
                     setPlacesMap(map);
                 } else {
-                    console.error('[Kol Youm API] Invalid response structure:', result);
+                    console.error('[Kol Youm] Failed to load places:', result.error || 'Unknown error');
                 }
             } catch (error) {
-                console.error("Failed to fetch places from Kol Youm API", error);
+                console.error('[Kol Youm] Failed to fetch places:', error);
             } finally {
                 setIsFetchingPlaces(false);
             }
