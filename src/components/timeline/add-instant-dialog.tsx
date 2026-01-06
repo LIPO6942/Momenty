@@ -723,69 +723,89 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                                         {showPlacesCombobox ? (
                                             <div className="flex flex-col gap-2">
-                                                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            role="combobox"
-                                                            aria-expanded={openCombobox}
-                                                            className="w-full justify-between"
+                                                {/* Simple autocomplete input */}
+                                                <div className="relative">
+                                                    <div className="flex items-center gap-1 border rounded-md">
+                                                        <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                        <Input
+                                                            id="restaurant-search"
+                                                            placeholder="Tapez le nom du restaurant..."
+                                                            className="border-0 focus-visible:ring-0 flex-grow"
+                                                            value={location}
+                                                            onChange={(e) => {
+                                                                setLocation(e.target.value);
+                                                                setOpenCombobox(e.target.value.length >= 2);
+                                                                // Auto-select zone if exact match
+                                                                const exactMatch = places.find(p => p.label.toLowerCase() === e.target.value.toLowerCase());
+                                                                if (exactMatch) {
+                                                                    setCity(exactMatch.zone);
+                                                                }
+                                                            }}
+                                                            onFocus={() => {
+                                                                if (location.length >= 2) setOpenCombobox(true);
+                                                            }}
+                                                            onBlur={() => {
+                                                                // Delay to allow click on dropdown items
+                                                                setTimeout(() => setOpenCombobox(false), 200);
+                                                            }}
                                                             disabled={isLoading || isFetchingPlaces}
-                                                        >
-                                                            {isFetchingPlaces
-                                                                ? "Chargement des restaurants..."
-                                                                : location
-                                                                    ? location
-                                                                    : "Sélectionner un restaurant..."}
-                                                            {isFetchingPlaces ? <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" /> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-[300px] p-0 z-[100]" align="start">
-                                                        <Command>
-                                                            <CommandInput placeholder="Rechercher un restaurant..." />
-                                                            <CommandList>
-                                                                <CommandEmpty>Aucun restaurant trouvé.</CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {places.map((place) => (
-                                                                        <CommandItem
-                                                                            key={`${place.label}-${place.zone}`}
-                                                                            value={place.label}
-                                                                            onSelect={handleSelectPlace}
-                                                                        >
-                                                                            <Check
-                                                                                className={cn(
-                                                                                    "mr-2 h-4 w-4",
-                                                                                    location === place.label ? "opacity-100" : "opacity-0"
-                                                                                )}
-                                                                            />
-                                                                            <div className="flex flex-col">
-                                                                                <span>{place.label}</span>
-                                                                                <span className="text-xs text-muted-foreground">{place.zone}</span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ))}
-                                                                </CommandGroup>
-                                                            </CommandList>
-                                                        </Command>
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-grow space-y-2">
-                                                        <div className="flex items-center gap-1 border rounded-md bg-muted/50">
-                                                            <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            <Input
-                                                                id="city"
-                                                                name="city"
-                                                                placeholder="Ville (Zone)"
-                                                                className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
-                                                                value={city}
-                                                                readOnly
-                                                                disabled
-                                                            />
+                                                            autoComplete="off"
+                                                        />
+                                                        {isFetchingPlaces && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
+                                                    </div>
+
+                                                    {/* Dropdown with filtered results */}
+                                                    {openCombobox && location.length >= 2 && (
+                                                        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                                                            {places
+                                                                .filter(p => p.label.toLowerCase().includes(location.toLowerCase()))
+                                                                .slice(0, 15) // Limit to 15 results for performance
+                                                                .map((place) => (
+                                                                    <div
+                                                                        key={`${place.label}-${place.zone}`}
+                                                                        className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground flex flex-col"
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault(); // Prevent blur
+                                                                            setLocation(place.label);
+                                                                            setCity(place.zone);
+                                                                            setOpenCombobox(false);
+                                                                        }}
+                                                                    >
+                                                                        <span className="font-medium">{place.label}</span>
+                                                                        <span className="text-xs text-muted-foreground">{place.zone}</span>
+                                                                    </div>
+                                                                ))}
+                                                            {places.filter(p => p.label.toLowerCase().includes(location.toLowerCase())).length === 0 && (
+                                                                <div className="px-3 py-2 text-muted-foreground text-sm">
+                                                                    Aucun résultat trouvé
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Zone display */}
+                                                {city && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-grow">
+                                                            <div className="flex items-center gap-1 border rounded-md bg-muted/50">
+                                                                <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                                <Input
+                                                                    id="city"
+                                                                    name="city"
+                                                                    placeholder="Ville (Zone)"
+                                                                    className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
+                                                                    value={city}
+                                                                    readOnly
+                                                                    disabled
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                )}
+
                                                 <Button
+                                                    type="button"
                                                     variant="link"
                                                     className="h-auto p-0 text-xs text-muted-foreground self-start"
                                                     onClick={() => {
