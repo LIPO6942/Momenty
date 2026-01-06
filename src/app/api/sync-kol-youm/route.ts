@@ -14,31 +14,39 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { userEmail, placeName, category, cityName, dishName, date } = body;
+        const cleanEmail = userEmail?.trim().toLowerCase();
 
         // Validation
-        if (!userEmail || !placeName || !cityName || !dishName) {
+        if (!cleanEmail || !placeName || !cityName || !dishName) {
+            console.error('[Sync Kol Youm] Validation failed:', { cleanEmail, placeName, cityName, dishName });
             return NextResponse.json(
                 { success: false, error: 'Missing required fields' },
                 { status: 400 }
             );
         }
 
-        console.log(`[Sync Kol Youm] Syncing dish "${dishName}" for ${userEmail} at ${placeName}`);
+        const payload = {
+            userEmail: cleanEmail,
+            placeName,
+            category: category || 'restaurants',
+            cityName,
+            dishName,
+            date: date || Date.now(),
+            source: 'momenty'
+        };
 
-        const response = await fetch('https://kol-youm.vercel.app/api/external-visit', {
+        console.log(`[Sync Kol Youm] Sending payload to Kol Youm:`, payload);
+
+        // We try the domain specified by the dev, but we have the alternate in mind
+        const targetUrl = 'https://kol-youm.vercel.app/api/external-visit';
+
+        const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': apiKey,
             },
-            body: JSON.stringify({
-                userEmail,
-                placeName,
-                category: category || 'restaurants',
-                cityName,
-                dishName,
-                date: date || Date.now(),
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
