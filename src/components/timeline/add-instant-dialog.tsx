@@ -40,6 +40,7 @@ import type { Encounter, Dish, Accommodation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type heic2any from "heic2any";
 import { VoiceInput } from "@/components/ui/voice-input";
+import { useAuth } from "@/context/auth-context";
 
 
 interface AddInstantDialogProps {
@@ -84,11 +85,12 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [accommodationName, setAccommodationName] = useState("");
 
     // Kol Youm API State
-    const [places, setPlaces] = useState<{ label: string; zone: string }[]>([]);
+    const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
     const [isFetchingPlaces, setIsFetchingPlaces] = useState(false);
     const [openCombobox, setOpenCombobox] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [placesMap, setPlacesMap] = useState<Map<string, string>>(new Map()); // Restaurant -> Zone
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
 
     // UI State
     const [isLocating, setIsLocating] = useState(false);
@@ -130,7 +132,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                     // Build the map for zone lookups
                     const map = new Map<string, string>();
-                    result.places.forEach((place: { label: string; zone: string }) => {
+                    result.places.forEach((place: { label: string; zone: string; category: string }) => {
                         map.set(place.label, place.zone);
                     });
                     setPlacesMap(map);
@@ -155,6 +157,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         if (selectedPlace) {
             setLocation(selectedPlace.label);
             setCity(selectedPlace.zone);
+            setSelectedCategory(selectedPlace.category);
             setOpenCombobox(false);
         } else {
             console.warn('[Kol Youm] No match found for:', currentValue);
@@ -485,6 +488,30 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     photo: mainPhoto,
                 };
                 await addDish(newDish);
+
+                // Sync with Kol Youm
+                if (user?.email) {
+                    try {
+                        console.log('[Kol Youm] Triggering sync...');
+                        fetch('/api/sync-kol-youm', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userEmail: user.email,
+                                placeName: location,
+                                category: selectedCategory,
+                                cityName: city,
+                                dishName: dishName,
+                                date: Date.now()
+                            })
+                        }).then(res => res.json()).then(data => {
+                            console.log('[Kol Youm] Sync result:', data);
+                        });
+                    } catch (syncError) {
+                        console.error('[Kol Youm] Sync failed:', syncError);
+                    }
+                }
+
                 toast({ title: "Nouveau plat ajouté !" });
             } else if (isAccommodation) {
                 if (!accommodationName) {
@@ -743,6 +770,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                                     const exactMatch = places.find(p => p.label.toLowerCase() === e.target.value.toLowerCase());
                                                                     if (exactMatch) {
                                                                         setCity(exactMatch.zone);
+                                                                        setSelectedCategory(exactMatch.category);
                                                                     }
                                                                 }}
                                                                 onFocus={() => {
@@ -770,6 +798,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                                                 e.preventDefault();
                                                                                 setLocation(place.label);
                                                                                 setCity(place.zone);
+                                                                                setSelectedCategory(place.category);
                                                                                 setOpenCombobox(false);
                                                                             }}
                                                                         >

@@ -22,7 +22,7 @@ export async function GET() {
 
         // Parse and flatten the places data
         if (data.success && data.data && Array.isArray(data.data.zones)) {
-            const places: { label: string; zone: string }[] = [];
+            const places: { label: string; zone: string; category: string }[] = [];
             const seen = new Set<string>();
 
             data.data.zones.forEach((zoneItem: any) => {
@@ -31,21 +31,22 @@ export async function GET() {
 
                 if (categories) {
                     // Helper function to add places from a category
-                    const addPlaces = (categoryArray: string[] | undefined) => {
+                    const addPlaces = (categoryArray: string[] | undefined, categoryName: string) => {
                         if (categoryArray && Array.isArray(categoryArray)) {
                             categoryArray.forEach((place: string) => {
-                                if (place && !seen.has(place)) {
-                                    places.push({ label: place, zone: zoneName });
-                                    seen.add(place);
+                                const seenKey = `${place.toLowerCase()}-${zoneName.toLowerCase()}`;
+                                if (place && !seen.has(seenKey)) {
+                                    places.push({ label: place, zone: zoneName, category: categoryName });
+                                    seen.add(seenKey);
                                 }
                             });
                         }
                     };
 
-                    addPlaces(categories.restaurants);
-                    addPlaces(categories.cafes);
-                    addPlaces(categories.fastFoods);
-                    addPlaces(categories.brunch);
+                    addPlaces(categories.restaurants, 'restaurants');
+                    addPlaces(categories.cafes, 'cafes');
+                    addPlaces(categories.fastFoods, 'fastFoods');
+                    addPlaces(categories.brunch, 'brunch');
                 }
             });
 
