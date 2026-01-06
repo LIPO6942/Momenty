@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
         console.log(`[Sync Kol Youm] Syncing dish "${dishName}" for ${userEmail} at ${placeName}`);
 
-        const response = await fetch('https://kol-youm-app.vercel.app/api/external-visit', {
+        const response = await fetch('https://kol-youm.vercel.app/api/external-visit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -42,8 +42,16 @@ export async function POST(request: Request) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('[Sync Kol Youm] Kol Youm API returned error:', response.status, errorData);
+            const errorText = await response.text().catch(() => 'No error text');
+            console.error('[Sync Kol Youm] Kol Youm API returned error:', response.status, errorText);
+
+            let errorData = {};
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { raw: errorText.substring(0, 100) };
+            }
+
             return NextResponse.json(
                 { success: false, error: `Kol Youm API error: ${response.status}`, details: errorData },
                 { status: response.status }
