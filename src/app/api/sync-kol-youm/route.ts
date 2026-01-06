@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
         console.log(`[Sync Kol Youm] Sending payload:`, payload);
 
-        // On essaie les deux domaines possibles en séquence pour être sûr
+        // On essaie les deux domaines possibles sans slash final forcé
         const urls = [
             'https://kol-youm-app.vercel.app/api/external-visit',
             'https://kol-youm.vercel.app/api/external-visit'
@@ -49,8 +49,8 @@ export async function POST(request: Request) {
 
         for (const url of urls) {
             try {
-                console.log(`[Sync Kol Youm] Trying URL: ${url}`);
-                const response = await fetch(url.endsWith('/') ? url : `${url}/`, {
+                console.log(`[Sync Kol Youm] Attempting fetch to: ${url}`);
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -67,8 +67,9 @@ export async function POST(request: Request) {
                     break;
                 } else {
                     lastResponseStatus = response.status;
-                    lastErrorText = await response.text().catch(() => 'No body');
-                    console.warn(`[Sync Kol Youm] Failed with ${url}: ${response.status} - ${lastErrorText}`);
+                    const text = await response.text().catch(() => 'No body');
+                    lastErrorText = text;
+                    console.warn(`[Sync Kol Youm] Failed URL ${url}: ${response.status} - ${text.substring(0, 100)}`);
                 }
             } catch (err) {
                 console.error(`[Sync Kol Youm] Error fetching ${url}:`, err);
