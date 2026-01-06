@@ -717,9 +717,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                             />
                                         </div>
                                     )}
-
-                                    {/* Only show restaurant/place selection when in dish mode */}
-                                    {isDish && (
+                                    {/* Location Section */}
+                                    {isDish ? (
+                                        /* DISH MODE: Show restaurant autocomplete with zone */
                                         <div className="space-y-2">
                                             <Label htmlFor="location" className="flex items-center gap-2">
                                                 C'était ou ?
@@ -740,7 +740,6 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                                 onChange={(e) => {
                                                                     setLocation(e.target.value);
                                                                     setOpenCombobox(e.target.value.length >= 2);
-                                                                    // Auto-select zone if exact match
                                                                     const exactMatch = places.find(p => p.label.toLowerCase() === e.target.value.toLowerCase());
                                                                     if (exactMatch) {
                                                                         setCity(exactMatch.zone);
@@ -750,7 +749,6 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                                     if (location.length >= 2) setOpenCombobox(true);
                                                                 }}
                                                                 onBlur={() => {
-                                                                    // Delay to allow click on dropdown items
                                                                     setTimeout(() => setOpenCombobox(false), 200);
                                                                 }}
                                                                 disabled={isLoading || isFetchingPlaces}
@@ -759,18 +757,17 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                             {isFetchingPlaces && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
                                                         </div>
 
-                                                        {/* Dropdown with filtered results */}
                                                         {openCombobox && location.length >= 2 && (
                                                             <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
                                                                 {places
                                                                     .filter(p => p.label.toLowerCase().includes(location.toLowerCase()))
-                                                                    .slice(0, 15) // Limit to 15 results for performance
+                                                                    .slice(0, 15)
                                                                     .map((place) => (
                                                                         <div
                                                                             key={`${place.label}-${place.zone}`}
                                                                             className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground flex flex-col"
                                                                             onMouseDown={(e) => {
-                                                                                e.preventDefault(); // Prevent blur
+                                                                                e.preventDefault();
                                                                                 setLocation(place.label);
                                                                                 setCity(place.zone);
                                                                                 setOpenCombobox(false);
@@ -789,23 +786,18 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         )}
                                                     </div>
 
-                                                    {/* Zone display */}
                                                     {city && (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex-grow">
-                                                                <div className="flex items-center gap-1 border rounded-md bg-muted/50">
-                                                                    <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                                    <Input
-                                                                        id="city"
-                                                                        name="city"
-                                                                        placeholder="Ville (Zone)"
-                                                                        className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
-                                                                        value={city}
-                                                                        readOnly
-                                                                        disabled
-                                                                    />
-                                                                </div>
-                                                            </div>
+                                                        <div className="flex items-center gap-1 border rounded-md bg-muted/50">
+                                                            <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                            <Input
+                                                                id="city"
+                                                                name="city"
+                                                                placeholder="Ville (Zone)"
+                                                                className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
+                                                                value={city}
+                                                                readOnly
+                                                                disabled
+                                                            />
                                                         </div>
                                                     )}
 
@@ -813,10 +805,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         type="button"
                                                         variant="link"
                                                         className="h-auto p-0 text-xs text-muted-foreground self-start"
-                                                        onClick={() => {
-                                                            // Fallback to manual entry
-                                                            setPlaces([]);
-                                                        }}
+                                                        onClick={() => setPlaces([])}
                                                     >
                                                         Je ne trouve pas mon restaurant (Saisie manuelle)
                                                     </Button>
@@ -825,14 +814,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex-grow space-y-2">
                                                         <div className="flex items-center gap-1 border rounded-md">
-                                                            {isDish ? (
-                                                                <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            ) : (
-                                                                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            )}
+                                                            <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
                                                             <Input
                                                                 id="location"
-                                                                placeholder={isDish ? "Nom du restaurant" : "Nom du lieu"}
+                                                                placeholder="Nom du restaurant"
                                                                 className="border-0 focus-visible:ring-0 flex-grow"
                                                                 value={location}
                                                                 onChange={(e) => setLocation(e.target.value)}
@@ -869,6 +854,45 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                     </Button>
                                                 </div>
                                             )}
+                                        </div>
+                                    ) : (
+                                        /* OTHER MODES: Show only Ville and Pays (no "Nom du lieu") */
+                                        <div className="space-y-2">
+                                            <Label className="flex items-center gap-2">
+                                                Localisation
+                                                {isLocating && <Loader2 className="h-4 w-4 animate-spin" />}
+                                            </Label>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-grow space-y-2">
+                                                    <div className="flex items-center gap-1 border rounded-md">
+                                                        <Building className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
+                                                        <Input
+                                                            id="city"
+                                                            name="city"
+                                                            placeholder="Ville"
+                                                            className="border-0 focus-visible:ring-0 flex-grow"
+                                                            value={city}
+                                                            onChange={(e) => setCity(e.target.value)}
+                                                            disabled={isLoading}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-1 border rounded-md">
+                                                        <Globe className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
+                                                        <Input
+                                                            id="country"
+                                                            name="country"
+                                                            placeholder="Pays"
+                                                            className="border-0 focus-visible:ring-0 flex-grow"
+                                                            value={country}
+                                                            onChange={(e) => setCountry(e.target.value)}
+                                                            disabled={isLoading || !!activeContext}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
+                                                    <LocateFixed className="h-5 w-5" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     )}
                                     <div className="space-y-2">
