@@ -35,47 +35,64 @@ export async function POST(request: Request) {
             source: 'momenty'
         };
 
-        console.log(`[Sync Kol Youm] Sending payload to Kol Youm:`, payload);
+        console.log(`[Sync Kol Youm] Sending payload:`, payload);
 
-        // Ajout d'un slash final et de headers plus complets pour éviter les redirections 405 de Vercel
-        const targetUrl = 'https://kol-youm-app.vercel.app/api/external-visit/';
+        // On essaie les deux domaines possibles en séquence pour être sûr
+        const urls = [
+            'https://kol-youm-app.vercel.app/api/external-visit',
+            'https://kol-youm.vercel.app/api/external-visit'
+        ];
 
-        const response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-API-Key': apiKey,
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
+        let lastResponseStatus = 500;
+        let lastErrorText: string = "";
+        let successResult: any = null;
 
-        if (!response.ok) {
-            const errorText = await response.text().catch(() => 'No error text');
-            console.error('[Sync Kol Youm] Kol Youm API returned error:', response.status, errorText);
-
-            let errorData = {};
+        for (const url of urls) {
             try {
-                errorData = JSON.parse(errorText);
-            } catch (e) {
-                errorData = { raw: errorText.substring(0, 100) };
-            }
+                console.log(`[Sync Kol Youm] Trying URL: ${url}`);
+                const response = await fetch(url.endsWith('/') ? url : `${url}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-API-Key': apiKey,
+                    },
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
 
-            return NextResponse.json(
-                { success: false, error: `Kol Youm API error: ${response.status}`, details: errorData },
-                { status: response.status }
-            );
+                if (response.ok) {
+                    successResult = await response.json();
+                    console.log(`[Sync Kol Youm] Success with ${url}`);
+                    break;
+                } else {
+                    lastResponseStatus = response.status;
+                    lastErrorText = await response.text().catch(() => 'No body');
+                    console.warn(`[Sync Kol Youm] Failed with ${url}: ${response.status} - ${lastErrorText}`);
+                }
+            } catch (err) {
+                console.error(`[Sync Kol Youm] Error fetching ${url}:`, err);
+            }
         }
 
-        const result = await response.json();
-        console.log('[Sync Kol Youm] Sync successful:', result);
+        if (successResult) {
+            return NextResponse.json({
+                success: true,
+                message: 'Successfully synced with Kol Youm',
+                data: successResult,
+            });
+        }
 
-        return NextResponse.json({
-            success: true,
-            message: 'Successfully synced with Kol Youm',
-            data: result,
-        });
+        return NextResponse.json(
+            {
+                success: false,
+                error: `Kol Youm API error: ${lastResponseStatus}`,
+                details: { raw: lastErrorText.substring(0, 200) }
+            },
+            { status: lastResponseStatus }
+        );
+
+
     } catch (error) {
         console.error('[Sync Kol Youm] Unexpected error:', error);
         return NextResponse.json(
