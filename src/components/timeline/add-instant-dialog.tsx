@@ -63,6 +63,7 @@ const MAX_IMAGE_WIDTH = 1920; // Max width for compression
 
 export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDialogProps) {
     const { toast } = useToast();
+    const { user } = useAuth();
     const { addInstant, addEncounter, addDish, addAccommodation } = useContext(TimelineContext);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
