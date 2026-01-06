@@ -493,23 +493,41 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 // Sync with Kol Youm
                 if (user?.email) {
                     try {
-                        console.log('[Kol Youm] Triggering sync...');
-                        fetch('/api/sync-kol-youm', {
+                        console.log('[Kol Youm] Triggering sync for:', {
+                            userEmail: user.email,
+                            placeName: location,
+                            city: city,
+                            dish: dishName
+                        });
+
+                        // We use a separate async function to not block the UI if needed, 
+                        // but here we want to at least start it reliably.
+                        const syncResponse = await fetch('/api/sync-kol-youm', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userEmail: user.email,
                                 placeName: location,
-                                category: selectedCategory,
+                                category: selectedCategory || 'restaurants',
                                 cityName: city,
                                 dishName: dishName,
                                 date: Date.now()
                             })
-                        }).then(res => res.json()).then(data => {
-                            console.log('[Kol Youm] Sync result:', data);
                         });
+
+                        const syncResult = await syncResponse.json();
+                        console.log('[Kol Youm] Sync result:', syncResult);
+
+                        if (!syncResponse.ok || !syncResult.success) {
+                            console.warn('[Kol Youm] Sync failed:', syncResult.error || 'Unknown error');
+                            toast({
+                                variant: "destructive",
+                                title: "Synchro Kol Youm échouée",
+                                description: syncResult.error || "Impossible de mettre à jour le compteur de visites."
+                            });
+                        }
                     } catch (syncError) {
-                        console.error('[Kol Youm] Sync failed:', syncError);
+                        console.error('[Kol Youm] Sync call failed:', syncError);
                     }
                 }
 
