@@ -37,16 +37,18 @@ export async function POST(request: Request) {
 
         console.log(`[Sync Kol Youm] Sending payload to Kol Youm:`, payload);
 
-        // Reverting to the domain confirmed by the user
-        const targetUrl = 'https://kol-youm-app.vercel.app/api/external-visit';
+        // Ajout d'un slash final et de headers plus complets pour éviter les redirections 405 de Vercel
+        const targetUrl = 'https://kol-youm-app.vercel.app/api/external-visit/';
 
         const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-API-Key': apiKey,
             },
             body: JSON.stringify(payload),
+            redirect: 'follow'
         });
 
         if (!response.ok) {
