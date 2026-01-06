@@ -37,8 +37,8 @@ export async function POST(request: Request) {
 
         console.log(`[Sync Kol Youm] Sending payload to Kol Youm:`, payload);
 
-        // We try the domain specified by the dev, but we have the alternate in mind
-        const targetUrl = 'https://kol-youm.vercel.app/api/external-visit';
+        // Reverting to the domain confirmed by the user
+        const targetUrl = 'https://kol-youm-app.vercel.app/api/external-visit';
 
         const response = await fetch(targetUrl, {
             method: 'POST',
