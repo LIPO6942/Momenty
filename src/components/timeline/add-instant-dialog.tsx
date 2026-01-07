@@ -156,7 +156,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
             place => place.label.toLowerCase() === currentValue.toLowerCase()
         );
         if (selectedPlace) {
-            setLocation(selectedPlace.label);
+            setLocation(`${selectedPlace.label} (${selectedPlace.zone})`);
             setCity(selectedPlace.zone);
             setSelectedCategory(selectedPlace.category);
             setOpenCombobox(false);
@@ -480,9 +480,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     setIsSubmitting(false);
                     return;
                 }
+                const finalDishDescription = description
+                    ? (city ? `${description} (Dégusté à ${city})` : description)
+                    : (city ? `Dégusté à ${location}` : "Un plat mémorable");
+
                 const newDish: Omit<Dish, 'id'> = {
                     name: dishName,
-                    description: description || "Un plat mémorable",
+                    description: finalDishDescription,
                     date: new Date().toISOString(),
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
