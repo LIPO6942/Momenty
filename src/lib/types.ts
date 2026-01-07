@@ -31,8 +31,8 @@ export interface DayPlan {
 }
 
 export interface ItineraryOutput {
-  title: string;
-  itinerary: DayPlan[];
+    title: string;
+    itinerary: DayPlan[];
 }
 
 
@@ -44,7 +44,7 @@ export interface Instant {
     title: string;
     description: string;
     date: string; // ISO String
-    icon?: React.ReactNode; 
+    icon?: React.ReactNode;
     color?: string;
     location: string;
     emotion: string | string[];
@@ -70,13 +70,14 @@ export interface Dish {
     description: string;
     date: string; // ISO String
     location: string;
+    city?: string; // Zone/City name
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
     displayTransform?: DisplayTransform; // Optional persisted display settings
 }
 
 export interface Accommodation {
-    id:string;
+    id: string;
     name: string;
     description: string;
     date: string; // ISO String
@@ -120,19 +121,19 @@ export interface TimelineEvent {
 }
 
 export interface TimelineEventPhoto {
-  id: string;
-  imageUrl: string;
-  title: string;
-  description: string;
-  dateTaken: string; // ISO string format
+    id: string;
+    imageUrl: string;
+    title: string;
+    description: string;
+    dateTaken: string; // ISO string format
 }
 
 export interface GeneratedStory {
-  id: string; // Can be a single day 'yyyy-MM-dd' or a composite key 'day1_day2'
-  date: string; // The first day string 'yyyy-MM-dd' for sorting purposes
-  title: string;
-  story: string;
-  instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
+    id: string; // Can be a single day 'yyyy-MM-dd' or a composite key 'day1_day2'
+    date: string; // The first day string 'yyyy-MM-dd' for sorting purposes
+    title: string;
+    story: string;
+    instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
 }
 
 export interface LocationWithCoords extends ManualLocation {

@@ -489,6 +489,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     description: finalDishDescription,
                     date: new Date().toISOString(),
                     location,
+                    city,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                 };
