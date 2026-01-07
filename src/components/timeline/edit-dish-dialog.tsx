@@ -138,7 +138,7 @@ export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
       place => place.label.toLowerCase() === currentValue.toLowerCase()
     );
     if (selectedPlace) {
-      setLocation(`${selectedPlace.label} (${selectedPlace.zone})`);
+      setLocation(selectedPlace.label);
       setCity(selectedPlace.zone);
       setSelectedCategory(selectedPlace.category);
       setOpenCombobox(false);
