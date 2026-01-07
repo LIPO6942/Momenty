@@ -35,63 +35,43 @@ export async function POST(request: Request) {
             source: 'momenty'
         };
 
-        console.log(`[Sync Kol Youm] Sending payload:`, payload);
+        console.log(`[Sync Kol Youm] Sending payload to production:`, payload);
 
-        // On essaie les deux domaines possibles sans slash final forcé
-        const urls = [
-            'https://kol-youm-app.vercel.app/api/external-visit',
-            'https://kol-youm.vercel.app/api/external-visit'
-        ];
+        const targetUrl = 'https://kol-youm-app.vercel.app/api/external-visit';
 
-        let lastResponseStatus = 500;
-        let lastErrorText: string = "";
-        let successResult: any = null;
-
-        for (const url of urls) {
-            try {
-                console.log(`[Sync Kol Youm] Attempting fetch to: ${url}`);
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-API-Key': apiKey,
-                    },
-                    body: JSON.stringify(payload),
-                    redirect: 'follow'
-                });
-
-                if (response.ok) {
-                    successResult = await response.json();
-                    console.log(`[Sync Kol Youm] Success with ${url}`);
-                    break;
-                } else {
-                    lastResponseStatus = response.status;
-                    const text = await response.text().catch(() => 'No body');
-                    lastErrorText = text;
-                    console.warn(`[Sync Kol Youm] Failed URL ${url}: ${response.status} - ${text.substring(0, 100)}`);
-                }
-            } catch (err) {
-                console.error(`[Sync Kol Youm] Error fetching ${url}:`, err);
-            }
-        }
-
-        if (successResult) {
-            return NextResponse.json({
-                success: true,
-                message: 'Successfully synced with Kol Youm',
-                data: successResult,
-            });
-        }
-
-        return NextResponse.json(
-            {
-                success: false,
-                error: `Kol Youm API error: ${lastResponseStatus}`,
-                details: { raw: lastErrorText.substring(0, 200) }
+        const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-API-Key': apiKey,
             },
-            { status: lastResponseStatus }
-        );
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const text = await response.text().catch(() => 'No body');
+
+        if (!response.ok) {
+            console.error(`[Sync Kol Youm] Failed to sync: ${response.status}`, text);
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: `Kol Youm API error: ${response.status}`,
+                    details: { raw: text.substring(0, 200) }
+                },
+                { status: response.status }
+            );
+        }
+
+        const result = JSON.parse(text);
+        console.log('[Sync Kol Youm] Sync successful:', result);
+
+        return NextResponse.json({
+            success: true,
+            message: 'Successfully synced with Kol Youm',
+            data: result,
+        });
 
 
     } catch (error) {
