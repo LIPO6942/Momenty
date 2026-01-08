@@ -178,7 +178,15 @@ export default function TimelinePage() {
         <Accordion type="multiple" value={openDays} onValueChange={setOpenDays} className="w-full space-y-4">
           {Object.entries(filteredGroupedInstants).map(([day, dayData]) => (
             <AccordionItem key={day} value={day} className="border-none">
-              <AccordionTrigger className="text-xl font-bold text-gradient-blue mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+              <AccordionTrigger
+                className="text-xl font-bold mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
+                style={{
+                  background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
                 {dayData.title}
               </AccordionTrigger>
               <AccordionContent>
