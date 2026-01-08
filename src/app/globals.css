@@ -78,9 +78,10 @@ body {
 
 @layer utilities {
   .text-gradient-blue {
-    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    color: transparent !important;
   }
 }
