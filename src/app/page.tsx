@@ -178,17 +178,20 @@ export default function TimelinePage() {
         <Accordion type="multiple" value={openDays} onValueChange={setOpenDays} className="w-full space-y-4">
           {Object.entries(filteredGroupedInstants).map(([day, dayData]) => (
             <AccordionItem key={day} value={day} className="border-none">
-              <AccordionTrigger
-                className="text-xl font-bold mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
-                style={{
-                  background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                {dayData.title}
+              <AccordionTrigger className="text-xl font-bold mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
+                <span
+                  style={{
+                    background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    display: 'inline-block',
+                  }}
+                >
+                  {dayData.title}
+                </span>
               </AccordionTrigger>
+
               <AccordionContent>
                 <div className="space-y-6 pt-4">
                   {dayData.instants.map((instant) => (
@@ -204,7 +207,8 @@ export default function TimelinePage() {
           <p>Aucun souvenir trouvé pour {selectedMonth === -1 ? selectedYear : `${monthNames[selectedMonth]} ${selectedYear}`}.</p>
           <p className="text-sm mt-1">Essayez de sélectionner une autre période.</p>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
