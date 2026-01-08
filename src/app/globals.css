@@ -80,8 +80,11 @@ body {
   .text-gradient-blue {
     background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
     -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
     background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
     color: transparent !important;
+    display: inline-block !important;
+    background-size: 100% !important;
+    background-repeat: no-repeat !important;
   }
 }
