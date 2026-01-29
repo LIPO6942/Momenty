@@ -14,26 +14,29 @@ import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/f
 import { getProfile } from '@/lib/idb';
 import type { ProfileData } from '@/lib/idb';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -43,7 +46,7 @@ import {
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-  } from "@/components/ui/accordion";
+} from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -53,64 +56,64 @@ import { useAuth } from '@/context/auth-context';
 
 const StoryPreview = ({ story }: { story: string }) => {
     const html = story
-      .split('\n')
-      .map(line => {
-        if (line.startsWith('# ')) {
-          return `<h1 class="text-2xl font-bold mb-4">${line.substring(2)}</h1>`;
-        }
-        if (line.trim() === '') {
-            return '<br />';
-        }
-        return `<p class="mb-2 leading-relaxed">${line}</p>`;
-      })
-      .join('');
-  
+        .split('\n')
+        .map(line => {
+            if (line.startsWith('# ')) {
+                return `<h1 class="text-2xl font-bold mb-4">${line.substring(2)}</h1>`;
+            }
+            if (line.trim() === '') {
+                return '<br />';
+            }
+            return `<p class="mb-2 leading-relaxed">${line}</p>`;
+        })
+        .join('');
+
     return <div dangerouslySetInnerHTML={{ __html: html }} className="prose dark:prose-invert max-w-none" />;
 };
 
 const StoryDisplay = ({ story }: { story: GeneratedStory }) => {
     const photos = story.instants.flatMap(i => i.photos || []);
     const notes = story.instants.filter(i => i.type === 'note' && i.description);
-    
+
     return (
         <div className="space-y-4">
             <StoryPreview story={story.story} />
 
             {photos.length > 0 && (
-                 <ScrollArea className="w-full whitespace-nowrap rounded-lg">
+                <ScrollArea className="w-full whitespace-nowrap rounded-lg">
                     <div className="flex w-max space-x-4 p-1">
                         {photos.map((photo, index) => (
-                           photo && (
-                            <div key={index} className="flex-shrink-0">
-                                <Image
-                                    src={photo}
-                                    alt={`Story photo ${index}`}
-                                    width={80}
-                                    height={80}
-                                    className="aspect-square rounded-md object-cover"
-                                />
-                             </div>
-                           )
+                            photo && (
+                                <div key={index} className="flex-shrink-0">
+                                    <Image
+                                        src={photo}
+                                        alt={`Story photo ${index}`}
+                                        width={80}
+                                        height={80}
+                                        className="aspect-square rounded-md object-cover"
+                                    />
+                                </div>
+                            )
                         ))}
                     </div>
-                     <ScrollBar orientation="horizontal" />
+                    <ScrollBar orientation="horizontal" />
                 </ScrollArea>
             )}
 
             {notes.length > 0 && (
                 <>
-                <Separator/>
-                <div className='space-y-2'>
-                    <h4 className="font-semibold text-sm text-muted-foreground">Notes originales</h4>
-                    <div className="space-y-2 text-sm text-foreground/80">
-                        {notes.map(note => (
-                            <div key={note.id} className="flex gap-2 items-start">
-                                <BookText className="h-4 w-4 mt-1 flex-shrink-0" />
-                                <span>{note.description}</span>
-                            </div>
-                        ))}
+                    <Separator />
+                    <div className='space-y-2'>
+                        <h4 className="font-semibold text-sm text-muted-foreground">Notes originales</h4>
+                        <div className="space-y-2 text-sm text-foreground/80">
+                            {notes.map(note => (
+                                <div key={note.id} className="flex gap-2 items-start">
+                                    <BookText className="h-4 w-4 mt-1 flex-shrink-0" />
+                                    <span>{note.description}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
                 </>
             )}
         </div>
@@ -129,14 +132,16 @@ export default function StoryPage() {
     const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>();
     const [userProfile, setUserProfile] = useState<Omit<ProfileData, 'id'> | null>(null);
     const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
+    const [manualCompanionType, setManualCompanionType] = useState<string>("");
+    const [manualCompanionName, setManualCompanionName] = useState<string>("");
 
     const loadStories = async () => {
-        if(!user) return;
+        if (!user) return;
         const loadedStories = await getStories(user.uid);
         // Hydrate stories with full instant data for display
         const hydratedStories = loadedStories.map(story => {
             const storyInstants = story.instants.map(i => instants.find(fullInstant => fullInstant.id === i.id)).filter(Boolean) as Instant[];
-            return {...story, instants: storyInstants};
+            return { ...story, instants: storyInstants };
         })
         setStories(hydratedStories);
         // Open the most recent story by default
@@ -152,12 +157,12 @@ export default function StoryPage() {
         };
         loadProfileData();
 
-        if(user && instants.length > 0) {
+        if (user && instants.length > 0) {
             loadStories();
         }
 
         const handleStoriesUpdated = () => {
-            if(user) loadStories();
+            if (user) loadStories();
         };
 
         window.addEventListener('stories-updated', handleStoriesUpdated);
@@ -180,14 +185,14 @@ export default function StoryPage() {
         try {
             const sortedDays = [...selectedDays].sort();
             const storyId = sortedDays.join('_');
-            
+
             const dayDataArray = sortedDays.map(dayKey => groupedInstants[dayKey]);
             const allInstantsForStory = dayDataArray.flatMap(d => d.instants);
 
-            const storyTitle = dayDataArray.length > 1 
-                ? `Du ${format(parseISO(dayDataArray[0].instants[0].date), 'd MMM', {locale: fr})} au ${format(parseISO(dayDataArray[dayDataArray.length-1].instants[0].date), 'd MMM yyyy', {locale: fr})}`
+            const storyTitle = dayDataArray.length > 1
+                ? `Du ${format(parseISO(dayDataArray[0].instants[0].date), 'd MMM', { locale: fr })} au ${format(parseISO(dayDataArray[dayDataArray.length - 1].instants[0].date), 'd MMM yyyy', { locale: fr })}`
                 : dayDataArray[0].title;
-            
+
             const instantsForPrompt = allInstantsForStory.map(i => ({
                 title: i.title,
                 description: i.description,
@@ -201,13 +206,13 @@ export default function StoryPage() {
 
             const result = await generateStory({
                 instants: instantsForPrompt,
-                companionType: activeContext?.companionType,
-                companionName: activeContext?.companionName,
+                companionType: manualCompanionType || activeContext?.companionType,
+                companionName: manualCompanionName || activeContext?.companionName,
                 userFirstName: userProfile?.firstName,
                 userAge: userProfile?.age,
                 userGender: userProfile?.gender,
             });
-            
+
             const newStory: GeneratedStory = {
                 id: storyId,
                 date: sortedDays[0], // Use first day for sorting purposes
@@ -217,11 +222,13 @@ export default function StoryPage() {
             };
 
             await saveStory(user.uid, newStory);
-            
-            const fullNewStory = {...newStory, instants: allInstantsForStory };
+
+            const fullNewStory = { ...newStory, instants: allInstantsForStory };
 
             setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== storyId)]);
             setOpenAccordionItem(newStory.id);
+            setManualCompanionType("");
+            setManualCompanionName("");
             toast({ title: "Histoire générée et sauvegardée !" });
 
         } catch (error) {
@@ -231,7 +238,7 @@ export default function StoryPage() {
             setIsLoading(false);
         }
     };
-    
+
     const handleEditStory = (story: GeneratedStory) => {
         setIsEditing(story);
         setEditText(story.story);
@@ -239,12 +246,12 @@ export default function StoryPage() {
 
     const handleSaveEdit = async () => {
         if (!isEditing || !user) return;
-        
+
         const updatedStory: GeneratedStory = {
-             ...isEditing, 
-             story: editText, 
+            ...isEditing,
+            story: editText,
         };
-        
+
         await saveStory(user.uid, updatedStory);
 
         setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s));
@@ -253,7 +260,7 @@ export default function StoryPage() {
     };
 
     const handleDeleteStory = async (storyId: string) => {
-        if(!user) return;
+        if (!user) return;
         await deleteStoryFromDB(user.uid, storyId);
         setStories(prev => prev.filter(s => s.id !== storyId));
         toast({ title: "Histoire supprimée." });
@@ -262,8 +269,8 @@ export default function StoryPage() {
     const selectedDaysInstants = selectedDays.flatMap(dayKey => groupedInstants[dayKey]?.instants || []);
 
     const toggleDaySelection = (dayKey: string) => {
-        setSelectedDays(prev => 
-            prev.includes(dayKey) 
+        setSelectedDays(prev =>
+            prev.includes(dayKey)
                 ? prev.filter(d => d !== dayKey)
                 : [...prev, dayKey]
         );
@@ -284,28 +291,28 @@ export default function StoryPage() {
                     <Popover open={isDaySelectorOpen} onOpenChange={setIsDaySelectorOpen}>
                         <PopoverTrigger asChild>
                             <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={isDaySelectorOpen}
-                            className="w-full justify-between h-auto min-h-10"
-                            disabled={!user}
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={isDaySelectorOpen}
+                                className="w-full justify-between h-auto min-h-10"
+                                disabled={!user}
                             >
-                            <div className="flex flex-wrap gap-1">
-                                {selectedDays.length === 0 && "Choisissez une ou plusieurs dates..."}
-                                {selectedDays.map(dayKey => {
-                                    const option = dayOptions.find(o => o.value === dayKey);
-                                    return (
-                                        <Badge
-                                            key={dayKey}
-                                            variant="secondary"
-                                            className="rounded-sm"
-                                        >
-                                           {option?.label}
-                                        </Badge>
-                                    )
-                                })}
-                            </div>
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                <div className="flex flex-wrap gap-1">
+                                    {selectedDays.length === 0 && "Choisissez une ou plusieurs dates..."}
+                                    {selectedDays.map(dayKey => {
+                                        const option = dayOptions.find(o => o.value === dayKey);
+                                        return (
+                                            <Badge
+                                                key={dayKey}
+                                                variant="secondary"
+                                                className="rounded-sm"
+                                            >
+                                                {option?.label}
+                                            </Badge>
+                                        )
+                                    })}
+                                </div>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
@@ -315,19 +322,19 @@ export default function StoryPage() {
                                     <CommandEmpty>Aucune date trouvée.</CommandEmpty>
                                     <CommandGroup>
                                         {dayOptions.map((option) => (
-                                        <CommandItem
-                                            key={option.value}
-                                            value={option.label}
-                                            onSelect={() => toggleDaySelection(option.value)}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    selectedDays.includes(option.value) ? "opacity-100" : "opacity-0"
-                                                )}
-                                            />
-                                            {option.label}
-                                        </CommandItem>
+                                            <CommandItem
+                                                key={option.value}
+                                                value={option.label}
+                                                onSelect={() => toggleDaySelection(option.value)}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        selectedDays.includes(option.value) ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                {option.label}
+                                            </CommandItem>
                                         ))}
                                     </CommandGroup>
                                 </CommandList>
@@ -337,19 +344,43 @@ export default function StoryPage() {
 
                     {selectedDays.length > 0 && (
                         <div className='pt-2'>
-                             <ScrollArea className="w-full whitespace-nowrap rounded-lg">
+                            <ScrollArea className="w-full whitespace-nowrap rounded-lg">
                                 {selectedDaysInstants.some(i => i.photos && i.photos.length > 0) && (
-                                     <div className="flex w-max space-x-2 mb-4">
+                                    <div className="flex w-max space-x-2 mb-4">
                                         {selectedDaysInstants?.flatMap(instant => instant.photos || []).map((photo, index) => (
                                             photo && (
                                                 <Image key={index} src={photo} alt={selectedDaysInstants[0].title} width={100} height={100} className="rounded-md object-cover aspect-square" />
                                             )
                                         ))}
-                                     </div>
+                                    </div>
                                 )}
-                                 <ScrollBar orientation="horizontal" />
+                                <ScrollBar orientation="horizontal" />
                             </ScrollArea>
-                             <Button onClick={handleGenerateStory} disabled={isLoading || !user} className="w-full">
+
+                            <div className="space-y-3 mt-4">
+                                <Label>Vous étiez avec qui ?</Label>
+                                <Select value={manualCompanionType} onValueChange={setManualCompanionType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Solo, Ami(e), Famille..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="solo">Solo</SelectItem>
+                                        <SelectItem value="ami">Ami(e)</SelectItem>
+                                        <SelectItem value="famille">Famille</SelectItem>
+                                        <SelectItem value="conjoint">Conjoint(e)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {manualCompanionType && manualCompanionType !== "solo" && (
+                                    <Input
+                                        placeholder="Nom du compagnon (optionnel)"
+                                        value={manualCompanionName}
+                                        onChange={(e) => setManualCompanionName(e.target.value)}
+                                    />
+                                )}
+                            </div>
+
+                            <Button onClick={handleGenerateStory} disabled={isLoading || !user} className="w-full mt-4">
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
@@ -363,11 +394,11 @@ export default function StoryPage() {
             </Card>
 
             <div className="space-y-4">
-                 <h2 className="text-2xl font-bold text-foreground mb-4">Mes Histoires</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-4">Mes Histoires</h2>
                 {stories.length > 0 ? (
                     <Accordion type="single" collapsible value={openAccordionItem} onValueChange={setOpenAccordionItem} className="w-full space-y-4">
                         {stories.map(story => (
-                             <AccordionItem key={story.id} value={story.id} className="border-none">
+                            <AccordionItem key={story.id} value={story.id} className="border-none">
                                 <Card className='overflow-hidden'>
                                     <AccordionTrigger className="text-lg font-bold text-foreground p-4 hover:no-underline w-full text-left">
                                         {story.title}
@@ -388,16 +419,16 @@ export default function StoryPage() {
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
-                                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Cette action est irréversible. L'histoire sera définitivement supprimée.
-                                                    </AlertDialogDescription>
+                                                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Cette action est irréversible. L'histoire sera définitivement supprimée.
+                                                        </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteStory(story.id)}>
-                                                        Supprimer
-                                                    </AlertDialogAction>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteStory(story.id)}>
+                                                            Supprimer
+                                                        </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
@@ -408,7 +439,7 @@ export default function StoryPage() {
                         ))}
                     </Accordion>
                 ) : (
-                    <p className="text-muted-foreground text-center py-8">{ user ? "Aucune histoire générée pour le moment." : "Connectez-vous pour voir vos histoires."}</p>
+                    <p className="text-muted-foreground text-center py-8">{user ? "Aucune histoire générée pour le moment." : "Connectez-vous pour voir vos histoires."}</p>
                 )}
             </div>
 

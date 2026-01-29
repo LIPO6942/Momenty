@@ -281,7 +281,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
                     )}>
-                        <h3 className="font-bold text-lg">{instant.title}</h3>
+                        <h3 className="font-bold text-lg text-gradient-blue">{instant.title}</h3>
                         {instant.description && (
                             <p className="text-sm text-white/80">{instant.description}</p>
                         )}
@@ -314,7 +314,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                     </div>
                     <div className="flex flex-col">
-                        <p className="font-bold text-lg text-foreground leading-tight">{instant.title}</p>
+                        <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue">{instant.title}</p>
                     </div>
                 </div>
 
