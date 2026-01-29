@@ -376,8 +376,19 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         Object.keys(groups).forEach(dayKey => {
             const dayInstants = groups[dayKey].instants;
             const locations = new Set(dayInstants.map(i => i.location).filter(Boolean));
-            const locationString = locations.size > 0
-                ? Array.from(locations).join(', ')
+
+            // Deduplicate location parts (e.g., "Moscou, Russie, Moscou, Russie" -> "Moscou, Russie")
+            const allLocationParts = new Set<string>();
+            locations.forEach(location => {
+                // Split by comma, trim whitespace, and add each part to the set
+                location.split(',').forEach(part => {
+                    const trimmed = part.trim();
+                    if (trimmed) allLocationParts.add(trimmed);
+                });
+            });
+
+            const locationString = allLocationParts.size > 0
+                ? Array.from(allLocationParts).join(', ')
                 : 'Journée sans lieu'; // Fallback if no location
 
             const dayDate = parseISO(dayKey);
