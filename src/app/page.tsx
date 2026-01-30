@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useContext, useMemo, useState, useEffect } from "react";
+import React, { useContext, useMemo, useState, useEffect, Suspense } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -25,7 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
-export default function TimelinePage() {
+function TimelineContent() {
   const { groupedInstants, instants } = useContext(TimelineContext);
   const [firstName, setFirstName] = useState<string | null>(null);
 
@@ -239,5 +238,26 @@ export default function TimelinePage() {
       )
       }
     </div >
+  );
+}
+
+export default function TimelinePage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+        <div className="py-16 space-y-4 text-center">
+          <Skeleton className="h-10 w-3/4 mx-auto" />
+          <Skeleton className="h-6 w-1/2 mx-auto" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      </div>
+    }>
+      <TimelineContent />
+    </Suspense>
   );
 }
