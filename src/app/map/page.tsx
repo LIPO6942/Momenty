@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -221,12 +219,25 @@ export default function MapPage() {
             const coordsCache: { [key: string]: [number, number] } = JSON.parse(localStorage.getItem('coordsCache') || '{}');
             const newCoords: LocationWithCoords[] = [];
 
-            // Helper for geocoding with multiple attempts
-            const geocode = async (query: string): Promise<[number, number] | null> => {
+            // Helper for geocoding with multiple attempts and country validation
+            const geocode = async (query: string, expectedCountry?: string): Promise<[number, number] | null> => {
                 try {
                     const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
                     const data = await response.json();
                     if (data && data.length > 0) {
+                        // Country Guard: Verify match location is in the expected country
+                        if (expectedCountry) {
+                            const result = data[0];
+                            // display_name usually contains the full address including country
+                            const displayName = (result.display_name || "").toLowerCase();
+                            const countryCheck = expectedCountry.toLowerCase();
+
+                            // Basic check: Result must contain the country name
+                            if (!displayName.includes(countryCheck)) {
+                                console.warn(`Geocoding rejected: "${displayName}" does not match country "${expectedCountry}"`);
+                                return null;
+                            }
+                        }
                         return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
                     }
                     return null;
@@ -241,22 +252,34 @@ export default function MapPage() {
                 if (coordsCache[locationKey]) {
                     newCoords.push({ ...location, coords: coordsCache[locationKey] });
                 } else {
-                    // Strategy 1: Try exact name
-                    let coords = await geocode(location.name);
+                    // Extract expected country if available (last part after comma)
+                    let expectedCountry: string | undefined = undefined;
+                    if (location.name.includes(',')) {
+                        const parts = location.name.split(',');
+                        const lastPart = parts[parts.length - 1].trim();
+                        // Assume the last part is the country if it's not empty
+                        if (lastPart.length > 0) {
+                            expectedCountry = lastPart;
+                        }
+                    }
 
-                    // Strategy 2: If failed and has comma, try City + Space + Country (often better than comma for some APIs)
+                    // Strategy 1: Try exact name
+                    let coords = await geocode(location.name, expectedCountry);
+
+                    // Strategy 2: If failed and has comma, try City + Space + Country
                     if (!coords && location.name.includes(',')) {
                         const parts = location.name.split(',').map(s => s.trim());
                         if (parts.length >= 2) {
                             const simplified = `${parts[0]} ${parts[parts.length - 1]}`;
-                            coords = await geocode(simplified);
+                            coords = await geocode(simplified, expectedCountry);
                         }
                     }
 
-                    // Strategy 3: Try just the City (first part)
+                    // Strategy 3: Try just the City (first part) - BUT keep the country guard!
                     if (!coords && location.name.includes(',')) {
                         const city = location.name.split(',')[0].trim();
-                        coords = await geocode(city);
+                        // This ensures "Feija" (Portugal) is rejected if we expect "Tunisie"
+                        coords = await geocode(city, expectedCountry);
                     }
 
                     if (coords) {
@@ -264,7 +287,7 @@ export default function MapPage() {
                         newCoords.push({ ...location, coords });
                     }
 
-                    // Small delay to be nice to the API
+                    // Small delay to respect API usage
                     await new Promise(r => setTimeout(r, 200));
                 }
             }
@@ -495,30 +518,16 @@ export default function MapPage() {
     const handleMarkerClick = (location: LocationWithCoords) => {
         setFocusedLocation(location.coords);
 
-        // Check if location has instants
-        if (location.instants && location.instants.length > 0) {
-            // Sort instants by date (most recent first) to align with timeline view
-            const sortedInstants = [...location.instants].sort((a, b) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime()
-            );
+        // Clean up location name for search (remove obvious country parts if needed, but keeping full name is usually safer for fuzzy match)
+        // We will pass the full name and let the timeline page handle the fuzzy matching
+        const searchName = location.name;
 
-            // Redirect to the first instant (most recent)
-            const targetInstant = sortedInstants[0];
-            router.push(`/?instant=${targetInstant.id}`);
-        } else {
-            // If it's a manual location without instants, show toast
-            if (location.isManual) {
-                toast({
-                    title: location.name,
-                    description: location.souvenir || "Lieu visité (aucun instant associé)"
-                });
-            } else {
-                toast({
-                    title: location.name,
-                    description: "Aucun instant associé à ce lieu."
-                });
-            }
-        }
+        // Redirect with location search parameter
+        // We also pass manual flag to help timeline page decide solely on fallback
+        const isManual = location.isManual ? 'true' : 'false';
+        const souvenir = location.souvenir ? encodeURIComponent(location.souvenir) : '';
+
+        router.push(`/?locationSearch=${encodeURIComponent(searchName)}&isManual=${isManual}&souvenir=${souvenir}`);
     };
 
     const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
@@ -842,67 +851,35 @@ export default function MapPage() {
                                                                             <DialogClose asChild>
                                                                                 <Button variant="ghost">Annuler</Button>
                                                                             </DialogClose>
-                                                                            <Button onClick={handleEditLocation} disabled={isUploading}>Enregistrer</Button>
+                                                                            <Button onClick={handleEditLocation} disabled={isUploading}>Sauvegarder</Button>
                                                                         </DialogFooter>
                                                                     </DialogContent>
                                                                 </Dialog>
                                                             )}
-                                                            {location.isManual && (
-                                                                <AlertDialog>
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <Button variant="destructive" size="icon" className="h-9 w-9">
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </AlertDialogTrigger>
-                                                                    <AlertDialogContent>
-                                                                        <AlertDialogHeader>
-                                                                            <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
-                                                                            <AlertDialogDescription>
-                                                                                Cette action est irréversible. Elle supprimera le lieu ainsi que tous les souvenirs (instants) qui y sont associés.
-                                                                            </AlertDialogDescription>
-                                                                        </AlertDialogHeader>
-                                                                        <AlertDialogFooter>
-                                                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                                            <AlertDialogAction onClick={() => handleDeleteLocation(location.name)}>
-                                                                                Supprimer définitivement
-                                                                            </AlertDialogAction>
-                                                                        </AlertDialogFooter>
-                                                                    </AlertDialogContent>
-                                                                </AlertDialog>
-                                                            )}
+                                                            <Dialog>
+                                                                <DialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Cette action est irréversible. Pour les lieux manuels, cela supprimera le lieu et ses infos.
+                                                                            Pour les lieux générés depuis la timeline, cela supprimera tous les instants associés à ce lieu.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteLocation(location.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                            Supprimer
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </Dialog>
                                                         </div>
                                                     </div>
-
-                                                    {location.souvenir && (
-                                                        <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
-                                                    )}
-
-                                                    {location.photos && location.photos.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2 pt-2">
-                                                            {location.photos.map((photo, index) => (
-                                                                photo && (
-                                                                    <button
-                                                                        key={index}
-                                                                        onClick={() => openImageModal(location.photos || [], index)}
-                                                                        className="relative group"
-                                                                    >
-                                                                        <Image
-                                                                            src={photo}
-                                                                            alt={`Miniature du lieu ${index + 1}`}
-                                                                            width={100}
-                                                                            height={100}
-                                                                            className="rounded-md object-cover h-24 w-24 hover:opacity-90 transition-opacity"
-                                                                        />
-                                                                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 rounded-md transition-opacity flex items-center justify-center">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white">
-                                                                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                                                                            </svg>
-                                                                        </div>
-                                                                    </button>
-                                                                )
-                                                            ))}
-                                                        </div>
-                                                    )}
                                                 </CardHeader>
                                             </Card>
                                         ))}
@@ -914,7 +891,6 @@ export default function MapPage() {
                 )}
             </div>
 
-            {/* Image Modal */}
             <ImageModal
                 isOpen={selectedImageIndex !== null && selectedImages.length > 0}
                 onClose={closeImageModal}
@@ -927,3 +903,4 @@ export default function MapPage() {
         </div>
     );
 }
+
