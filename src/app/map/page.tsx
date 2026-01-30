@@ -472,7 +472,7 @@ export default function MapPage() {
         setIsUploading(true);
         toast({ title: `Téléversement de ${files.length} photo(s)...` });
 
-        const uploadedUrls = [];
+        const uploadedUrls: string[] = [];
         for (const file of Array.from(files)) {
             const formData = new FormData();
             formData.append('file', file);
@@ -812,7 +812,7 @@ export default function MapPage() {
                                                             {(() => {
                                                                 const allPhotos = [
                                                                     ...(location.photos || []),
-                                                                    ...location.instants.flatMap(i => i.photos || [])
+                                                                    ...(location.instants || []).flatMap(i => i.photos || [])
                                                                 ].filter(Boolean);
 
                                                                 if (allPhotos.length > 0) {
