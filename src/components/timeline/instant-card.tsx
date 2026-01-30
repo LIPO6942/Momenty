@@ -240,7 +240,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
     if (validPhotos.length > 0) {
         return (
-            <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
+            <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 <CardHeader className="p-0 relative">
                     <PhotoCollage photos={validPhotos} title={instant.title} displayTransform={instant.displayTransform} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
@@ -307,7 +307,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
     // Card for instants without a photo
     return (
-        <Card className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
+        <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
                 <div className="flex items-start gap-4">
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0", instant.color)}>

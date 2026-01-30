@@ -21,7 +21,7 @@ import { getProfile } from "@/lib/idb";
 import { parseISO, getMonth, getYear, format } from "date-fns";
 import { fr } from 'date-fns/locale';
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
@@ -35,6 +35,7 @@ export default function TimelinePage() {
   const [openDays, setOpenDays] = useState<string[]>([]);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
 
   useEffect(() => {
@@ -77,12 +78,40 @@ export default function TimelinePage() {
 
   useEffect(() => {
     if (instants.length > 0 && !hasSetInitialFilter) {
-      const mostRecentInstantDate = parseISO(instants[0].date);
-      setSelectedYear(getYear(mostRecentInstantDate));
-      setSelectedMonth(-1); // Default to "Voir tout"
-      setHasSetInitialFilter(true);
+      const instantId = searchParams.get('instant');
+      let targetInstant = null;
+
+      if (instantId) {
+        targetInstant = instants.find(i => i.id === instantId);
+      }
+
+      // If we have a target instant from URL, set filter to its date
+      if (targetInstant) {
+        const date = parseISO(targetInstant.date);
+        setSelectedYear(getYear(date));
+        setSelectedMonth(-1); // "Voir tout" to make sure it's visible or handle specific month if preferred
+        setHasSetInitialFilter(true);
+
+        // Wait for render then scroll
+        setTimeout(() => {
+          const element = document.getElementById(`instant-${instantId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+            }, 3000);
+          }
+        }, 500); // Small delay to ensure Accordion is expanded and rendered
+      } else {
+        // Default behavior if no instant param or not found
+        const mostRecentInstantDate = parseISO(instants[0].date);
+        setSelectedYear(getYear(mostRecentInstantDate));
+        setSelectedMonth(-1);
+        setHasSetInitialFilter(true);
+      }
     }
-  }, [instants, hasSetInitialFilter]);
+  }, [instants, hasSetInitialFilter, searchParams]);
 
 
   const filteredGroupedInstants = useMemo(() => {

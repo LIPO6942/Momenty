@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon } from "lucide-react";
 import { useContext, useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { TimelineContext } from "@/context/timeline-context";
 import {
     Dialog,
@@ -57,7 +58,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { InstantSidebar } from "@/components/timeline/instant-sidebar";
+// InstantSidebar removed
+
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -79,6 +81,7 @@ export default function MapPage() {
     const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
     const { user } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
@@ -89,9 +92,8 @@ export default function MapPage() {
     const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
-    // Sidebar states
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [selectedLocation, setSelectedLocation] = useState<LocationWithCoords | null>(null);
+    // Sidebar states removed
+
 
     // State for Add Dialog
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -463,9 +465,32 @@ export default function MapPage() {
     }
 
     const handleMarkerClick = (location: LocationWithCoords) => {
-        setSelectedLocation(location);
-        setIsSidebarOpen(true);
         setFocusedLocation(location.coords);
+
+        // Check if location has instants
+        if (location.instants && location.instants.length > 0) {
+            // Sort instants by date (most recent first) to align with timeline view
+            const sortedInstants = [...location.instants].sort((a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+            // Redirect to the first instant (most recent)
+            const targetInstant = sortedInstants[0];
+            router.push(`/?instant=${targetInstant.id}`);
+        } else {
+            // If it's a manual location without instants, show toast
+            if (location.isManual) {
+                toast({
+                    title: location.name,
+                    description: location.souvenir || "Lieu visité (aucun instant associé)"
+                });
+            } else {
+                toast({
+                    title: location.name,
+                    description: "Aucun instant associé à ce lieu."
+                });
+            }
+        }
     };
 
     const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
@@ -870,14 +895,7 @@ export default function MapPage() {
             />
 
             {/* Instant Sidebar */}
-            <InstantSidebar
-                location={selectedLocation?.name || ""}
-                instants={selectedLocation?.instants || []}
-                souvenir={selectedLocation?.souvenir}
-                photos={selectedLocation?.photos}
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
+            {/* InstantSidebar removed */}
         </div>
     );
 }
