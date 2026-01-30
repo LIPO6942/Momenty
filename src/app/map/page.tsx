@@ -873,6 +873,8 @@ export default function MapPage() {
             <InstantSidebar
                 location={selectedLocation?.name || ""}
                 instants={selectedLocation?.instants || []}
+                souvenir={selectedLocation?.souvenir}
+                photos={selectedLocation?.photos}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
