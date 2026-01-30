@@ -221,23 +221,51 @@ export default function MapPage() {
             const coordsCache: { [key: string]: [number, number] } = JSON.parse(localStorage.getItem('coordsCache') || '{}');
             const newCoords: LocationWithCoords[] = [];
 
+            // Helper for geocoding with multiple attempts
+            const geocode = async (query: string): Promise<[number, number] | null> => {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                    }
+                    return null;
+                } catch (error) {
+                    console.error(`Geocoding failed for ${query}`, error);
+                    return null;
+                }
+            };
+
             for (const location of allLocations) {
                 const locationKey = location.name.toLowerCase();
                 if (coordsCache[locationKey]) {
                     newCoords.push({ ...location, coords: coordsCache[locationKey] });
                 } else {
-                    try {
-                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location.name)}&format=json&limit=1`);
-                        const data = await response.json();
-                        if (data && data.length > 0) {
-                            const { lat, lon } = data[0];
-                            const coords: [number, number] = [parseFloat(lat), parseFloat(lon)];
-                            coordsCache[locationKey] = coords;
-                            newCoords.push({ ...location, coords });
+                    // Strategy 1: Try exact name
+                    let coords = await geocode(location.name);
+
+                    // Strategy 2: If failed and has comma, try City + Space + Country (often better than comma for some APIs)
+                    if (!coords && location.name.includes(',')) {
+                        const parts = location.name.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            const simplified = `${parts[0]} ${parts[parts.length - 1]}`;
+                            coords = await geocode(simplified);
                         }
-                    } catch (error) {
-                        console.error(`Failed to geocode ${location.name}:`, error);
                     }
+
+                    // Strategy 3: Try just the City (first part)
+                    if (!coords && location.name.includes(',')) {
+                        const city = location.name.split(',')[0].trim();
+                        coords = await geocode(city);
+                    }
+
+                    if (coords) {
+                        coordsCache[locationKey] = coords;
+                        newCoords.push({ ...location, coords });
+                    }
+
+                    // Small delay to be nice to the API
+                    await new Promise(r => setTimeout(r, 200));
                 }
             }
 
