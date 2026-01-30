@@ -598,6 +598,24 @@ export default function MapPage() {
                 </CardContent>
             </Card>
 
+            {/* Confirmation Dialog for Marker Click */}
+            <AlertDialog open={!!locationToRedirect} onOpenChange={(open) => !open && setLocationToRedirect(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{locationToRedirect?.name}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Souhaitez-vous voir les souvenirs associés à ce lieu dans votre journal ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRedirection}>
+                            Voir les souvenirs
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div className="mb-8">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
