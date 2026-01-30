@@ -518,7 +518,15 @@ export default function MapPage() {
 
     const handleMarkerClick = (location: LocationWithCoords) => {
         setFocusedLocation(location.coords);
-        setLocationToRedirect(location);
+        if (location.count > 0) {
+            setLocationToRedirect(location);
+        } else {
+            // Just show info for manual locations without instants
+            toast({
+                title: location.name,
+                description: location.souvenir || "Lieu enregistré (aucun souvenir associé)",
+            });
+        }
     };
 
     const confirmRedirection = () => {
