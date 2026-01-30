@@ -85,6 +85,7 @@ export default function MapPage() {
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const [focusedLocation, setFocusedLocation] = useState<[number, number] | null>(null);
+    const [locationToRedirect, setLocationToRedirect] = useState<LocationWithCoords | null>(null);
 
     // Filter states
     const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
@@ -517,7 +518,13 @@ export default function MapPage() {
 
     const handleMarkerClick = (location: LocationWithCoords) => {
         setFocusedLocation(location.coords);
+        setLocationToRedirect(location);
+    };
 
+    const confirmRedirection = () => {
+        if (!locationToRedirect) return;
+
+        const location = locationToRedirect;
         // Clean up location name for search (remove obvious country parts if needed, but keeping full name is usually safer for fuzzy match)
         // We will pass the full name and let the timeline page handle the fuzzy matching
         const searchName = location.name;
@@ -528,6 +535,7 @@ export default function MapPage() {
         const souvenir = location.souvenir ? encodeURIComponent(location.souvenir) : '';
 
         router.push(`/?locationSearch=${encodeURIComponent(searchName)}&isManual=${isManual}&souvenir=${souvenir}`);
+        setLocationToRedirect(null);
     };
 
     const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
