@@ -141,6 +141,7 @@ export interface LocationWithCoords extends ManualLocation {
     count: number;
     isManual: boolean;
     coords: [number, number];
+    instants?: Instant[]; // Timeline instants associated with this location
 }
 
 export interface AuthContextType {
