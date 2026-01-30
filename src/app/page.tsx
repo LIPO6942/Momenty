@@ -22,6 +22,8 @@ import { fr } from 'date-fns/locale';
 import { useAuth } from "@/context/auth-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import stringSimilarity from "string-similarity";
+import { useToast } from "@/components/ui/use-toast";
 
 
 function TimelineContent() {
@@ -35,6 +37,7 @@ function TimelineContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
 
   useEffect(() => {
@@ -78,10 +81,50 @@ function TimelineContent() {
   useEffect(() => {
     if (instants.length > 0 && !hasSetInitialFilter) {
       const instantId = searchParams.get('instant');
+      const locationSearch = searchParams.get('locationSearch');
+      const isManual = searchParams.get('isManual') === 'true';
+      const souvenir = searchParams.get('souvenir');
+
       let targetInstant = null;
 
       if (instantId) {
         targetInstant = instants.find(i => i.id === instantId);
+      } else if (locationSearch) {
+        // Fuzzy search logic
+        const normalizedSearch = locationSearch.toLowerCase();
+
+        // 1. Try exact or partial match on location field
+        targetInstant = instants.find(i => {
+          const loc = (i.location || "").toLowerCase();
+          return loc.includes(normalizedSearch) || normalizedSearch.includes(loc);
+        });
+
+        // 2. If not found, try fuzzy match on location and title
+        if (!targetInstant) {
+          const candidates = instants.map(i => {
+            const loc = i.location || "";
+            const title = i.title || "";
+            const locScore = stringSimilarity.compareTwoStrings(loc.toLowerCase(), normalizedSearch);
+            const titleScore = stringSimilarity.compareTwoStrings(title.toLowerCase(), normalizedSearch);
+            return { instant: i, score: Math.max(locScore, titleScore) };
+          });
+
+          // Sort by score descending
+          candidates.sort((a, b) => b.score - a.score);
+
+          // Take the best match if confidence is high enough (e.g., > 0.4)
+          if (candidates.length > 0 && candidates[0].score > 0.4) {
+            targetInstant = candidates[0].instant;
+          }
+        }
+
+        // If still not found and it's a manual location, show toast
+        if (!targetInstant) {
+          toast({
+            title: locationSearch,
+            description: souvenir ? decodeURIComponent(souvenir) : "Lieu visité (aucun instant associé trouvé)"
+          });
+        }
       }
 
       // If we have a target instant from URL, set filter to its date
@@ -93,7 +136,7 @@ function TimelineContent() {
 
         // Wait for render then scroll
         setTimeout(() => {
-          const element = document.getElementById(`instant-${instantId}`);
+          const element = document.getElementById(`instant-${targetInstant.id}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
@@ -102,8 +145,8 @@ function TimelineContent() {
             }, 3000);
           }
         }, 500); // Small delay to ensure Accordion is expanded and rendered
-      } else {
-        // Default behavior if no instant param or not found
+      } else if (!hasSetInitialFilter) {
+        // Default behavior if no instant matched (and we haven't set filter yet)
         const mostRecentInstantDate = parseISO(instants[0].date);
         setSelectedYear(getYear(mostRecentInstantDate));
         setSelectedMonth(-1);
