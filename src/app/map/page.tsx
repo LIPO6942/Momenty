@@ -882,12 +882,12 @@ export default function MapPage() {
                                                                     </DialogContent>
                                                                 </Dialog>
                                                             )}
-                                                            <Dialog>
-                                                                <DialogTrigger asChild>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
                                                                     <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive">
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>
-                                                                </DialogTrigger>
+                                                                </AlertDialogTrigger>
                                                                 <AlertDialogContent>
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
@@ -903,7 +903,7 @@ export default function MapPage() {
                                                                         </AlertDialogAction>
                                                                     </AlertDialogFooter>
                                                                 </AlertDialogContent>
-                                                            </Dialog>
+                                                            </AlertDialog>
                                                         </div>
                                                     </div>
                                                 </CardHeader>
