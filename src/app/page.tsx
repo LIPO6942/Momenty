@@ -31,7 +31,7 @@ function TimelineContent() {
   const [firstName, setFirstName] = useState<string | null>(null);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(-1); // -1 for "Toutes les années"
   const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
   const [openDays, setOpenDays] = useState<string[]>([]);
   const { user, loading } = useAuth();
@@ -175,7 +175,7 @@ function TimelineContent() {
     return Object.entries(groupedInstants)
       .filter(([dayKey]) => {
         const date = parseISO(dayKey);
-        const isYearMatch = getYear(date) === selectedYear;
+        const isYearMatch = selectedYear === -1 || getYear(date) === selectedYear;
         const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
         return isYearMatch && isMonthMatch;
       })
@@ -236,6 +236,7 @@ function TimelineContent() {
             <SelectValue placeholder="Année" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={String(-1)}>Toutes les années</SelectItem>
             {availableFilters.years.map(year => (
               <SelectItem key={year} value={String(year)}>{year}</SelectItem>
             ))}
@@ -245,7 +246,7 @@ function TimelineContent() {
         <Select
           value={String(selectedMonth)}
           onValueChange={(val) => setSelectedMonth(Number(val))}
-          disabled={!availableFilters.months[selectedYear]}
+          disabled={selectedYear !== -1 && !availableFilters.months[selectedYear]}
         >
           <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
             <SelectValue placeholder="Mois" />

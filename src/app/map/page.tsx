@@ -89,7 +89,7 @@ export default function MapPage() {
 
     // Filter states
     const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [selectedYear, setSelectedYear] = useState<number>(-1); // -1 for "Toutes les années"
 
     // Sidebar states removed
 
