@@ -82,7 +82,6 @@ function TimelineContent() {
     if (instants.length > 0 && !hasSetInitialFilter) {
       const instantId = searchParams.get('instant');
       const locationSearch = searchParams.get('locationSearch');
-      const isManual = searchParams.get('isManual') === 'true';
       const souvenir = searchParams.get('souvenir');
 
       let targetInstant = null;
@@ -90,35 +89,51 @@ function TimelineContent() {
       if (instantId) {
         targetInstant = instants.find(i => i.id === instantId);
       } else if (locationSearch) {
-        // Fuzzy search logic
-        const normalizedSearch = locationSearch.toLowerCase();
+        // Advanced Cascade Matching Strategy
+        const normalizedFullSearch = locationSearch.toLowerCase();
+        const searchParts = normalizedFullSearch.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const mainCity = searchParts.length > 0 ? searchParts[0] : normalizedFullSearch;
 
-        // 1. Try exact or partial match on location field
+        // 1. Priority: City Match (The first part of the location string)
+        // Check if instant location contains the city name
         targetInstant = instants.find(i => {
           const loc = (i.location || "").toLowerCase();
-          return loc.includes(normalizedSearch) || normalizedSearch.includes(loc);
+          // Strict check for city at the start or distinct word to avoid false positives
+          return loc.includes(mainCity);
         });
 
-        // 2. If not found, try fuzzy match on location and title
+        // 2. Fallback: Component & Content Match Scoring
         if (!targetInstant) {
           const candidates = instants.map(i => {
-            const loc = i.location || "";
-            const title = i.title || "";
-            const locScore = stringSimilarity.compareTwoStrings(loc.toLowerCase(), normalizedSearch);
-            const titleScore = stringSimilarity.compareTwoStrings(title.toLowerCase(), normalizedSearch);
-            return { instant: i, score: Math.max(locScore, titleScore) };
+            const loc = (i.location || "").toLowerCase();
+            const title = (i.title || "").toLowerCase();
+            const desc = (i.description || "").toLowerCase();
+            let score = 0;
+
+            // Check match for each part of the search string (e.g. "Lombok", "Indonesia")
+            searchParts.forEach(part => {
+              if (loc.includes(part)) score += 10;      // High relevance if in location
+              if (title.includes(part)) score += 5;     // Medium relevance if in title
+              if (desc.includes(part)) score += 3;      // Lower relevance if in description
+            });
+
+            // Add fuzzy similarity bonus for the full string on location matches
+            const locSimilarity = stringSimilarity.compareTwoStrings(loc, normalizedFullSearch);
+            if (locSimilarity > 0.4) score += locSimilarity * 5;
+
+            return { instant: i, score };
           });
 
           // Sort by score descending
           candidates.sort((a, b) => b.score - a.score);
 
-          // Take the best match if confidence is high enough (e.g., > 0.4)
-          if (candidates.length > 0 && candidates[0].score > 0.4) {
+          // Threshold: We need at least some match
+          if (candidates.length > 0 && candidates[0].score > 2) {
             targetInstant = candidates[0].instant;
           }
         }
 
-        // If still not found and it's a manual location, show toast
+        // If still not found, show toast
         if (!targetInstant) {
           toast({
             title: locationSearch,
@@ -153,7 +168,7 @@ function TimelineContent() {
         setHasSetInitialFilter(true);
       }
     }
-  }, [instants, hasSetInitialFilter, searchParams]);
+  }, [instants, hasSetInitialFilter, searchParams, toast]);
 
 
   const filteredGroupedInstants = useMemo(() => {
