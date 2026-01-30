@@ -169,7 +169,7 @@ export default function MapPage() {
     const filteredInstants = useMemo(() => {
         return instants.filter(instant => {
             const date = parseISO(instant.date);
-            const isYearMatch = getYear(date) === selectedYear;
+            const isYearMatch = selectedYear === -1 || getYear(date) === selectedYear;
             const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
             return isYearMatch && isMonthMatch;
         });
@@ -567,10 +567,11 @@ export default function MapPage() {
                         }}
                         disabled={availableFilters.years.length === 0}
                     >
-                        <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
+                        <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground min-w-[140px]">
                             <SelectValue placeholder="Année" />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value={String(-1)}>Toutes les années</SelectItem>
                             {availableFilters.years.map(year => (
                                 <SelectItem key={year} value={String(year)}>{year}</SelectItem>
                             ))}
@@ -580,7 +581,7 @@ export default function MapPage() {
                     <Select
                         value={String(selectedMonth)}
                         onValueChange={(val) => setSelectedMonth(Number(val))}
-                        disabled={!availableFilters.months[selectedYear]}
+                        disabled={selectedYear !== -1 && !availableFilters.months[selectedYear]}
                     >
                         <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
                             <SelectValue placeholder="Mois" />
@@ -807,6 +808,43 @@ export default function MapPage() {
                                                             {location.isManual && location.startDate && (
                                                                 <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
                                                             )}
+                                                            {/* Photo Gallery Restoration */}
+                                                            {(() => {
+                                                                const allPhotos = [
+                                                                    ...(location.photos || []),
+                                                                    ...location.instants.flatMap(i => i.photos || [])
+                                                                ].filter(Boolean);
+
+                                                                if (allPhotos.length > 0) {
+                                                                    return (
+                                                                        <div className="flex flex-wrap gap-2 mt-4">
+                                                                            {allPhotos.slice(0, 10).map((photo, pIdx) => (
+                                                                                <div
+                                                                                    key={pIdx}
+                                                                                    className="relative w-16 h-16 rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                                                                                    onClick={() => openImageModal(allPhotos, pIdx)}
+                                                                                >
+                                                                                    <Image
+                                                                                        src={photo}
+                                                                                        alt={`Photo ${pIdx + 1} de ${location.name}`}
+                                                                                        fill
+                                                                                        className="object-cover"
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                            {allPhotos.length > 10 && (
+                                                                                <div
+                                                                                    className="w-16 h-16 rounded-md bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground cursor-pointer"
+                                                                                    onClick={() => openImageModal(allPhotos, 10)}
+                                                                                >
+                                                                                    +{allPhotos.length - 10}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
                                                         </div>
                                                         <div className="flex items-center gap-2 flex-shrink-0 w-full justify-end sm:w-auto">
                                                             <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)} className="flex-grow sm:flex-grow-0">
