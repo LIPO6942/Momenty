@@ -25,10 +25,17 @@ export async function POST(request: Request) {
             );
         }
 
+        // Determine category: explicitly handle empty/null as 'restaurants'
+        // If the user didn't select a place from the list (manual entry), it defaults to 'restaurants'
+        // unless they manually selected another type (which we don't have UI for in Dish mode yet besides implicit)
+        const finalCategory = category || 'restaurants';
+
+        console.log(`[Sync Kol Youm] Processing request for: ${placeName} (${finalCategory})`);
+
         const payload = {
             userEmail: cleanEmail,
             placeName,
-            category: category || 'restaurants',
+            category: finalCategory,
             cityName,
             dishName,
             date: date || Date.now(),
