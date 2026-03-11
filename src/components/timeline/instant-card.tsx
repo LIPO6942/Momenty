@@ -64,7 +64,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                             <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={index}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
@@ -88,7 +88,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-2">
                             <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={0}
                                 alt={`${title} 1`}
                                 width={t.w}
@@ -107,7 +107,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1">
                             <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={1}
                                 alt={`${title} 2`}
                                 width={t.w}
@@ -126,7 +126,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1">
                             <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={2}
                                 alt={`${title} 3`}
                                 width={t.w}
@@ -151,7 +151,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                             <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={index}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
@@ -178,7 +178,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-2">
                             <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={0}
                                 alt={`${title} 1`}
                                 width={t.w}
@@ -197,7 +197,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1 relative">
                             <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={1}
                                 alt={`${title} 2`}
                                 width={t.w}
@@ -216,7 +216,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1 relative">
                             <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
-                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 initialIndex={2}
                                 alt={`${title} 3`}
                                 width={t.w}
