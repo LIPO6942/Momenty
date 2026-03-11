@@ -84,7 +84,7 @@ export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
   const [date, setDate] = useState(dishToEdit.date);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
-  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
 
   // Kol Youm API State
@@ -109,7 +109,7 @@ export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
       setDate(dishToEdit.date);
       setCity(dishToEdit.city || "");
       setDisplayPreset(dishToEdit.displayTransform?.preset ?? 'landscape');
-      setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fill');
+      setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(dishToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, dishToEdit]);
@@ -240,7 +240,7 @@ export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
       setEmotions(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
       setDate(dishToEdit.date);
       setDisplayPreset(dishToEdit.displayTransform?.preset ?? 'landscape');
-      setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fill');
+      setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(dishToEdit.displayTransform?.gravity ?? 'auto');
     }
     setIsLoading(false);

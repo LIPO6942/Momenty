@@ -69,7 +69,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
   const [date, setDate] = useState(accommodationToEdit.date);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
-  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
   
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
         setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
-        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, accommodationToEdit]);
@@ -181,7 +181,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
         setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
-        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
     }
     setIsLoading(false);

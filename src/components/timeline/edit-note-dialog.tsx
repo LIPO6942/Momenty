@@ -86,7 +86,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [isMultiSelect, setIsMultiSelect] = useState(true); // Always allow multi-select in edit mode
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
-  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setDate(instantToEdit.date);
       setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
       setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
-      setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fill');
+      setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, instantToEdit]);
@@ -244,7 +244,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setDate(instantToEdit.date);
     setCategories(Array.isArray(instantToEdit.category) ? instantToEdit.category : (instantToEdit.category ? [instantToEdit.category] : []));
     setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
-    setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fill');
+    setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
     setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
     setIsAnalyzing(false);
     setIsImprovingText(false);
