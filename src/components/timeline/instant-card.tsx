@@ -37,29 +37,35 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
         switch (photoCount) {
             case 1:
                 return (
-                    <ImageLightbox
-                        src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
-                        alt={title}
-                        width={t.w}
-                        height={t.h}
-                    >
-                        <Image
+                    <div className="max-h-[600px] sm:max-h-[70vh] w-full flex items-center justify-center bg-black/5 overflow-hidden">
+                        <ImageLightbox
                             src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                            photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                            initialIndex={0}
                             alt={title}
                             width={t.w}
                             height={t.h}
-                            className="w-full h-full object-cover rounded-t-xl"
-                            data-ai-hint="travel photo"
-                        />
-                    </ImageLightbox>
+                        >
+                            <Image
+                                src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                alt={title}
+                                width={t.w}
+                                height={t.h}
+                                className="w-full h-auto max-h-[600px] sm:max-h-[70vh] object-contain md:object-cover md:h-[450px]"
+                                data-ai-hint="travel photo"
+                            />
+                        </ImageLightbox>
+                    </div>
                 );
             case 2:
                 return (
-                    <div className="grid grid-cols-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 gap-1 h-[450px] w-full">
                         {photos.map((photo, index) => (
                             <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={index}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
@@ -69,7 +75,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} ${index + 1}`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover first:rounded-l-xl last:rounded-r-xl"
+                                    className="w-full h-full object-cover first:rounded-tl-xl last:rounded-tr-xl"
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -78,10 +84,12 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
             case 3:
                 return (
-                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full">
                         <div className="col-span-1 row-span-2">
                             <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={0}
                                 alt={`${title} 1`}
                                 width={t.w}
                                 height={t.h}
@@ -91,7 +99,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 1`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover rounded-l-xl"
+                                    className="w-full h-full object-cover rounded-tl-xl"
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -99,6 +107,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1">
                             <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={1}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -116,6 +126,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1">
                             <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={2}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -125,7 +137,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 3`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover rounded-br-xl"
+                                    className="w-full h-full object-cover"
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -134,11 +146,13 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
             case 4:
                 return (
-                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full">
                         {photos.map((photo, index) => (
                             <ImageLightbox
                                 key={index}
                                 src={clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={index}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
@@ -150,9 +164,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     height={t.h}
                                     className={cn("w-full h-full object-cover",
                                         index === 0 && "rounded-tl-xl",
-                                        index === 1 && "rounded-tr-xl",
-                                        index === 2 && "rounded-bl-xl",
-                                        index === 3 && "rounded-br-xl",
+                                        index === 1 && "rounded-tr-xl"
                                     )}
                                     data-ai-hint="travel photo"
                                 />
@@ -162,10 +174,12 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                 );
             default: // 5+ photos
                 return (
-                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full">
                         <div className="col-span-1 row-span-2">
                             <ImageLightbox
                                 src={clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={0}
                                 alt={`${title} 1`}
                                 width={t.w}
                                 height={t.h}
@@ -175,7 +189,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 1`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover rounded-l-xl"
+                                    className="w-full h-full object-cover rounded-tl-xl"
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -183,6 +197,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1 relative">
                             <ImageLightbox
                                 src={clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={1}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -200,6 +216,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                         <div className="col-span-1 row-span-1 relative">
                             <ImageLightbox
                                 src={clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g })}
+                                photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit", g: "auto" }))}
+                                initialIndex={2}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -209,12 +227,12 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 3`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover rounded-br-xl"
+                                    className="w-full h-full object-cover"
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
                             {photos.length > 3 && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-br-xl pointer-events-none">
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
                                     <span className="text-white text-2xl font-bold">+{photos.length - 3}</span>
                                 </div>
                             )}
@@ -224,7 +242,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
         }
     };
 
-    return <div className="h-[450px] w-full">{renderGrid()}</div>
+    return <div className="w-full">{renderGrid()}</div>
 }
 
 
