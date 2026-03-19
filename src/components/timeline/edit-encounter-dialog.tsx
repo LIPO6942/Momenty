@@ -69,7 +69,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(encounterToEdit.emotion) ? encounterToEdit.emotion : (encounterToEdit.emotion ? [encounterToEdit.emotion] : []));
   const [date, setDate] = useState(encounterToEdit.date);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
-  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fill');
+  const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
   
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
         setEmotions(Array.isArray(encounterToEdit.emotion) ? encounterToEdit.emotion : (encounterToEdit.emotion ? [encounterToEdit.emotion] : []));
         setDate(encounterToEdit.date);
         setDisplayPreset(encounterToEdit.displayTransform?.preset ?? 'landscape');
-        setDisplayCrop(encounterToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayCrop(encounterToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(encounterToEdit.displayTransform?.gravity ?? 'auto');
     }
   }, [open, encounterToEdit]);
@@ -181,7 +181,7 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
         setEmotions(Array.isArray(encounterToEdit.emotion) ? encounterToEdit.emotion : (encounterToEdit.emotion ? [encounterToEdit.emotion] : []));
         setDate(encounterToEdit.date);
         setDisplayPreset(encounterToEdit.displayTransform?.preset ?? 'landscape');
-        setDisplayCrop(encounterToEdit.displayTransform?.crop ?? 'fill');
+        setDisplayCrop(encounterToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(encounterToEdit.displayTransform?.gravity ?? 'auto');
     }
     setIsLoading(false);

@@ -1,25 +1,24 @@
-
-
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon } from "lucide-react";
 import { useContext, useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { TimelineContext } from "@/context/timeline-context";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, getMonth, getYear } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getManualLocations, saveManualLocations, type ManualLocation } from "@/lib/firestore";
 import dynamic from 'next/dynamic';
@@ -50,6 +49,15 @@ import {
 } from "@/components/ui/accordion";
 import { useAuth } from "@/context/auth-context";
 import { ImageModal } from "@/components/ui/image-modal";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+// InstantSidebar removed
+
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -71,11 +79,20 @@ export default function MapPage() {
     const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
     const { user } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
     const [manualLocations, setManualLocations] = useState<ManualLocation[]>([]);
     const [locationsWithCoords, setLocationsWithCoords] = useState<LocationWithCoords[]>([]);
     const [isLoadingCoords, setIsLoadingCoords] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const [focusedLocation, setFocusedLocation] = useState<[number, number] | null>(null);
+    const [locationToRedirect, setLocationToRedirect] = useState<LocationWithCoords | null>(null);
+
+    // Filter states
+    const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
+    const [selectedYear, setSelectedYear] = useState<number>(-1); // -1 for "Toutes les années"
+
+    // Sidebar states removed
+
 
     // State for Add Dialog
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -100,7 +117,7 @@ export default function MapPage() {
         setSelectedImageIndex(null);
         setSelectedImages([]);
     };
-    
+
     // State for Edit Dialog
     const [editingLocation, setEditingLocation] = useState<ManualLocation | null>(null);
     const [editedName, setEditedName] = useState("");
@@ -118,20 +135,72 @@ export default function MapPage() {
 
     useEffect(() => {
         setIsMounted(true);
-        if(user) {
+        if (user) {
             reloadManualLocations();
         }
     }, [user]);
 
     const instantLocations = useMemo(() => Array.from(new Set(instants.map(i => i.location))), [instants]);
 
-    const allLocations = useMemo(() => {
-        const combined = new Map<string, { name: string, startDate?: string, endDate?: string, photos?: string[], souvenir?: string }>();
+    // Available filters based on instants
+    const availableFilters = useMemo(() => {
+        const years = new Set<number>();
+        const months: { [year: number]: Set<number> } = {};
 
-        manualLocations.forEach(l => combined.set(l.name.toLowerCase(), l));
-        instantLocations.forEach(location => {
-            if (!combined.has(location.toLowerCase())) {
-                combined.set(location.toLowerCase(), { name: location });
+        instants.forEach(instant => {
+            const date = parseISO(instant.date);
+            const year = getYear(date);
+            const month = getMonth(date);
+
+            years.add(year);
+            if (!months[year]) {
+                months[year] = new Set<number>();
+            }
+            months[year].add(month);
+        });
+
+        return {
+            years: Array.from(years).sort((a, b) => b - a),
+            months,
+        }
+    }, [instants]);
+
+    // Filter instants by year and month
+    const filteredInstants = useMemo(() => {
+        return instants.filter(instant => {
+            const date = parseISO(instant.date);
+            const isYearMatch = selectedYear === -1 || getYear(date) === selectedYear;
+            const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
+            return isYearMatch && isMonthMatch;
+        });
+    }, [instants, selectedMonth, selectedYear]);
+
+    const allLocations = useMemo(() => {
+        const combined = new Map<string, {
+            name: string,
+            startDate?: string,
+            endDate?: string,
+            photos?: string[],
+            souvenir?: string,
+            instants: typeof instants
+        }>();
+
+        // Add manual locations
+        manualLocations.forEach(l => combined.set(l.name.toLowerCase(), {
+            ...l,
+            instants: []
+        }));
+
+        // Group filtered instants by location
+        filteredInstants.forEach(instant => {
+            const key = instant.location.toLowerCase();
+            if (combined.has(key)) {
+                combined.get(key)!.instants.push(instant);
+            } else {
+                combined.set(key, {
+                    name: instant.location,
+                    instants: [instant]
+                });
             }
         });
 
@@ -139,38 +208,91 @@ export default function MapPage() {
             const isManual = manualLocations.some(ml => ml.name.toLowerCase() === location.name.toLowerCase());
             return {
                 ...location,
-                count: instants.filter(i => i.location === location.name).length,
+                count: location.instants.length,
                 isManual
             }
         }).sort((a, b) => b.count - a.count);
-    }, [instantLocations, manualLocations, instants]);
+    }, [manualLocations, filteredInstants]);
 
     useEffect(() => {
         const fetchCoordinates = async () => {
             setIsLoadingCoords(true);
-            const coordsCache: {[key: string]: [number, number]} = JSON.parse(localStorage.getItem('coordsCache') || '{}');
+            const coordsCache: { [key: string]: [number, number] } = JSON.parse(localStorage.getItem('coordsCache') || '{}');
             const newCoords: LocationWithCoords[] = [];
+
+            // Helper for geocoding with multiple attempts and country validation
+            const geocode = async (query: string, expectedCountry?: string): Promise<[number, number] | null> => {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        // Country Guard: Verify match location is in the expected country
+                        if (expectedCountry) {
+                            const result = data[0];
+                            // display_name usually contains the full address including country
+                            const displayName = (result.display_name || "").toLowerCase();
+                            const countryCheck = expectedCountry.toLowerCase();
+
+                            // Basic check: Result must contain the country name
+                            if (!displayName.includes(countryCheck)) {
+                                console.warn(`Geocoding rejected: "${displayName}" does not match country "${expectedCountry}"`);
+                                return null;
+                            }
+                        }
+                        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                    }
+                    return null;
+                } catch (error) {
+                    console.error(`Geocoding failed for ${query}`, error);
+                    return null;
+                }
+            };
 
             for (const location of allLocations) {
                 const locationKey = location.name.toLowerCase();
                 if (coordsCache[locationKey]) {
                     newCoords.push({ ...location, coords: coordsCache[locationKey] });
                 } else {
-                    try {
-                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location.name)}&format=json&limit=1`);
-                        const data = await response.json();
-                        if (data && data.length > 0) {
-                            const { lat, lon } = data[0];
-                            const coords: [number, number] = [parseFloat(lat), parseFloat(lon)];
-                            coordsCache[locationKey] = coords;
-                            newCoords.push({ ...location, coords });
+                    // Extract expected country if available (last part after comma)
+                    let expectedCountry: string | undefined = undefined;
+                    if (location.name.includes(',')) {
+                        const parts = location.name.split(',');
+                        const lastPart = parts[parts.length - 1].trim();
+                        // Assume the last part is the country if it's not empty
+                        if (lastPart.length > 0) {
+                            expectedCountry = lastPart;
                         }
-                    } catch (error) {
-                        console.error(`Failed to geocode ${location.name}:`, error);
                     }
+
+                    // Strategy 1: Try exact name
+                    let coords = await geocode(location.name, expectedCountry);
+
+                    // Strategy 2: If failed and has comma, try City + Space + Country
+                    if (!coords && location.name.includes(',')) {
+                        const parts = location.name.split(',').map(s => s.trim());
+                        if (parts.length >= 2) {
+                            const simplified = `${parts[0]} ${parts[parts.length - 1]}`;
+                            coords = await geocode(simplified, expectedCountry);
+                        }
+                    }
+
+                    // Strategy 3: Try just the City (first part) - BUT keep the country guard!
+                    if (!coords && location.name.includes(',')) {
+                        const city = location.name.split(',')[0].trim();
+                        // This ensures "Feija" (Portugal) is rejected if we expect "Tunisie"
+                        coords = await geocode(city, expectedCountry);
+                    }
+
+                    if (coords) {
+                        coordsCache[locationKey] = coords;
+                        newCoords.push({ ...location, coords });
+                    }
+
+                    // Small delay to respect API usage
+                    await new Promise(r => setTimeout(r, 200));
                 }
             }
-            
+
             localStorage.setItem('coordsCache', JSON.stringify(coordsCache));
             setLocationsWithCoords(newCoords);
             setIsLoadingCoords(false);
@@ -194,7 +316,7 @@ export default function MapPage() {
             }
             grouped[country].push(location);
         });
-        
+
         const orderedGrouped: { [country: string]: LocationWithCoords[] } = {};
         Object.keys(grouped).sort((a, b) => {
             if (a === 'Lieux non classés') return 1;
@@ -226,7 +348,7 @@ export default function MapPage() {
             setNewCities(updatedCities);
         }
     };
-    
+
 
     const handleAddLocations = async () => {
         if (!user) return;
@@ -258,21 +380,21 @@ export default function MapPage() {
                 if (newStartDate) locationToAdd.startDate = newStartDate;
                 if (newEndDate) locationToAdd.endDate = newEndDate;
                 if (newSouvenir) locationToAdd.souvenir = newSouvenir;
-                
+
                 newManualLocations.push(locationToAdd);
             }
         });
 
         if (hasError) return;
-        
+
         const currentLocations = await getManualLocations(user.uid);
         const updatedManualLocations = [...currentLocations, ...newManualLocations];
-        
+
         await saveManualLocations(user.uid, updatedManualLocations);
         await reloadManualLocations();
 
         toast({ title: "Lieu(x) ajouté(s) !" });
-        
+
         setNewCountry("");
         setNewCities([""]);
         setNewStartDate("");
@@ -294,7 +416,7 @@ export default function MapPage() {
 
     const handleEditLocation = async () => {
         if (!editingLocation || !user) return;
-        
+
         const finalName = editedName.trim();
         if (!finalName) {
             toast({ variant: "destructive", title: "Le nom du lieu ne peut pas être vide." });
@@ -310,14 +432,14 @@ export default function MapPage() {
 
         const updatedLocations = currentLocations.map(loc => {
             if (loc.name === editingLocation.name) {
-                 const updatedLoc: ManualLocation = {
+                const updatedLoc: ManualLocation = {
                     name: finalName,
                     photos: editedPhotos,
-                 };
-                 if(editedStartDate) updatedLoc.startDate = editedStartDate;
-                 if(editedEndDate) updatedLoc.endDate = editedEndDate;
-                 if(editedSouvenir) updatedLoc.souvenir = editedSouvenir;
-                 return updatedLoc;
+                };
+                if (editedStartDate) updatedLoc.startDate = editedStartDate;
+                if (editedEndDate) updatedLoc.endDate = editedEndDate;
+                if (editedSouvenir) updatedLoc.souvenir = editedSouvenir;
+                return updatedLoc;
             }
             return loc;
         });
@@ -325,19 +447,19 @@ export default function MapPage() {
 
         await saveManualLocations(user.uid, updatedLocations);
         await reloadManualLocations();
-        
+
         toast({ title: "Lieu mis à jour." });
         setEditingLocation(null);
     }
-    
+
     const handleDeleteLocation = async (locationName: string) => {
-        if(!user) return;
+        if (!user) return;
         const currentLocations = await getManualLocations(user.uid);
         const updatedManualLocations = currentLocations.filter(l => l.name !== locationName);
         await saveManualLocations(user.uid, updatedManualLocations);
         await reloadManualLocations();
         deleteInstantsByLocation(locationName); // Also delete associated instants
-        toast({title: "Lieu et souvenirs associés supprimés."});
+        toast({ title: "Lieu et souvenirs associés supprimés." });
     }
 
     const handlePhotoUpload = async (
@@ -346,11 +468,11 @@ export default function MapPage() {
     ) => {
         const files = e.target.files;
         if (!files) return;
-    
+
         setIsUploading(true);
         toast({ title: `Téléversement de ${files.length} photo(s)...` });
-    
-        const uploadedUrls = [];
+
+        const uploadedUrls: string[] = [];
         for (const file of Array.from(files)) {
             const formData = new FormData();
             formData.append('file', file);
@@ -359,19 +481,19 @@ export default function MapPage() {
                     method: 'POST',
                     body: formData,
                 });
-                if(!response.ok) throw new Error(`Upload failed for ${file.name}`);
+                if (!response.ok) throw new Error(`Upload failed for ${file.name}`);
                 const result = await response.json();
                 uploadedUrls.push(result.secure_url);
             } catch (error) {
-                 console.error('Upload Error:', error);
-                 toast({ variant: "destructive", title: 'Échec du téléversement', description: `L'envoi de ${file.name} a échoué.` });
+                console.error('Upload Error:', error);
+                toast({ variant: "destructive", title: 'Échec du téléversement', description: `L'envoi de ${file.name} a échoué.` });
             }
         }
-    
+
         setPhotosCallback(prev => [...prev, ...uploadedUrls]);
         setIsUploading(false);
         toast({ title: 'Toutes les photos ont été traitées.' });
-    
+
         if (e.target) {
             e.target.value = '';
         }
@@ -384,7 +506,7 @@ export default function MapPage() {
     const removeEditedPhoto = (index: number) => {
         setEditedPhotos(prev => prev.filter((_, i) => i !== index));
     };
-    
+
 
     const formatDateRange = (startDate?: string, endDate?: string) => {
         if (!startDate) return null;
@@ -394,363 +516,463 @@ export default function MapPage() {
         return `${start} - ${end}`;
     }
 
-  return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
-      <div className="py-16 space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Ma Carte de Voyage</h1>
-        <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
-      </div>
+    const handleMarkerClick = (location: LocationWithCoords) => {
+        setFocusedLocation(location.coords);
+        if (location.count > 0) {
+            setLocationToRedirect(location);
+        } else {
+            // Just show info for manual locations without instants
+            toast({
+                title: location.name,
+                description: location.souvenir || "Lieu enregistré (aucun souvenir associé)",
+            });
+        }
+    };
 
-       <Card className="mb-8 overflow-hidden rounded-xl">
-            <CardHeader>
-                <CardTitle>Carte du monde</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isMounted && <InteractiveMap locations={locationsWithCoords} focusedLocation={focusedLocation} />}
-                {!isMounted && <Skeleton className="h-[400px] w-full rounded-lg" />}
-            </CardContent>
-       </Card>
+    const confirmRedirection = () => {
+        if (!locationToRedirect) return;
 
-       <div className="mb-8">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button disabled={!user}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter un lieu
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Ajouter un ou plusieurs lieux</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label>Pays</Label>
-                             <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={isCountryPopoverOpen}
-                                    className="w-full justify-between"
-                                    >
-                                    {newCountry
-                                        ? countries.find((country) => country.label.toLowerCase() === newCountry.toLowerCase())?.label
-                                        : "Sélectionner un pays..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Rechercher un pays..." />
-                                        <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
-                                        <CommandList>
-                                            <CommandGroup>
-                                                {countries.map((country) => (
-                                                <CommandItem
-                                                    key={country.value}
-                                                    value={country.label}
-                                                    onSelect={(currentValue) => {
-                                                        setNewCountry(currentValue === newCountry ? "" : currentValue);
-                                                        setIsCountryPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            newCountry.toLowerCase() === country.label.toLowerCase() ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    {country.label}
-                                                </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
+        const location = locationToRedirect;
+        // Clean up location name for search (remove obvious country parts if needed, but keeping full name is usually safer for fuzzy match)
+        // We will pass the full name and let the timeline page handle the fuzzy matching
+        const searchName = location.name;
 
-                        <div className="space-y-2">
-                          <Label>Villes</Label>
-                            {newCities.map((city, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        value={city}
-                                        onChange={(e) => handleCityChange(index, e.target.value)}
-                                        placeholder={`ex: Ville ${index + 1}`}
-                                    />
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={() => handleRemoveCity(index)}
-                                        disabled={newCities.length <= 1}
-                                        className="text-destructive hover:text-destructive"
-                                    >
-                                        <MinusCircle className="h-4 w-4" />
-                                    </Button>
-                                </div>
+        // Redirect with location search parameter
+        // We also pass manual flag to help timeline page decide solely on fallback
+        const isManual = location.isManual ? 'true' : 'false';
+        const souvenir = location.souvenir ? encodeURIComponent(location.souvenir) : '';
+
+        router.push(`/?locationSearch=${encodeURIComponent(searchName)}&isManual=${isManual}&souvenir=${souvenir}`);
+        setLocationToRedirect(null);
+    };
+
+    const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
+
+    return (
+        <div className="container mx-auto px-4 py-8 min-h-screen">
+            <div className="py-16 space-y-2">
+                <h1 className="text-3xl font-bold text-foreground">Ma Carte de Voyage</h1>
+                <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
+            </div>
+
+            {/* Filters */}
+            {instants.length > 0 && (
+                <div className="flex gap-4 mb-6">
+                    <Select
+                        value={String(selectedYear)}
+                        onValueChange={(val) => {
+                            const newYear = Number(val);
+                            setSelectedYear(newYear);
+                            setSelectedMonth(-1); // Reset to "Voir tout" when year changes
+                        }}
+                        disabled={availableFilters.years.length === 0}
+                    >
+                        <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground min-w-[140px]">
+                            <SelectValue placeholder="Année" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={String(-1)}>Toutes les années</SelectItem>
+                            {availableFilters.years.map(year => (
+                                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
                             ))}
-                            <Button type="button" variant="outline" size="sm" onClick={handleAddCity} className="mt-2">
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Ajouter une autre ville
-                            </Button>
-                        </div>
+                        </SelectContent>
+                    </Select>
 
+                    <Select
+                        value={String(selectedMonth)}
+                        onValueChange={(val) => setSelectedMonth(Number(val))}
+                        disabled={selectedYear !== -1 && !availableFilters.months[selectedYear]}
+                    >
+                        <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
+                            <SelectValue placeholder="Mois" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={String(-1)}>Voir tout</SelectItem>
+                            {availableFilters.months[selectedYear] &&
+                                Array.from(availableFilters.months[selectedYear]).sort((a, b) => b - a).map(month => (
+                                    <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
 
-                        <div className="grid grid-cols-2 gap-4">
+            <Card className="mb-8 overflow-hidden rounded-xl">
+                <CardHeader>
+                    <CardTitle>Carte du monde</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isMounted && <InteractiveMap locations={locationsWithCoords} focusedLocation={focusedLocation} onMarkerClick={handleMarkerClick} />}
+                    {!isMounted && <Skeleton className="h-[400px] w-full rounded-lg" />}
+                </CardContent>
+            </Card>
+
+            {/* Confirmation Dialog for Marker Click */}
+            <AlertDialog open={!!locationToRedirect} onOpenChange={(open) => !open && setLocationToRedirect(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{locationToRedirect?.name}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Souhaitez-vous voir les souvenirs associés à ce lieu dans votre journal ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRedirection}>
+                            Voir les souvenirs
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <div className="mb-8">
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button disabled={!user}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Ajouter un lieu
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Ajouter un ou plusieurs lieux</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="start-date">Date de début</Label>
-                                <Input 
-                                    id="start-date" 
-                                    type="date"
-                                    value={newStartDate}
-                                    onChange={(e) => setNewStartDate(e.target.value)}
-                                />
+                                <Label>Pays</Label>
+                                <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={isCountryPopoverOpen}
+                                            className="w-full justify-between"
+                                        >
+                                            {newCountry
+                                                ? countries.find((country) => country.label.toLowerCase() === newCountry.toLowerCase())?.label
+                                                : "Sélectionner un pays..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Rechercher un pays..." />
+                                            <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
+                                            <CommandList>
+                                                <CommandGroup>
+                                                    {countries.map((country) => (
+                                                        <CommandItem
+                                                            key={country.value}
+                                                            value={country.label}
+                                                            onSelect={(currentValue) => {
+                                                                setNewCountry(currentValue === newCountry ? "" : currentValue);
+                                                                setIsCountryPopoverOpen(false);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    newCountry.toLowerCase() === country.label.toLowerCase() ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {country.label}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="end-date">Date de fin</Label>
-                                <Input 
-                                    id="end-date" 
-                                    type="date"
-                                    value={newEndDate}
-                                    onChange={(e) => setNewEndDate(e.target.value)}
-                                />
-                            </div>
-                        </div>
 
-                         <div className="space-y-2">
-                            <Label>Photos souvenirs</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {newPhotos.map((photo, index) => (
-                                    <div key={index} className="relative group">
-                                        <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
-                                        <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeNewPhoto(index)}>
-                                            <Trash2 className="h-3 w-3" />
+                            <div className="space-y-2">
+                                <Label>Villes</Label>
+                                {newCities.map((city, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                        <Input
+                                            value={city}
+                                            onChange={(e) => handleCityChange(index, e.target.value)}
+                                            placeholder={`ex: Ville ${index + 1}`}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveCity(index)}
+                                            disabled={newCities.length <= 1}
+                                            className="text-destructive hover:text-destructive"
+                                        >
+                                            <MinusCircle className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
+                                <Button type="button" variant="outline" size="sm" onClick={handleAddCity} className="mt-2">
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Ajouter une autre ville
+                                </Button>
                             </div>
-                            <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
-                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
-                                {isUploading ? "Téléversement..." : "Ajouter des photos"}
-                            </Button>
-                            <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)}/>
-                        </div>
 
-                         <div className="space-y-2">
-                            <Label htmlFor="souvenir">Un souvenir à raconter ?</Label>
-                            <Textarea
-                                id="souvenir"
-                                value={newSouvenir}
-                                onChange={(e) => setNewSouvenir(e.target.value)}
-                                placeholder="Écrivez un court souvenir associé à ce lieu..."
-                            />
-                        </div>
 
-                    </div>
-                    <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="ghost">Annuler</Button>
-                        </DialogClose>
-                        <Button onClick={handleAddLocations} disabled={isUploading}>Ajouter</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
-      
-       <div className="space-y-4">
-        {isLoadingCoords ? (
-             <div className="flex justify-center items-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-             </div>
-        ) : !user ? (
-             <div className="text-center py-10">
-                <p className="text-muted-foreground">Connectez-vous pour gérer votre carte de voyage.</p>
-            </div>
-        ) : allLocations.length === 0 ? (
-            <div className="text-center py-10">
-                <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
-            </div>
-        ) : (
-            <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full space-y-4">
-                {Object.entries(locationsByCountry).map(([country, locations]) => (
-                    <AccordionItem key={country} value={country} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
-                        <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
-                           {country}
-                        </AccordionTrigger>
-                        <AccordionContent className="p-4 pt-0">
-                           <div className="space-y-4 pt-2">
-                           {locations.map(location => (
-                                <Card key={location.name} className="border shadow-none">
-                                    <CardHeader className="flex flex-col items-start gap-4 p-4">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-2 sm:gap-4">
-                                            <div className="flex-grow">
-                                                <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
-                                                {location.count > 0 && (
-                                                   <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
-                                                )}
-                                                {location.isManual && location.startDate && (
-                                                    <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0 w-full justify-end sm:w-auto">
-                                                <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)} className="flex-grow sm:flex-grow-0">
-                                                        <MapPin className="mr-2 h-4 w-4" />
-                                                        Voir
-                                                </Button>
-                                                {location.isManual && (
-                                                    <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
-                                                        <DialogTrigger asChild>
-                                                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent>
-                                                            <DialogHeader>
-                                                                <DialogTitle>Modifier le lieu</DialogTitle>
-                                                            </DialogHeader>
-                                                            <div className="py-4 space-y-4">
-                                                                <div className="space-y-2">
-                                                                    <Label htmlFor="edit-location-name">Nom du lieu</Label>
-                                                                    <Input 
-                                                                        id="edit-location-name" 
-                                                                        value={editedName} 
-                                                                        onChange={(e) => setEditedName(e.target.value)} 
-                                                                    />
-                                                                </div>
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="edit-start-date">Date de début</Label>
-                                                                        <Input 
-                                                                            id="edit-start-date" 
-                                                                            type="date"
-                                                                            value={editedStartDate}
-                                                                            onChange={(e) => setEditedStartDate(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="edit-end-date">Date de fin</Label>
-                                                                        <Input 
-                                                                            id="edit-end-date" 
-                                                                            type="date"
-                                                                            value={editedEndDate}
-                                                                            onChange={(e) => setEditedEndDate(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <Label>Photos souvenirs</Label>
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                        {editedPhotos.map((photo, index) => (
-                                                                            <div key={photo + index} className="relative group">
-                                                                                <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
-                                                                                <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
-                                                                                    <Trash2 className="h-3 w-3" />
-                                                                                </Button>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
-                                                                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ImageIcon className="mr-2 h-4 w-4"/>}
-                                                                        {isUploading ? "Téléversement..." : "Ajouter des photos"}
-                                                                    </Button>
-                                                                    <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
-                                                                    <Textarea
-                                                                        id="edit-souvenir"
-                                                                        value={editedSouvenir}
-                                                                        onChange={(e) => setEditedSouvenir(e.target.value)}
-                                                                        placeholder="Écrivez un court souvenir associé à ce lieu..."
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <DialogFooter>
-                                                                <DialogClose asChild>
-                                                                    <Button variant="ghost">Annuler</Button>
-                                                                </DialogClose>
-                                                                <Button onClick={handleEditLocation} disabled={isUploading}>Enregistrer</Button>
-                                                            </DialogFooter>
-                                                        </DialogContent>
-                                                    </Dialog>
-                                                )}
-                                                {location.isManual && (
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="destructive" size="icon" className="h-9 w-9">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                            <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Cette action est irréversible. Elle supprimera le lieu ainsi que tous les souvenirs (instants) qui y sont associés.
-                                                            </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteLocation(location.name)}>
-                                                                Supprimer définitivement
-                                                            </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                )}
-                                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="start-date">Date de début</Label>
+                                    <Input
+                                        id="start-date"
+                                        type="date"
+                                        value={newStartDate}
+                                        onChange={(e) => setNewStartDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="end-date">Date de fin</Label>
+                                    <Input
+                                        id="end-date"
+                                        type="date"
+                                        value={newEndDate}
+                                        onChange={(e) => setNewEndDate(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Photos souvenirs</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {newPhotos.map((photo, index) => (
+                                        <div key={index} className="relative group">
+                                            <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeNewPhoto(index)}>
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
                                         </div>
-                                        
-                                        {location.souvenir && (
-                                            <p className="text-sm text-muted-foreground pt-2 italic">"{location.souvenir}"</p>
-                                        )}
-                                        
-                                        {location.photos && location.photos.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 pt-2">
-                                                {location.photos.map((photo, index) => (
-                                                   photo && (
-                                                       <button 
-                                                           key={index}
-                                                           onClick={() => openImageModal(location.photos || [], index)}
-                                                           className="relative group"
-                                                       >
-                                                           <Image
-                                                               src={photo}
-                                                               alt={`Miniature du lieu ${index + 1}`}
-                                                               width={100}
-                                                               height={100}
-                                                               className="rounded-md object-cover h-24 w-24 hover:opacity-90 transition-opacity"
-                                                           />
-                                                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 rounded-md transition-opacity flex items-center justify-center">
-                                                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white">
-                                                                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                                                               </svg>
-                                                           </div>
-                                                       </button>
-                                                   )
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardHeader>
-                                </Card>
-                            ))}
-                           </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
-            </Accordion>
-        )}
+                                    ))}
+                                </div>
+                                <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
+                                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                                    {isUploading ? "Téléversement..." : "Ajouter des photos"}
+                                </Button>
+                                <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="souvenir">Un souvenir à raconter ?</Label>
+                                <Textarea
+                                    id="souvenir"
+                                    value={newSouvenir}
+                                    onChange={(e) => setNewSouvenir(e.target.value)}
+                                    placeholder="Écrivez un court souvenir associé à ce lieu..."
+                                />
+                            </div>
+
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="ghost">Annuler</Button>
+                            </DialogClose>
+                            <Button onClick={handleAddLocations} disabled={isUploading}>Ajouter</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="space-y-4">
+                {isLoadingCoords ? (
+                    <div className="flex justify-center items-center py-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : !user ? (
+                    <div className="text-center py-10">
+                        <p className="text-muted-foreground">Connectez-vous pour gérer votre carte de voyage.</p>
+                    </div>
+                ) : allLocations.length === 0 ? (
+                    <div className="text-center py-10">
+                        <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
+                    </div>
+                ) : (
+                    <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full space-y-4">
+                        {Object.entries(locationsByCountry).map(([country, locations]) => (
+                            <AccordionItem key={country} value={country} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
+                                <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
+                                    {country}
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4 pt-0">
+                                    <div className="space-y-4 pt-2">
+                                        {locations.map(location => (
+                                            <Card key={location.name} className="border shadow-none">
+                                                <CardHeader className="flex flex-col items-start gap-4 p-4">
+                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-2 sm:gap-4">
+                                                        <div className="flex-grow">
+                                                            <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
+                                                            {location.count > 0 && (
+                                                                <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
+                                                            )}
+                                                            {location.isManual && location.startDate && (
+                                                                <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
+                                                            )}
+                                                            {/* Photo Gallery Restoration */}
+                                                            {(() => {
+                                                                const allPhotos = [
+                                                                    ...(location.photos || []),
+                                                                    ...(location.instants || []).flatMap(i => i.photos || [])
+                                                                ].filter(Boolean);
+
+                                                                if (allPhotos.length > 0) {
+                                                                    return (
+                                                                        <div className="flex flex-wrap gap-2 mt-4">
+                                                                            {allPhotos.slice(0, 10).map((photo, pIdx) => (
+                                                                                <div
+                                                                                    key={pIdx}
+                                                                                    className="relative w-16 h-16 rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                                                                                    onClick={() => openImageModal(allPhotos, pIdx)}
+                                                                                >
+                                                                                    <Image
+                                                                                        src={photo}
+                                                                                        alt={`Photo ${pIdx + 1} de ${location.name}`}
+                                                                                        fill
+                                                                                        className="object-cover"
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                            {allPhotos.length > 10 && (
+                                                                                <div
+                                                                                    className="w-16 h-16 rounded-md bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground cursor-pointer"
+                                                                                    onClick={() => openImageModal(allPhotos, 10)}
+                                                                                >
+                                                                                    +{allPhotos.length - 10}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 flex-shrink-0 w-full justify-end sm:w-auto">
+                                                            <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)} className="flex-grow sm:flex-grow-0">
+                                                                <MapPin className="mr-2 h-4 w-4" />
+                                                                Voir
+                                                            </Button>
+                                                            {location.isManual && (
+                                                                <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(location as ManualLocation)}>
+                                                                            <Edit className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                    <DialogContent>
+                                                                        <DialogHeader>
+                                                                            <DialogTitle>Modifier le lieu</DialogTitle>
+                                                                        </DialogHeader>
+                                                                        <div className="py-4 space-y-4">
+                                                                            <div className="space-y-2">
+                                                                                <Label htmlFor="edit-location-name">Nom du lieu</Label>
+                                                                                <Input
+                                                                                    id="edit-location-name"
+                                                                                    value={editedName}
+                                                                                    onChange={(e) => setEditedName(e.target.value)}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="grid grid-cols-2 gap-4">
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="edit-start-date">Date de début</Label>
+                                                                                    <Input
+                                                                                        id="edit-start-date"
+                                                                                        type="date"
+                                                                                        value={editedStartDate}
+                                                                                        onChange={(e) => setEditedStartDate(e.target.value)}
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="edit-end-date">Date de fin</Label>
+                                                                                    <Input
+                                                                                        id="edit-end-date"
+                                                                                        type="date"
+                                                                                        value={editedEndDate}
+                                                                                        onChange={(e) => setEditedEndDate(e.target.value)}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label>Photos souvenirs</Label>
+                                                                                <div className="flex flex-wrap gap-2">
+                                                                                    {editedPhotos.map((photo, index) => (
+                                                                                        <div key={photo + index} className="relative group">
+                                                                                            <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
+                                                                                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeEditedPhoto(index)}>
+                                                                                                <Trash2 className="h-3 w-3" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
+                                                                                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                                                                                    {isUploading ? "Téléversement..." : "Ajouter des photos"}
+                                                                                </Button>
+                                                                                <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={editPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setEditedPhotos)} />
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <Label htmlFor="edit-souvenir">Un souvenir à raconter ?</Label>
+                                                                                <Textarea
+                                                                                    id="edit-souvenir"
+                                                                                    value={editedSouvenir}
+                                                                                    onChange={(e) => setEditedSouvenir(e.target.value)}
+                                                                                    placeholder="Écrivez un court souvenir associé à ce lieu..."
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        <DialogFooter>
+                                                                            <DialogClose asChild>
+                                                                                <Button variant="ghost">Annuler</Button>
+                                                                            </DialogClose>
+                                                                            <Button onClick={handleEditLocation} disabled={isUploading}>Sauvegarder</Button>
+                                                                        </DialogFooter>
+                                                                    </DialogContent>
+                                                                </Dialog>
+                                                            )}
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Supprimer ce lieu ?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Cette action est irréversible. Pour les lieux manuels, cela supprimera le lieu et ses infos.
+                                                                            Pour les lieux générés depuis la timeline, cela supprimera tous les instants associés à ce lieu.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteLocation(location.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                            Supprimer
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    </div>
+                                                </CardHeader>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                )}
+            </div>
+
+            <ImageModal
+                isOpen={selectedImageIndex !== null && selectedImages.length > 0}
+                onClose={closeImageModal}
+                images={selectedImages}
+                initialIndex={selectedImageIndex || 0}
+            />
+
+            {/* Instant Sidebar */}
+            {/* InstantSidebar removed */}
         </div>
-        
-        {/* Image Modal */}
-        <ImageModal 
-            isOpen={selectedImageIndex !== null && selectedImages.length > 0}
-            onClose={closeImageModal}
-            images={selectedImages}
-            initialIndex={selectedImageIndex || 0}
-        />
-      </div>
-  );
+    );
 }
+

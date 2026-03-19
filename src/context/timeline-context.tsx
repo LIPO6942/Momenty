@@ -22,7 +22,6 @@ import { useAuth } from './auth-context';
 interface GroupedInstants {
     [key: string]: {
         title: string;
-        dayNumber: number;
         instants: Instant[];
     };
 }
@@ -361,23 +360,39 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const sortedInstants = [...instants].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        const dayKeysWithIndices = [...new Set(sortedInstants.map(i => format(startOfDay(parseISO(i.date)), 'yyyy-MM-dd')))]
-            .map((dayKey, index, allKeys) => ({ dayKey, dayNumber: allKeys.length - index }));
-
-        dayKeysWithIndices.forEach(({ dayKey, dayNumber }) => {
-            const dayDate = parseISO(dayKey);
-            groups[dayKey] = {
-                title: `Jour ${dayNumber} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`,
-                dayNumber,
-                instants: []
-            };
-        });
-
+        // First, group everything by day
         sortedInstants.forEach(instant => {
             const dayKey = format(startOfDay(parseISO(instant.date)), 'yyyy-MM-dd');
-            if (groups[dayKey]) {
-                groups[dayKey].instants.push(instant);
+            if (!groups[dayKey]) {
+                groups[dayKey] = {
+                    title: '', // Will be filled later
+                    instants: []
+                };
             }
+            groups[dayKey].instants.push(instant);
+        });
+
+        // Then, generate titles for each day based on locations
+        Object.keys(groups).forEach(dayKey => {
+            const dayInstants = groups[dayKey].instants;
+            const locations = new Set(dayInstants.map(i => i.location).filter(Boolean));
+
+            // Deduplicate location parts (e.g., "Moscou, Russie, Moscou, Russie" -> "Moscou, Russie")
+            const allLocationParts = new Set<string>();
+            locations.forEach(location => {
+                // Split by comma, trim whitespace, and add each part to the set
+                location.split(',').forEach(part => {
+                    const trimmed = part.trim();
+                    if (trimmed) allLocationParts.add(trimmed);
+                });
+            });
+
+            const locationString = allLocationParts.size > 0
+                ? Array.from(allLocationParts).join(', ')
+                : 'Journée sans lieu'; // Fallback if no location
+
+            const dayDate = parseISO(dayKey);
+            groups[dayKey].title = `${locationString} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`;
         });
 
         return groups;

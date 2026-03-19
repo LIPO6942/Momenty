@@ -133,9 +133,16 @@ export default function PlatsPage() {
                                             >
                                                 <h3 className="font-bold text-2xl">{dish.name}</h3>
                                                 <p className="text-sm text-white/80 mt-1 italic">"{dish.description}"</p>
-                                                <div className="flex items-center gap-1.5 mt-3">
-                                                    <MapPin className="h-4 w-4 text-white/90" />
-                                                    <span className="font-semibold text-sm">Dégusté à {dish.location}</span>
+                                                <div className="mt-3 space-y-0.5">
+                                                    <div className="flex items-center gap-1.5 font-semibold text-sm">
+                                                        <MapPin className="h-4 w-4 text-white/90 shrink-0" />
+                                                        <span>Dégusté à {dish.location}</span>
+                                                    </div>
+                                                    {dish.city && (
+                                                        <div className="text-xs text-white/70 ml-[22px]">
+                                                            à {dish.city}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
                                                     <div className="flex gap-2 flex-wrap">
@@ -155,10 +162,17 @@ export default function PlatsPage() {
                                         <CardHeader className="flex flex-row items-start gap-4">
                                             <div className="flex-grow">
                                                 <CardTitle className="text-2xl">{dish.name}</CardTitle>
-                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                                                    <MapPin className="h-4 w-4" />
-                                                    Dégusté à {dish.location}
-                                                </p>
+                                                <div className="mt-1 space-y-0.5">
+                                                    <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                        <MapPin className="h-4 w-4 shrink-0" />
+                                                        Dégusté à {dish.location}
+                                                    </div>
+                                                    {dish.city && (
+                                                        <div className="text-xs text-muted-foreground ml-[22px]">
+                                                            à {dish.city}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>

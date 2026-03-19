@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useContext, useMemo, useState, useEffect } from "react";
+import React, { useContext, useMemo, useState, useEffect, Suspense } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -21,21 +20,25 @@ import { getProfile } from "@/lib/idb";
 import { parseISO, getMonth, getYear, format } from "date-fns";
 import { fr } from 'date-fns/locale';
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Calendar } from "lucide-react";
+import stringSimilarity from "string-similarity";
+import { useToast } from "@/hooks/use-toast";
 
 
-export default function TimelinePage() {
+function TimelineContent() {
   const { groupedInstants, instants } = useContext(TimelineContext);
   const [firstName, setFirstName] = useState<string | null>(null);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(-1); // -1 for "Toutes les années"
   const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
   const [openDays, setOpenDays] = useState<string[]>([]);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
 
 
   useEffect(() => {
@@ -78,19 +81,102 @@ export default function TimelinePage() {
 
   useEffect(() => {
     if (instants.length > 0 && !hasSetInitialFilter) {
-      const mostRecentInstantDate = parseISO(instants[0].date);
-      setSelectedYear(getYear(mostRecentInstantDate));
-      setSelectedMonth(-1); // Default to "Voir tout"
-      setHasSetInitialFilter(true);
+      const instantId = searchParams.get('instant');
+      const locationSearch = searchParams.get('locationSearch');
+      const souvenir = searchParams.get('souvenir');
+
+      let targetInstant = null;
+
+      if (instantId) {
+        targetInstant = instants.find(i => i.id === instantId);
+      } else if (locationSearch) {
+        // Advanced Cascade Matching Strategy
+        const normalizedFullSearch = locationSearch.toLowerCase();
+        const searchParts = normalizedFullSearch.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const mainCity = searchParts.length > 0 ? searchParts[0] : normalizedFullSearch;
+
+        // 1. Priority: City Match (The first part of the location string)
+        // Check if instant location contains the city name
+        targetInstant = instants.find(i => {
+          const loc = (i.location || "").toLowerCase();
+          // Strict check for city at the start or distinct word to avoid false positives
+          return loc.includes(mainCity);
+        });
+
+        // 2. Fallback: Component & Content Match Scoring
+        if (!targetInstant) {
+          const candidates = instants.map(i => {
+            const loc = (i.location || "").toLowerCase();
+            const title = (i.title || "").toLowerCase();
+            const desc = (i.description || "").toLowerCase();
+            let score = 0;
+
+            // Check match for each part of the search string (e.g. "Lombok", "Indonesia")
+            searchParts.forEach(part => {
+              if (loc.includes(part)) score += 10;      // High relevance if in location
+              if (title.includes(part)) score += 5;     // Medium relevance if in title
+              if (desc.includes(part)) score += 3;      // Lower relevance if in description
+            });
+
+            // Add fuzzy similarity bonus for the full string on location matches
+            const locSimilarity = stringSimilarity.compareTwoStrings(loc, normalizedFullSearch);
+            if (locSimilarity > 0.4) score += locSimilarity * 5;
+
+            return { instant: i, score };
+          });
+
+          // Sort by score descending
+          candidates.sort((a, b) => b.score - a.score);
+
+          // Threshold: We need at least some match
+          if (candidates.length > 0 && candidates[0].score > 2) {
+            targetInstant = candidates[0].instant;
+          }
+        }
+
+        // If still not found, show toast
+        if (!targetInstant) {
+          toast({
+            title: locationSearch,
+            description: souvenir ? decodeURIComponent(souvenir) : "Lieu visité (aucun instant associé trouvé)"
+          });
+        }
+      }
+
+      // If we have a target instant from URL, set filter to its date
+      if (targetInstant) {
+        const date = parseISO(targetInstant.date);
+        setSelectedYear(getYear(date));
+        setSelectedMonth(-1); // "Voir tout" to make sure it's visible or handle specific month if preferred
+        setHasSetInitialFilter(true);
+
+        // Wait for render then scroll
+        setTimeout(() => {
+          const element = document.getElementById(`instant-${targetInstant.id}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+            }, 3000);
+          }
+        }, 500); // Small delay to ensure Accordion is expanded and rendered
+      } else if (!hasSetInitialFilter) {
+        // Default behavior if no instant matched (and we haven't set filter yet)
+        const mostRecentInstantDate = parseISO(instants[0].date);
+        setSelectedYear(getYear(mostRecentInstantDate));
+        setSelectedMonth(-1);
+        setHasSetInitialFilter(true);
+      }
     }
-  }, [instants, hasSetInitialFilter]);
+  }, [instants, hasSetInitialFilter, searchParams, toast]);
 
 
   const filteredGroupedInstants = useMemo(() => {
     return Object.entries(groupedInstants)
       .filter(([dayKey]) => {
         const date = parseISO(dayKey);
-        const isYearMatch = getYear(date) === selectedYear;
+        const isYearMatch = selectedYear === -1 || getYear(date) === selectedYear;
         const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
         return isYearMatch && isMonthMatch;
       })
@@ -222,6 +308,7 @@ export default function TimelinePage() {
             <SelectValue placeholder="Année" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={String(-1)}>Toutes les années</SelectItem>
             {availableFilters.years.map(year => (
               <SelectItem key={year} value={String(year)}>{year}</SelectItem>
             ))}
@@ -231,7 +318,7 @@ export default function TimelinePage() {
         <Select
           value={String(selectedMonth)}
           onValueChange={(val) => setSelectedMonth(Number(val))}
-          disabled={!availableFilters.months[selectedYear]}
+          disabled={selectedYear !== -1 && !availableFilters.months[selectedYear]}
         >
           <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
             <SelectValue placeholder="Mois" />
@@ -314,7 +401,29 @@ export default function TimelinePage() {
           <p>Aucun souvenir trouvé pour {selectedMonth === -1 ? selectedYear : `${monthNames[selectedMonth]} ${selectedYear}`}.</p>
           <p className="text-sm mt-1">Essayez de sélectionner une autre période.</p>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
+  );
+}
+
+export default function TimelinePage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+        <div className="py-16 space-y-4 text-center">
+          <Skeleton className="h-10 w-3/4 mx-auto" />
+          <Skeleton className="h-6 w-1/2 mx-auto" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      </div>
+    }>
+      <TimelineContent />
+    </Suspense>
   );
 }

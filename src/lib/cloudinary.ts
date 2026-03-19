@@ -42,7 +42,7 @@ export type DisplayTransform = {
 
 export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: 'auto' | 'center' } {
   const preset = dt?.preset ?? 'landscape';
-  const crop = (dt?.crop ?? 'fill') as 'fill' | 'fit';
+  const crop = (dt?.crop ?? 'fit') as 'fill' | 'fit';
   const gravity = (dt?.gravity ?? 'auto') as 'auto' | 'center';
   switch (preset) {
     case 'portrait':
