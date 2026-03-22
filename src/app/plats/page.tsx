@@ -116,7 +116,7 @@ function PlatsContent() {
                                                         alt={`Photo de ${dish.name}`}
                                                         width={t.w}
                                                         height={t.h}
-                                                        className="w-full h-[400px] object-cover"
+                                                        className={cn("w-full h-[400px]", t.c === 'fit' ? "object-contain" : "object-cover")}
                                                         data-ai-hint="food dish"
                                                     />
                                                 </ImageLightbox>
