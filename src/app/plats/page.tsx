@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
@@ -34,9 +35,33 @@ import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 
 export default function PlatsPage() {
+    return (
+        <Suspense fallback={<div className="container mx-auto max-w-2xl px-4 py-32 text-center">Chargement des plats...</div>}>
+            <PlatsContent />
+        </Suspense>
+    );
+}
+
+function PlatsContent() {
     const { dishes, deleteDish } = useContext(TimelineContext);
     const { toast } = useToast();
+    const searchParams = useSearchParams();
     const [textVisibility, setTextVisibility] = useState<{ [key: string]: boolean }>({});
+    const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (id) {
+            setHighlightedId(id);
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            // Clear highlight after a few seconds
+            const timer = setTimeout(() => setHighlightedId(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams, dishes]);
 
     const handleDelete = (id: string) => {
         deleteDish(id);
@@ -68,7 +93,14 @@ export default function PlatsPage() {
                     {dishes.map((dish) => {
                         const isTextVisible = textVisibility[dish.id] ?? true;
                         return (
-                            <Card key={dish.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
+                            <Card 
+                                key={dish.id} 
+                                id={dish.id}
+                                className={cn(
+                                    "overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white transition-all duration-500",
+                                    highlightedId === dish.id && "ring-4 ring-primary ring-offset-4 scale-[1.02] shadow-2xl z-10"
+                                )}
+                            >
                                 {dish.photo ? (
                                     <>
                                         {(() => {

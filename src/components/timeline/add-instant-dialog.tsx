@@ -489,16 +489,18 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                 };
-                await addDish(newDish);
+                const newId = await addDish(newDish);
 
                 // Sync with Kol Youm
                 if (user?.email) {
                     try {
+                        const postUrl = `${window.location.origin}/plats?id=${newId}`;
                         console.log('[Kol Youm] Triggering sync for:', {
                             userEmail: user.email,
                             placeName: location,
                             city: city,
-                            dish: dishName
+                            dish: dishName,
+                            postUrl
                         });
 
                         // We use a separate async function to not block the UI if needed, 
@@ -512,7 +514,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                 category: selectedCategory || 'restaurants',
                                 cityName: city,
                                 dishName: dishName,
-                                date: Date.now()
+                                date: Date.now(),
+                                postUrl: postUrl
                             })
                         });
 

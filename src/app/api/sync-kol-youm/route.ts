@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { userEmail, placeName, category, cityName, dishName, date } = body;
+        const { userEmail, placeName, category, cityName, dishName, date, postUrl } = body;
         const cleanEmail = userEmail?.trim().toLowerCase();
 
         // Validation
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
             cityName,
             dishName,
             date: date || Date.now(),
-            source: 'momenty'
+            source: 'momenty',
+            postUrl: postUrl || null
         };
 
         console.log(`[Sync Kol Youm] Sending payload to production:`, payload);

@@ -29,22 +29,22 @@ interface GroupedInstants {
 interface TimelineContextType {
     instants: Instant[];
     groupedInstants: GroupedInstants;
-    addInstant: (instant: Omit<Instant, 'id'>) => void;
+    addInstant: (instant: Omit<Instant, 'id'>) => Promise<string>;
     updateInstant: (id: string, updatedInstant: Partial<Omit<Instant, 'id'>>) => void;
     deleteInstant: (id: string) => void;
     deleteInstantsByLocation: (locationName: string) => void;
     activeTrip: Trip | null;
     activeStay: Trip | null; // Using Trip type for Stay as well
     encounters: Encounter[];
-    addEncounter: (encounter: Omit<Encounter, 'id'>) => void;
+    addEncounter: (encounter: Omit<Encounter, 'id'>) => Promise<string>;
     updateEncounter: (id: string, updatedData: Partial<Omit<Encounter, 'id'>>) => Promise<void>;
     deleteEncounter: (id: string) => void;
     dishes: Dish[];
-    addDish: (dish: Omit<Dish, 'id'>) => void;
+    addDish: (dish: Omit<Dish, 'id'>) => Promise<string>;
     updateDish: (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => Promise<void>;
     deleteDish: (id: string) => void;
     accommodations: Accommodation[];
-    addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => void;
+    addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => Promise<string>;
     updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => Promise<void>;
     deleteAccommodation: (id: string) => void;
 }
@@ -195,7 +195,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     }, [user, syncActiveContextsFromStorage]);
 
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
-        if (!user) return;
+        if (!user) throw new Error("User not authenticated");
         let categories = instantData.category || ['Note'];
         try {
             const result = await categorizeInstant({
@@ -215,26 +215,29 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newId = await saveInstant(user.uid, newInstantForDb);
         const newInstantForState = addRuntimeAttributes({ ...newInstantForDb, id: newId });
-
         setInstants(prevInstants => [newInstantForState, ...prevInstants]);
+        return newId;
     };
 
     const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
-        if (!user) return;
+        if (!user) throw new Error("User not authenticated");
         const newId = await saveEncounter(user.uid, encounterData);
         setEncounters(prev => [{ ...encounterData, id: newId }, ...prev]);
+        return newId;
     }
 
     const addDish = async (dishData: Omit<Dish, 'id'>) => {
-        if (!user) return;
+        if (!user) throw new Error("User not authenticated");
         const newId = await saveDish(user.uid, dishData);
         setDishes(prev => [{ ...dishData, id: newId }, ...prev]);
+        return newId;
     }
 
     const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
-        if (!user) return;
+        if (!user) throw new Error("User not authenticated");
         const newId = await saveAccommodation(user.uid, accommodationData);
         setAccommodations(prev => [{ ...accommodationData, id: newId }, ...prev]);
+        return newId;
     }
 
 

@@ -34,6 +34,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
     const t = buildTransformFromDisplay(displayTransform);
 
     const renderGrid = () => {
+        const objectClass = t.c === 'fit' ? "object-contain" : "object-cover";
         switch (photoCount) {
             case 1:
                 return (
@@ -51,7 +52,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                 alt={title}
                                 width={t.w}
                                 height={t.h}
-                                className="w-full h-auto max-h-[600px] sm:max-h-[70vh] object-contain md:object-cover md:h-[450px]"
+                                className={cn("w-full h-auto max-h-[600px] sm:max-h-[70vh] md:h-[450px]", objectClass)}
                                 data-ai-hint="travel photo"
                             />
                         </ImageLightbox>
@@ -75,7 +76,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} ${index + 1}`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover first:rounded-tl-xl last:rounded-tr-xl"
+                                    className={cn("w-full h-full first:rounded-tl-xl last:rounded-tr-xl", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -99,7 +100,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 1`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover rounded-tl-xl"
+                                    className={cn("w-full h-full rounded-tl-xl", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -118,7 +119,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 2`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover rounded-tr-xl"
+                                    className={cn("w-full h-full rounded-tr-xl", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -137,7 +138,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 3`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover"
+                                    className={cn("w-full h-full", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -162,7 +163,8 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} ${index + 1}`}
                                     width={t.w}
                                     height={t.h}
-                                    className={cn("w-full h-full object-cover",
+                                    className={cn("w-full h-full",
+                                        objectClass,
                                         index === 0 && "rounded-tl-xl",
                                         index === 1 && "rounded-tr-xl"
                                     )}
@@ -189,7 +191,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 1`}
                                     width={t.w}
                                     height={t.h}
-                                    className="w-full h-full object-cover rounded-tl-xl"
+                                    className={cn("w-full h-full rounded-tl-xl", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -208,7 +210,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 2`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover rounded-tr-xl"
+                                    className={cn("w-full h-full rounded-tr-xl", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>
@@ -227,7 +229,7 @@ const PhotoCollage = ({ photos, title, displayTransform }: { photos: string[], t
                                     alt={`${title} 3`}
                                     width={t.w}
                                     height={Math.round(t.h * 0.66)}
-                                    className="w-full h-full object-cover"
+                                    className={cn("w-full h-full", objectClass)}
                                     data-ai-hint="travel photo"
                                 />
                             </ImageLightbox>

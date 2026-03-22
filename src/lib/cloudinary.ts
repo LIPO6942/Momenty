@@ -16,7 +16,7 @@ export function clTransform(
     const q = opts.q ?? 'q_auto';
     const f = opts.f ?? 'f_auto';
     if (opts.c) params.push(`c_${opts.c}`);
-    if (opts.g) params.push(`g_${opts.g}`);
+    if (opts.g && opts.c !== 'fit') params.push(`g_${opts.g}`);
     if (opts.w) params.push(`w_${opts.w}`);
     if (opts.h) params.push(`h_${opts.h}`);
     params.push(q);
@@ -25,9 +25,10 @@ export function clTransform(
     // Insert the transformation segment right after 'upload'
     const before = parts.slice(0, uploadIndex + 1);
     const after = parts.slice(uploadIndex + 1);
-    const newPath = [...before, params.join(','), ...after].join('/');
+    const transformationString = params.join(',');
+    const newPath = [...before, transformationString, ...after].join('/');
 
-    return `${u.protocol}//${u.host}${newPath}`;
+    return `${u.origin}${newPath}`;
   } catch {
     return url;
   }
