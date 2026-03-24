@@ -559,10 +559,43 @@ export default function MapPage() {
     const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
 
     return (
-        <div className="container mx-auto px-4 py-8 min-h-screen">
-            <div className="py-16 space-y-2">
-                <h1 className="text-3xl font-bold text-foreground">Ma Carte de Voyage</h1>
-                <p className="text-muted-foreground">La liste de tous les lieux que vous avez visités.</p>
+        <div className="container mx-auto px-4 py-6 sm:py-12 min-h-screen">
+            {/* Header & Stats Dashboard */}
+            <div className="pt-12 sm:pt-16 pb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 rounded-xl border border-amber-200">
+                            <Compass className="h-6 w-6 text-amber-700 animate-spin-slow" />
+                        </div>
+                        <h1 className="text-3xl sm:text-5xl font-serif font-black text-slate-900 tracking-tight">MA CARTE</h1>
+                    </div>
+                    <p className="text-slate-500 font-medium ml-1">L'odyssée de vos explorations à travers le monde.</p>
+                </div>
+
+                {/* Quick Stats Bar */}
+                <div className="flex gap-3 sm:gap-6 flex-wrap">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Pays</span>
+                        <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-emerald-600" />
+                            <span className="text-xl font-black text-slate-800">{totalCountriesCount}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Villes</span>
+                        <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-blue-600" />
+                            <span className="text-xl font-black text-slate-800">{totalCitiesCount}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Couverture</span>
+                        <div className="bg-slate-900 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2">
+                            <Target className="h-4 w-4 text-amber-400" />
+                            <span className="text-xl font-black text-white">{Math.min(100, Math.round((totalCountriesCount / 195) * 100))}%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Filters */}
@@ -607,13 +640,17 @@ export default function MapPage() {
                 </div>
             )}
 
-            <Card className="mb-8 overflow-hidden rounded-xl">
-                <CardHeader>
-                    <CardTitle>Carte du monde</CardTitle>
+            <Card className="mb-10 overflow-hidden rounded-3xl border-none shadow-2xl bg-white/40 backdrop-blur-md">
+                <CardHeader className="pb-0 pt-6 px-6">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                         <MapIcon className="h-4 w-4" /> Vue Satellitaire
+                    </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    {isMounted && <InteractiveMap locations={locationsWithCoords} focusedLocation={focusedLocation} onMarkerClick={handleMarkerClick} />}
-                    {!isMounted && <Skeleton className="h-[400px] w-full rounded-lg" />}
+                <CardContent className="p-2 sm:p-4">
+                    <div className="rounded-2xl overflow-hidden border-4 border-white shadow-inner">
+                        {isMounted && <InteractiveMap locations={locationsWithCoords} focusedLocation={focusedLocation} onMarkerClick={handleMarkerClick} />}
+                        {!isMounted && <Skeleton className="h-[400px] w-full rounded-2xl" />}
+                    </div>
                 </CardContent>
             </Card>
 
@@ -635,29 +672,35 @@ export default function MapPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <div className="mb-8 flex flex-wrap gap-4">
+            {/* Centered Actions for desktop / Floating for mobile */}
+            <div className="mb-12 flex flex-col sm:flex-row justify-center items-center gap-4">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button disabled={!user}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button 
+                            disabled={!user} 
+                            size="lg"
+                            className="w-full sm:w-auto rounded-2xl bg-slate-900 hover:bg-slate-800 text-white px-8 py-6 shadow-xl transition-all hover:scale-105"
+                        >
+                            <PlusCircle className="mr-3 h-5 w-5" />
                             Ajouter un lieu
                         </Button>
                     </DialogTrigger>
                     {/* ... (rest of the dialog content stays the same) */}
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl rounded-3xl">
                         <DialogHeader>
-                            <DialogTitle>Ajouter un ou plusieurs lieux</DialogTitle>
+                            <DialogTitle className="text-2xl font-serif font-black uppercase">Nouveau Périple</DialogTitle>
                         </DialogHeader>
-                        <div className="py-4 space-y-4">
+                        {/* Redacted dialog content same as before for brevity */}
+                        <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
                             <div className="space-y-2">
-                                <Label>Pays</Label>
+                                <Label className="text-xs font-black uppercase tracking-widest opacity-50">Pays de destination</Label>
                                 <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
                                             role="combobox"
                                             aria-expanded={isCountryPopoverOpen}
-                                            className="w-full justify-between"
+                                            className="w-full justify-between rounded-xl py-6"
                                         >
                                             {newCountry
                                                 ? countries.find((country) => country.label.toLowerCase() === newCountry.toLowerCase())?.label
@@ -668,7 +711,6 @@ export default function MapPage() {
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                         <Command>
                                             <CommandInput placeholder="Rechercher un pays..." />
-                                            <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
                                             <CommandList>
                                                 <CommandGroup>
                                                     {countries.map((country) => (
@@ -697,13 +739,14 @@ export default function MapPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Villes</Label>
+                                <Label className="text-xs font-black uppercase tracking-widest opacity-50">Villes visitées</Label>
                                 {newCities.map((city, index) => (
                                     <div key={index} className="flex items-center gap-2">
                                         <Input
                                             value={city}
                                             onChange={(e) => handleCityChange(index, e.target.value)}
-                                            placeholder={`ex: Ville ${index + 1}`}
+                                            placeholder={`ex: Paris`}
+                                            className="rounded-xl py-6"
                                         />
                                         <Button
                                             type="button"
@@ -711,87 +754,102 @@ export default function MapPage() {
                                             size="icon"
                                             onClick={() => handleRemoveCity(index)}
                                             disabled={newCities.length <= 1}
-                                            className="text-destructive hover:text-destructive"
+                                            className="text-destructive h-12 w-12"
                                         >
-                                            <MinusCircle className="h-4 w-4" />
+                                            <MinusCircle className="h-5 w-5" />
                                         </Button>
                                     </div>
                                 ))}
-                                <Button type="button" variant="outline" size="sm" onClick={handleAddCity} className="mt-2">
+                                <Button type="button" variant="outline" size="sm" onClick={handleAddCity} className="mt-2 rounded-xl border-dashed">
                                     <PlusCircle className="mr-2 h-4 w-4" />
-                                    Ajouter une autre ville
+                                    Ajouter une ville
                                 </Button>
                             </div>
 
-
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="start-date">Date de début</Label>
+                                    <Label htmlFor="start-date" className="text-xs font-black uppercase tracking-widest opacity-50">Date de début</Label>
                                     <Input
                                         id="start-date"
                                         type="date"
                                         value={newStartDate}
                                         onChange={(e) => setNewStartDate(e.target.value)}
+                                        className="rounded-xl py-6"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="end-date">Date de fin</Label>
+                                    <Label htmlFor="end-date" className="text-xs font-black uppercase tracking-widest opacity-50">Date de fin</Label>
                                     <Input
                                         id="end-date"
                                         type="date"
                                         value={newEndDate}
                                         onChange={(e) => setNewEndDate(e.target.value)}
+                                        className="rounded-xl py-6"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Photos souvenirs</Label>
+                                <Label className="text-xs font-black uppercase tracking-widest opacity-50">Photos souvenirs</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {newPhotos.map((photo, index) => (
                                         <div key={index} className="relative group">
-                                            <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-24 h-24" />
-                                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeNewPhoto(index)}>
+                                            <Image src={photo} alt={`Souvenir ${index + 1}`} width={100} height={100} className="rounded-xl object-cover w-24 h-24 border-2 border-white shadow-sm" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 rounded-lg" onClick={() => removeNewPhoto(index)}>
                                                 <Trash2 className="h-3 w-3" />
                                             </Button>
                                         </div>
                                     ))}
                                 </div>
-                                <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2" disabled={isUploading}>
+                                <Button type="button" variant="outline" onClick={() => addPhotoInputRef.current?.click()} className="w-full mt-2 rounded-xl py-6 border-dashed" disabled={isUploading}>
                                     {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-                                    {isUploading ? "Téléversement..." : "Ajouter des photos"}
+                                    {isUploading ? "Envoi..." : "Ajouter des clichés"}
                                 </Button>
                                 <Input type="file" multiple accept="image/*,.heic,.heif" className="hidden" ref={addPhotoInputRef} onChange={(e) => handlePhotoUpload(e, setNewPhotos)} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="souvenir">Un souvenir à raconter ?</Label>
+                                <Label htmlFor="souvenir" className="text-xs font-black uppercase tracking-widest opacity-50">Votre récit</Label>
                                 <Textarea
                                     id="souvenir"
                                     value={newSouvenir}
                                     onChange={(e) => setNewSouvenir(e.target.value)}
-                                    placeholder="Écrivez un court souvenir associé à ce lieu..."
+                                    placeholder="Un souvenir marquant..."
+                                    className="rounded-xl min-h-[100px]"
                                 />
                             </div>
-
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2">
                             <DialogClose asChild>
-                                <Button variant="ghost">Annuler</Button>
+                                <Button variant="ghost" className="rounded-xl">Annuler</Button>
                             </DialogClose>
-                            <Button onClick={handleAddLocations} disabled={isUploading}>Ajouter</Button>
+                            <Button onClick={handleAddLocations} disabled={isUploading} className="rounded-xl px-8">Valider</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
                 <Button 
                     variant="outline" 
-                    className="bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 shadow-sm"
+                    size="lg"
+                    className="w-full sm:w-auto rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white border-none shadow-xl px-8 py-6 transition-all hover:scale-105 group"
                     onClick={() => setIsPassportOpen(true)}
                     disabled={!user}
                 >
-                    <PassportIcon className="mr-2 h-4 w-4" />
+                    <PassportIcon className="mr-3 h-5 w-5 group-hover:rotate-12 transition-transform" />
                     Mon Passeport Momenty
+                </Button>
+            </div>
+
+            {/* Mobile-only floating button for Passport */}
+            <div className="fixed bottom-24 right-6 z-40 sm:hidden">
+                 <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-16 w-16 rounded-full bg-amber-500 text-white shadow-2xl border-4 border-white animate-bounce-slow"
+                    onClick={() => setIsPassportOpen(true)}
+                    disabled={!user}
+                >
+                    <PassportIcon className="h-6 w-6" />
                 </Button>
             </div>
 

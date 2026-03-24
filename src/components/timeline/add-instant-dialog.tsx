@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import type heic2any from "heic2any";
 import { VoiceInput } from "@/components/ui/voice-input";
 import { useAuth } from "@/context/auth-context";
+import { AudioPicker } from "@/components/ui/audio-picker";
 
 
 interface AddInstantDialogProps {
@@ -84,6 +85,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [dishName, setDishName] = useState("");
     const [isAccommodation, setIsAccommodation] = useState(false);
     const [accommodationName, setAccommodationName] = useState("");
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
     // Kol Youm API State
     const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
@@ -354,6 +356,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setIsAccommodation(false);
         setAccommodationName("");
         setIsSubmitting(false);
+        setAudioUrl(null);
     }
 
     const handleGetLocation = () => {
@@ -488,6 +491,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     city,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    audio: audioUrl,
                 };
                 const newId = await addDish(newDish);
 
@@ -549,6 +553,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    audio: audioUrl,
                 };
                 await addAccommodation(newAccommodation);
                 toast({ title: "Nouveau logement ajouté !" });
@@ -562,7 +567,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location: location || "Lieu inconnu",
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photos: uploadedPhotoUrls,
-                    category: ['Note'] // Default category, will be updated by context
+                    category: ['Note'], // Default category, will be updated by context
+                    audio: audioUrl
                 };
                 await addInstant(newInstant);
                 toast({ title: "Nouvel instant ajouté !" });
@@ -727,6 +733,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Mémoire Sonore</Label>
+                                        <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
                                     </div>
 
                                     {isAccommodation && (

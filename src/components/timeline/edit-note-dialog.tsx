@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { AudioPicker } from "../ui/audio-picker";
 import type { DisplayTransform } from "@/lib/types";
 
 
@@ -88,6 +89,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
   const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
+  const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
   useEffect(() => {
     if (open && instantToEdit) {
@@ -100,6 +102,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
       setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
+      setAudioUrl(instantToEdit.audio || null);
     }
   }, [open, instantToEdit]);
 
@@ -188,6 +191,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
         date: dateToSave.toISOString(), // Ensure date is in ISO format
         category: categories, // Pass the manually selected categories
         displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+        audio: audioUrl,
       });
 
       setOpen(false); // Close the dialog
@@ -246,6 +250,7 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
     setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
     setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
     setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
+    setAudioUrl(instantToEdit.audio || null);
     setIsAnalyzing(false);
     setIsImprovingText(false);
   }
@@ -367,6 +372,11 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
                   className="min-h-[100px] mt-1"
                   disabled={isLoading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground flex items-center gap-2">Mémoire Sonore</Label>
+                <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
               </div>
 
               <div>

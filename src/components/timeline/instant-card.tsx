@@ -4,7 +4,7 @@
 
 import React, { useContext, useState } from "react";
 import Image from "next/image";
-import { MoreVertical, Edit, Trash2, MapPin, Tag } from "lucide-react";
+import { MoreVertical, Edit, Trash2, MapPin, Tag, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -359,8 +359,13 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
         <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
                 <div className="flex items-start gap-4">
-                    <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0", instant.color)}>
+                    <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0 relative", instant.color)}>
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
+                        {instant.audio && (
+                            <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                                <Music className="h-3 w-3 text-primary animate-pulse" />
+                            </div>
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue">{instant.title}</p>

@@ -17,7 +17,8 @@ import {
   Sparkles,
   Trophy,
   Target,
-  Compass
+  Compass,
+  ArrowRight
 } from "lucide-react";
 import { 
   countryToContinent, 
@@ -42,15 +43,66 @@ interface PassportViewProps {
   manualLocations: any[];
 }
 
-interface CountryData {
+interface VisaData {
   name: string;
-  instants: Instant[];
-  dishes: Dish[];
-  encounters: Encounter[];
-  accommodations: Accommodation[];
-  manualCities: string[];
   firstVisit: string;
+  type: 'country' | 'city';
 }
+
+const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color: 'emerald' | 'blue' | 'amber' }) => {
+  const rotation = (index % 2 === 0 ? -2 : 2) + (index % 3);
+  
+  const colorClasses = {
+    emerald: "text-emerald-700/60 border-emerald-700/60 bg-emerald-50 text-emerald-900 border-emerald-200",
+    blue: "text-blue-700/60 border-blue-700/60 bg-blue-50 text-blue-900 border-blue-200",
+    amber: "text-amber-700/60 border-amber-700/60 bg-amber-50 text-amber-900 border-amber-200",
+  };
+
+  const stampColor = color === 'emerald' ? "text-emerald-700/40" : "text-blue-700/40";
+
+  return (
+    <div 
+      className={cn(
+        "relative p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md group overflow-hidden bg-white/60",
+        color === 'emerald' ? "border-emerald-100 hover:border-emerald-300" : "border-blue-100 hover:border-blue-300"
+      )}
+    >
+      {/* The Stamp Background */}
+      <div className={cn(
+        "absolute -top-2 -right-2 pointer-events-none opacity-20 transform-gpu group-hover:scale-110 transition-transform duration-500",
+        stampColor
+      )} style={{ transform: `rotate(${rotation}deg)` }}>
+          <div className="border-4 border-current rounded-full p-2 flex flex-col items-center justify-center w-28 h-28 transform rotate-12">
+              <span className="text-[8px] font-bold uppercase tracking-widest">ADMIS</span>
+              <span className="text-[10px] font-black my-0.5">{format(parseISO(visa.firstVisit), 'dd.MM.yy')}</span>
+              <div className="h-[1px] w-full bg-current mb-0.5" />
+              <span className="text-[10px] font-serif font-black uppercase text-center leading-tight truncate px-1 max-w-full">{visa.name}</span>
+          </div>
+      </div>
+
+      <div className="relative z-10 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          {visa.type === 'country' ? <Globe className="h-4 w-4 text-emerald-600" /> : <MapPin className="h-4 w-4 text-blue-600" />}
+          <h4 className="font-serif font-black text-lg text-slate-800 leading-tight truncate">{visa.name}</h4>
+        </div>
+        
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+          <Calendar className="h-3 w-3" />
+          <span>Visé le {format(parseISO(visa.firstVisit), 'd MMMM yyyy', { locale: fr })}</span>
+        </div>
+
+        <div className="mt-2 flex justify-end">
+            <span className={cn(
+              "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter border",
+              color === 'emerald' ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-blue-100 text-blue-700 border-blue-200"
+            )}>
+              VISA Momenty #{(index + 400).toString(16).toUpperCase()}
+            </span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const PassportView = ({ 
   onClose, 
@@ -75,248 +127,137 @@ export const PassportView = ({
 
   const continentStats = useMemo(() => {
     const stats: Record<string, { visited: number; total: number; icon: string }> = {};
-    
-    // Initialize stats
     continentData.forEach(c => {
       stats[c.id] = { visited: 0, total: c.totalCountries, icon: c.icon };
     });
-
-    // Count visited countries by continent
     const visitedCountries = new Set<string>();
     instants.forEach(i => { const c = getCountry(i.location); if (c) visitedCountries.add(c); });
     manualLocations.forEach(m => { const c = getCountry(m.name); if (c) visitedCountries.add(c); });
-
     visitedCountries.forEach(country => {
       const continent = countryToContinent[country];
-      if (continent && stats[continent]) {
-        stats[continent].visited += 1;
-      }
+      if (continent && stats[continent]) stats[continent].visited += 1;
     });
-
     return stats;
   }, [instants, manualLocations]);
 
-  const explorerGrade = useMemo(() => {
-    const countriesSet = new Set<string>();
-    const citiesSet = new Set<string>();
-    instants.forEach(i => { 
-      const c = getCountry(i.location);
-      const ct = getCity(i.location);
-      if (c) countriesSet.add(c); 
-      if (ct) citiesSet.add(ct);
+  const countryVisas = useMemo(() => {
+    const countries = new Set<string>();
+    instants.forEach(i => { const c = getCountry(i.location); if (c) countries.add(c); });
+    manualLocations.forEach(m => { const c = getCountry(m.name); if (c) countries.add(c); });
+    
+    return Array.from(countries).sort().map(name => {
+      let firstVisit = new Date().toISOString();
+      const iDates = instants.filter(i => getCountry(i.location) === name).map(i => i.date);
+      const mDates = manualLocations.filter(m => getCountry(m.name) === name).map(m => m.date);
+      const allDates = [...iDates, ...mDates].sort();
+      if (allDates.length > 0) firstVisit = allDates[0];
+      return { name, firstVisit, type: 'country' } as VisaData;
     });
-    manualLocations.forEach(m => { 
-      const c = getCountry(m.name);
-      const ct = getCity(m.name);
-      if (c) countriesSet.add(c); 
-      if (ct) citiesSet.add(ct);
-    });
-    return getExplorerGrade(countriesSet.size, citiesSet.size);
   }, [instants, manualLocations]);
 
-  const totalCountriesCount = useMemo(() => {
-    const countriesSet = new Set<string>();
-    instants.forEach(i => { const c = getCountry(i.location); if (c) countriesSet.add(c); });
-    manualLocations.forEach(m => { const c = getCountry(m.name); if (c) countriesSet.add(c); });
-    return countriesSet.size;
-  }, [instants, manualLocations]);
-
-  const totalCitiesCount = useMemo(() => {
+  const cityVisas = useMemo(() => {
     const citiesSet = new Set<string>();
     instants.forEach(i => { const c = getCity(i.location); if (c) citiesSet.add(c); });
     manualLocations.forEach(m => { const c = getCity(m.name); if (c) citiesSet.add(c); });
-    return citiesSet.size;
+    
+    return Array.from(citiesSet).sort().map(name => {
+      let firstVisit = new Date().toISOString();
+      const iDates = instants.filter(i => getCity(i.location) === name).map(i => i.date);
+      const mDates = manualLocations.filter(m => getCity(m.name) === name).map(m => m.date);
+      const allDates = [...iDates, ...mDates].sort();
+      if (allDates.length > 0) firstVisit = allDates[0];
+      return { name, firstVisit, type: 'city' } as VisaData;
+    });
   }, [instants, manualLocations]);
 
-  const countryStats = useMemo(() => {
-    const stats: Record<string, CountryData> = {};
-
-    const getCountryFromLocation = (loc: string) => {
-      const parts = loc.split(",");
-      return parts[parts.length - 1].trim();
-    };
-
-    // Helper to add data
-    const addData = (type: keyof CountryData, item: any) => {
-      const locStr = item.location || item.name || "";
-      const country = getCountryFromLocation(locStr);
-      if (!stats[country]) {
-        stats[country] = {
-          name: country,
-          instants: [],
-          dishes: [],
-          encounters: [],
-          accommodations: [],
-          manualCities: [],
-          firstVisit: item.date || item.startDate || new Date().toISOString()
-        };
-      }
-      
-      if (Array.isArray(stats[country][type])) {
-        (stats[country][type] as any[]).push(item);
-      }
-
-      // Update first visit
-      const itemDate = item.date || item.startDate;
-      if (itemDate && itemDate < stats[country].firstVisit) {
-        stats[country].firstVisit = itemDate;
-      }
-    };
-
-    instants.forEach(item => addData('instants', item));
-    dishes.forEach(item => addData('dishes', item));
-    encounters.forEach(item => addData('encounters', item));
-    accommodations.forEach(item => addData('accommodations', item));
-    
-    manualLocations.forEach(loc => {
-      const country = getCountryFromLocation(loc.name);
-      if (!stats[country]) {
-         stats[country] = {
-          name: country,
-          instants: [],
-          dishes: [],
-          encounters: [],
-          accommodations: [],
-          manualCities: [],
-          firstVisit: loc.startDate || new Date().toISOString()
-        };
-      }
-      const city = loc.name.split(",")[0].trim();
-      if (!stats[country].manualCities.includes(city)) {
-        stats[country].manualCities.push(city);
-      }
-    });
-
-    return Object.values(stats).sort((a, b) => a.firstVisit.localeCompare(b.firstVisit));
-  }, [instants, dishes, encounters, accommodations, manualLocations]);
-
-  const getAchievements = (country: CountryData) => {
-    const achievements = [];
-    
-    if (country.dishes.length >= 3) {
-      achievements.push({ icon: <Utensils className="h-4 w-4" />, label: "Chef de Cuisine", desc: "A goûté plus de 3 plats locaux" });
-    }
-    if (country.encounters.length >= 2) {
-      achievements.push({ icon: <Users className="h-4 w-4" />, label: "Papillon Social", desc: "S'est fait de nouveaux amis" });
-    }
-    
-    const cityCount = new Set([
-      ...country.instants.map(i => i.location.split(",")[0].trim()),
-      ...country.manualCities
-    ]).size;
-    
-    if (cityCount >= 3) {
-      achievements.push({ icon: <Globe className="h-4 w-4" />, label: "Globe-Trotteur", desc: `A exploré ${cityCount} villes` });
-    }
-
-    const hasNightActivity = country.instants.some(i => {
-      const hour = getHours(parseISO(i.date));
-      return hour >= 23 || hour <= 4;
-    });
-    if (hasNightActivity) {
-      achievements.push({ icon: <Moon className="h-4 w-4" />, label: "Hibou de Nuit", desc: "A vécu la vie nocturne" });
-    }
-
-    const hasEarlyActivity = country.instants.some(i => {
-      const hour = getHours(parseISO(i.date));
-      return hour >= 5 && hour <= 7;
-    });
-    if (hasEarlyActivity) {
-      achievements.push({ icon: <Sun className="h-4 w-4" />, label: "Aube Dorée", desc: "Debout avec le soleil" });
-    }
-
-    const photoCount = country.instants.reduce((acc, i) => acc + (i.photos?.length || 0), 0);
-    if (photoCount >= 10) {
-      achievements.push({ icon: <Camera className="h-4 w-4" />, label: "Paparazzi", desc: `A capturé ${photoCount} clichés` });
-    }
-
-    if (country.accommodations.length >= 2) {
-        achievements.push({ icon: <MapPin className="h-4 w-4" />, label: "Nomade", desc: "A testé plusieurs nids" });
-    }
-
-    return achievements;
-  };
+  const explorerGrade = useMemo(() => {
+    return getExplorerGrade(countryVisas.length, cityVisas.length);
+  }, [countryVisas, cityVisas]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-8">
-      <Card className="w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col bg-[#FDF5E6] border-[#D2B48C] border-8 shadow-2xl relative">
-        {/* Passport Texture Overlay */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/paper.png')]" />
+    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-2 sm:p-6">
+      <Card className="w-full max-w-5xl h-[90vh] sm:h-[85vh] overflow-hidden flex flex-col bg-[#FDF5E6] border-[#8B4513] border-4 sm:border-8 shadow-2xl relative rounded-3xl">
+        <div className="absolute inset-0 opacity-15 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/paper.png')]" />
         
         {/* Header */}
-        <div className="bg-[#8B4513] text-white p-6 flex justify-between items-center shadow-lg relative z-10">
-          <div className="flex items-center gap-4">
-              <div className="bg-white/20 p-2 rounded-full border-2 border-dashed border-white/40">
-                <Globe className="h-8 w-8 text-amber-200 animate-pulse" />
+        <div className="bg-[#5C3A21] text-white px-4 sm:px-8 py-4 sm:py-6 flex justify-between items-center shadow-lg relative z-10 border-b-2 border-amber-900/20">
+          <div className="flex items-center gap-3 sm:gap-5">
+              <div className="bg-amber-100/10 p-2 sm:p-3 rounded-2xl border-2 border-dashed border-amber-200/30">
+                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-amber-200" />
               </div>
               <div>
-                <h2 className="text-3xl font-serif font-bold italic tracking-wider">Mon Passeport Momenty</h2>
-                <p className="text-amber-200/80 text-sm font-medium">Archives Officielles des Globe-Trotteurs</p>
+                <h2 className="text-xl sm:text-3xl font-serif font-black tracking-tight leading-none">PASSEPORT MOMENTY</h2>
+                <p className="text-amber-200/60 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mt-1">Traveler Authentication System</p>
               </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20 rounded-full h-10 w-10">
-            <X className="h-6 w-6" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10 rounded-full h-8 w-8 sm:h-12 sm:w-12">
+            <X className="h-5 w-5 sm:h-7 sm:w-7" />
           </Button>
         </div>
 
-        <CardContent className="flex-1 overflow-y-auto p-6 space-y-12">
+        <CardContent className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-10 sm:space-y-16 scrollbar-hide">
           {/* Dashboard Section */}
-          <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-6 sm:space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
               {/* Explorer Grade Card */}
-              <Card className="md:col-span-2 bg-gradient-to-br from-white/80 to-[#DEB887]/30 border-[#8B4513]/20 shadow-md p-6 flex items-center justify-between overflow-hidden relative group">
-                <div className="absolute -right-8 -bottom-8 opacity-10 transform rotate-12 group-hover:scale-110 transition-transform">
-                  <Compass className="h-40 w-40 text-[#8B4513]" />
+              <Card className="lg:col-span-2 bg-white/60 backdrop-blur-sm border-[#8B4513]/10 shadow-xl p-5 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between overflow-hidden relative group rounded-2xl">
+                <div className="absolute -right-8 -bottom-8 opacity-5 transform rotate-12 group-hover:rotate-45 transition-transform duration-1000">
+                  <Compass className="h-32 w-32 sm:h-48 sm:w-48 text-[#8B4513]" />
                 </div>
-                <div className="space-y-4 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <Trophy className={cn("h-8 w-8", explorerGrade.color)} />
+                <div className="space-y-4 sm:space-y-6 relative z-10 w-full sm:w-auto">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("p-3 sm:p-4 rounded-2xl bg-white shadow-inner flex items-center justify-center text-3xl sm:text-4xl", explorerGrade.color)}>
+                        {explorerGrade.icon}
+                    </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-[#8B4513]/60 italic">Niveau d'Explorateur</p>
-                      <h3 className={cn("text-3xl font-serif font-black", explorerGrade.color)}>{explorerGrade.title}</h3>
+                      <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#8B4513]/40">Grade d'Explorateur</p>
+                      <h3 className={cn("text-2xl sm:text-4xl font-serif font-black", explorerGrade.color)}>{explorerGrade.title}</h3>
                     </div>
                   </div>
-                      <div className="flex gap-4">
-                    <div className="bg-white/40 px-3 py-1 rounded-full border border-[#8B4513]/10">
-                      <span className="text-xl font-bold text-[#8B4513]">{totalCountriesCount}</span>
-                      <span className="text-[10px] ml-1 uppercase text-[#8B4513]/60">Pays</span>
+                  <div className="flex gap-3 sm:gap-4 flex-wrap">
+                    <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
+                      <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Pays</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{countryVisas.length}</span>
                     </div>
-                    <div className="bg-white/40 px-3 py-1 rounded-full border border-[#8B4513]/10">
-                      <span className="text-xl font-bold text-[#8B4513]">{totalCitiesCount}</span>
-                      <span className="text-[10px] ml-1 uppercase text-[#8B4513]/60">Villes</span>
+                    <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
+                      <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Villes</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{cityVisas.length}</span>
                     </div>
-                    <div className="bg-white/40 px-3 py-1 rounded-full border border-[#8B4513]/10">
-                        <span className="text-xl font-bold text-[#8B4513]">{instants.length}</span>
-                        <span className="text-[10px] ml-1 uppercase text-[#8B4513]/60">Moments</span>
+                    <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
+                      <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Moments</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{instants.length}</span>
                     </div>
                   </div>
                 </div>
-                <div className="relative z-10 text-6xl opacity-50">{explorerGrade.icon}</div>
               </Card>
 
               {/* World Coverage Card */}
-              <Card className="bg-[#8B4513] text-[#FDF5E6] border-none shadow-xl p-6 flex flex-col justify-center items-center text-center space-y-3">
-                <Target className="h-8 w-8 text-amber-200" />
-                <div>
-                   <p className="text-[10px] uppercase font-bold tracking-widest opacity-60">Couverture Mondiale</p>
-                   <h4 className="text-4xl font-black">{Math.round((totalCountriesCount / 195) * 100)}%</h4>
+              <Card className="bg-[#5C3A21] text-[#FDF5E6] border-none shadow-xl p-6 sm:p-8 flex flex-col justify-center items-center text-center space-y-4 rounded-2xl">
+                <div className="h-16 w-16 rounded-full bg-white/10 flex items-center justify-center">
+                    <Target className="h-8 w-8 text-amber-200" />
                 </div>
-                <Progress value={(totalCountriesCount / 195) * 100} className="h-2 bg-white/20" />
-                <p className="text-[10px] italic opacity-60">Il vous reste 195 pays à découvrir !</p>
+                <div>
+                   <p className="text-[10px] uppercase font-black tracking-[0.2em] opacity-40">Couverture Mondiale</p>
+                   <h4 className="text-4xl sm:text-5xl font-black tracking-tighter">{Math.round((countryVisas.length / 195) * 100)}%</h4>
+                </div>
+                <div className="w-full space-y-2">
+                    <Progress value={(countryVisas.length / 195) * 100} className="h-2 bg-white/10" />
+                    <p className="text-[10px] font-bold italic opacity-40 text-right">Plus que {195 - countryVisas.length} pays !</p>
+                </div>
               </Card>
             </div>
 
             {/* Continent Progress Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                {continentData.map((c: { id: string; label: string; totalCountries: number; icon: string }) => {
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-4">
+                {continentData.map((c) => {
                   const stats = continentStats[c.id];
                   const percentage = Math.round((stats.visited / stats.total) * 100) || 0;
                   return (
-                    <div key={c.id} className="bg-white/40 p-3 rounded-xl border border-[#D2B48C]/30 flex flex-col items-center text-center space-y-2 hover:bg-white/60 transition-colors">
-                        <span className="text-2xl">{c.icon}</span>
+                    <div key={c.id} className="bg-white/40 p-2 sm:p-3 rounded-2xl border border-[#8B4513]/5 flex flex-col items-center text-center space-y-2 hover:bg-white/80 transition-all hover:shadow-sm">
+                        <span className="text-xl sm:text-2xl">{c.icon}</span>
                         <div>
-                          <p className="text-[9px] font-black uppercase text-[#8B4513]/60 leading-tight truncate w-full">{c.label}</p>
-                          <p className="text-xs font-bold text-[#8B4513]">{stats.visited}/{stats.total}</p>
+                          <p className="text-[8px] sm:text-[10px] font-black uppercase text-[#8B4513]/30 leading-tight truncate w-full">{c.label}</p>
+                          <p className="text-[10px] sm:text-xs font-black text-[#8B4513]">{stats.visited}/{stats.total}</p>
                         </div>
                         <Progress value={percentage} className="h-1 bg-[#8B4513]/10" />
                     </div>
@@ -327,109 +268,59 @@ export const PassportView = ({
 
           <div className="h-px w-full bg-[#8B4513]/10" />
 
-          {countryStats.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                <div className="w-24 h-24 bg-[#DEB887]/30 rounded-full flex items-center justify-center border-4 border-dashed border-[#8B4513]/20">
-                    <MapPin className="h-12 w-12 text-[#8B4513]/40" />
-                </div>
-                <div>
-                    <h3 className="text-2xl font-serif font-bold text-[#8B4513]">Votre passeport est vide !</h3>
-                    <p className="text-[#8B4513]/60 italic max-w-xs mx-auto">Commencez à explorer le monde et enregistrez vos souvenirs pour obtenir vos premiers tampons.</p>
-                </div>
+          {countryVisas.length === 0 && cityVisas.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
+                <Compass className="h-16 w-16 text-[#8B4513]/10 mb-4 animate-spin-slow" />
+                <h3 className="text-xl font-serif font-black text-[#8B4513]">Passeport en attente de visa...</h3>
+                <p className="text-slate-500 text-sm max-w-xs mx-auto italic">Explorez une ville ou un pays pour voir votre premier tampon officiel apparaître ici.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {countryStats.map((country: CountryData, idx: number) => {
-                const achievements = getAchievements(country);
-                const stampColors = ["text-red-700/60", "text-blue-700/60", "text-green-700/60", "text-purple-700/60", "text-teal-700/60"];
-                const colorClass = stampColors[idx % stampColors.length];
-                const rotation = (idx % 2 === 0 ? -3 : 3) + (idx % 3);
-
-                return (
-                  <div 
-                    key={country.name} 
-                    className="relative p-6 bg-white/50 rounded-lg border-2 border-[#D2B48C]/40 shadow-sm transition-transform hover:scale-[1.01]"
-                  >
-                    {/* The Stamp Background */}
-                    <div className={cn(
-                      "absolute -top-4 -right-4 pointer-events-none opacity-40 transform-gpu",
-                      colorClass
-                    )} style={{ transform: `rotate(${rotation}deg)` }}>
-                        <div className="border-4 border-current rounded-full p-3 flex flex-col items-center justify-center w-36 h-36">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Admis</span>
-                            <span className="text-sm font-black my-1">{format(parseISO(country.firstVisit), 'dd-MM-yyyy')}</span>
-                            <div className="h-[1px] w-full bg-current mb-1" />
-                            <span className="text-[12px] font-serif font-black uppercase text-center">{country.name}</span>
-                        </div>
-                    </div>
-
-                    <div className="relative z-10 space-y-4">
-                      <div className="flex items-center gap-3">
-                         <div className="p-2 bg-[#8B4513]/10 rounded-lg">
-                            <MapIcon className="h-6 w-6 text-[#8B4513]" />
-                         </div>
-                         <h3 className="text-2xl font-serif font-bold text-[#8B4513]">{country.name}</h3>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-[#8B4513]/70 bg-[#DEB887]/20 p-2 rounded-md">
-                           <Calendar className="h-4 w-4" />
-                           <span>Premier jour : {format(parseISO(country.firstVisit), 'd MMM yyyy', { locale: fr })}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[#8B4513]/70 bg-[#DEB887]/20 p-2 rounded-md">
-                           <Sparkles className="h-4 w-4" />
-                           <span>{country.instants.length} Instants</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-center gap-2 text-[#8B4513] font-bold">
-                           <Award className="h-5 w-5" />
-                           <span className="text-sm uppercase tracking-wider">Distinctions Officielles</span>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {achievements.length > 0 ? achievements.map((ach, aIdx) => (
-                            <div 
-                                key={aIdx} 
-                                className="group relative"
-                            >
-                                <Badge variant="outline" className="bg-[#F4A460]/20 border-[#8B4513]/30 text-[#8B4513] px-3 py-1 flex items-center gap-2 text-xs hover:bg-[#F4A460]/40 transition-colors">
-                                    {ach.icon}
-                                    {ach.label}
-                                </Badge>
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#8B4513] text-white text-[10px] rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
-                                    {ach.desc}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#8B4513]" />
-                                </div>
-                            </div>
-                          )) : (
-                            <p className="text-xs italic text-[#8B4513]/40">Aucune distinction enregistrée. Continuez l'exploration !</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Funny Footer for the page */}
-                      <div className="pt-4 border-t border-[#D2B48C]/30 flex justify-between items-center text-[10px] uppercase font-bold text-[#8B4513]/40 tracking-tighter">
-                          <span>Visa Momenty #{(idx + 1000).toString(16).toUpperCase()}</span>
-                          <span>Autorité de Voyage Galactique</span>
-                      </div>
-                    </div>
+            <div className="space-y-16 sm:space-y-24">
+              {/* Countries Section */}
+              {countryVisas.length > 0 && (
+                <div className="space-y-6 sm:space-y-10">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg sm:text-2xl font-serif font-black text-emerald-900 uppercase tracking-widest flex items-center gap-3">
+                      <span className="h-1 sm:h-2 w-8 sm:w-12 bg-emerald-600 rounded-full" /> 
+                      Mes Pays Visités
+                    </h3>
                   </div>
-                );
-              })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {countryVisas.map((visa, idx) => (
+                      <VisaCard key={visa.name} visa={visa} index={idx} color="emerald" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cities Section */}
+              {cityVisas.length > 0 && (
+                <div className="space-y-6 sm:space-y-10 pb-10">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg sm:text-2xl font-serif font-black text-blue-900 uppercase tracking-widest flex items-center gap-3">
+                      <span className="h-1 sm:h-2 w-8 sm:w-12 bg-blue-600 rounded-full" /> 
+                      Mes Villes Explorées
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {cityVisas.map((visa, idx) => (
+                      <VisaCard key={visa.name} visa={visa} index={idx} color="blue" />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
 
         {/* Footer decoration */}
-        <div className="bg-[#DEB887]/20 p-4 border-t border-[#D2B48C] flex justify-center items-center gap-3">
-             <div className="h-px flex-1 bg-[#D2B48C]/40" />
-             <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
-                <Palmtree className="h-4 w-4 text-[#8B4513]" />
-                <span className="text-[10px] font-serif font-black text-[#8B4513] uppercase">Exploration sans limites</span>
+        <div className="bg-[#5C3A21]/5 p-4 sm:p-6 border-t border-[#8B4513]/10 flex justify-center items-center gap-4 relative z-10">
+             <div className="h-px flex-1 bg-[#8B4513]/5" />
+             <div className="flex items-center gap-3 opacity-30 group cursor-default">
+                <Palmtree className="h-5 w-5 text-[#8B4513] group-hover:rotate-12 transition-transform" />
+                <span className="text-[10px] font-serif font-black text-[#8B4513] uppercase tracking-widest">CERTIFIÉ MOMENTY OFFICIAL</span>
              </div>
-             <div className="h-px flex-1 bg-[#D2B48C]/40" />
+             <div className="h-px flex-1 bg-[#8B4513]/5" />
         </div>
       </Card>
     </div>
