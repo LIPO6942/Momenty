@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon, Book as PassportIcon } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon, Book as PassportIcon, Compass, Globe, Target, Map as MapIcon } from "lucide-react";
 import { useContext, useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TimelineContext } from "@/context/timeline-context";
@@ -57,7 +57,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { PassportView } from "@/components/map/passport-view";
-// InstantSidebar removed
+import { InstantSidebar } from "@/components/timeline/instant-sidebar";
 
 
 
@@ -101,7 +101,9 @@ export default function MapPage() {
     // Passport state
     const [isPassportOpen, setIsPassportOpen] = useState(false);
 
-    // Sidebar states removed
+    // Sidebar states
+    const [selectedLocationForSidebar, setSelectedLocationForSidebar] = useState<LocationWithCoords | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
     // State for Add Dialog
@@ -338,6 +340,13 @@ export default function MapPage() {
 
         return orderedGrouped;
     }, [locationsWithCoords]);
+    
+    const totalCountriesCount = useMemo(() => {
+        const countries = Object.keys(locationsByCountry).filter(c => c !== 'Lieux non classés');
+        return countries.length;
+    }, [locationsByCountry]);
+
+    const totalCitiesCount = useMemo(() => locationsWithCoords.length, [locationsWithCoords]);
 
     const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
 
@@ -528,15 +537,8 @@ export default function MapPage() {
 
     const handleMarkerClick = (location: LocationWithCoords) => {
         setFocusedLocation(location.coords);
-        if (location.count > 0) {
-            setLocationToRedirect(location);
-        } else {
-            // Just show info for manual locations without instants
-            toast({
-                title: location.name,
-                description: location.souvenir || "Lieu enregistré (aucun souvenir associé)",
-            });
-        }
+        setSelectedLocationForSidebar(location);
+        setIsSidebarOpen(true);
     };
 
     const confirmRedirection = () => {
@@ -1060,8 +1062,14 @@ export default function MapPage() {
                 initialIndex={selectedImageIndex || 0}
             />
 
-            {/* Instant Sidebar */}
-            {/* InstantSidebar removed */}
+            <InstantSidebar 
+                isOpen={isSidebarOpen} 
+                onClose={() => setIsSidebarOpen(false)} 
+                location={selectedLocationForSidebar?.name || ""}
+                instants={selectedLocationForSidebar?.instants || []}
+                souvenir={selectedLocationForSidebar?.souvenir}
+                photos={selectedLocationForSidebar?.photos}
+            />
         </div>
     );
 }

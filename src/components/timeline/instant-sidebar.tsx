@@ -127,7 +127,7 @@ export const InstantSidebar = ({
                                                     <div className="relative flex-shrink-0">
                                                         <Image
                                                             src={instant.photos[0]}
-                                                            alt={instant.name}
+                                                            alt={instant.title}
                                                             width={80}
                                                             height={80}
                                                             className="rounded-lg object-cover h-20 w-20 ring-1 ring-border"
@@ -143,7 +143,7 @@ export const InstantSidebar = ({
                                                 {/* Content */}
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-semibold text-sm text-foreground line-clamp-2 mb-1">
-                                                        {instant.name}
+                                                        {instant.title}
                                                     </h3>
 
                                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
@@ -157,23 +157,24 @@ export const InstantSidebar = ({
                                                         </p>
                                                     )}
 
-                                                    {instant.companions && instant.companions.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 mt-2">
-                                                            {instant.companions.slice(0, 3).map((companion, idx) => (
-                                                                <span
-                                                                    key={idx}
-                                                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-secondary-foreground"
-                                                                >
-                                                                    {companion}
-                                                                </span>
-                                                            ))}
-                                                            {instant.companions.length > 3 && (
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-secondary-foreground">
-                                                                    +{instant.companions.length - 3}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {Array.isArray(instant.category) && instant.category.slice(0, 2).map((cat, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary border border-primary/20"
+                                                            >
+                                                                {cat}
+                                                            </span>
+                                                        ))}
+                                                        {Array.isArray(instant.emotion) && (Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion]).slice(0, 2).map((emotion, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-secondary text-secondary-foreground border border-secondary"
+                                                            >
+                                                                {emotion}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </CardContent>
