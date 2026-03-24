@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon, Book as PassportIcon } from "lucide-react";
 import { useContext, useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TimelineContext } from "@/context/timeline-context";
@@ -56,6 +56,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { PassportView } from "@/components/map/passport-view";
 // InstantSidebar removed
 
 
@@ -76,7 +77,13 @@ const toInputDate = (isoString?: string) => {
 }
 
 export default function MapPage() {
-    const { instants, deleteInstantsByLocation } = useContext(TimelineContext);
+    const { 
+        instants, 
+        deleteInstantsByLocation,
+        dishes,
+        encounters,
+        accommodations
+    } = useContext(TimelineContext);
     const { user } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
@@ -90,6 +97,9 @@ export default function MapPage() {
     // Filter states
     const [selectedMonth, setSelectedMonth] = useState<number>(-1); // -1 for "Voir tout"
     const [selectedYear, setSelectedYear] = useState<number>(-1); // -1 for "Toutes les années"
+
+    // Passport state
+    const [isPassportOpen, setIsPassportOpen] = useState(false);
 
     // Sidebar states removed
 
@@ -625,7 +635,7 @@ export default function MapPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <div className="mb-8">
+            <div className="mb-8 flex flex-wrap gap-4">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={!user}>
@@ -633,6 +643,7 @@ export default function MapPage() {
                             Ajouter un lieu
                         </Button>
                     </DialogTrigger>
+                    {/* ... (rest of the dialog content stays the same) */}
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Ajouter un ou plusieurs lieux</DialogTitle>
@@ -772,7 +783,28 @@ export default function MapPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                <Button 
+                    variant="outline" 
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 shadow-sm"
+                    onClick={() => setIsPassportOpen(true)}
+                    disabled={!user}
+                >
+                    <PassportIcon className="mr-2 h-4 w-4" />
+                    Mon Passeport Momenty
+                </Button>
             </div>
+
+            {isPassportOpen && (
+                <PassportView 
+                    onClose={() => setIsPassportOpen(false)}
+                    instants={instants}
+                    dishes={dishes}
+                    encounters={encounters}
+                    accommodations={accommodations}
+                    manualLocations={manualLocations}
+                />
+            )}
 
             <div className="space-y-4">
                 {isLoadingCoords ? (

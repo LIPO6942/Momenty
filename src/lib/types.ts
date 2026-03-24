@@ -49,6 +49,7 @@ export interface Instant {
     location: string;
     emotion: string | string[];
     photos?: string[] | null; // Now these will be Cloudinary URLs
+    audio?: string | null; // Cloudinary URL for audio memory
     category?: string[]; // AI-generated category, now an array
     displayTransform?: DisplayTransform; // Optional persisted display settings
 }
