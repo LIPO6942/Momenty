@@ -284,16 +284,12 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
         </div>
       )}
 
-      {/* Studio Sonore Dialog - Always rendered, controlled by isLibraryOpen */}
-      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={false}>
-        <DialogContent 
-          className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white [&>button]:hidden"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onInteractOutside={(e) => {
-            // allows clicking outside to close
-          }}
-        >
-          <div className="p-6 md:p-8 bg-slate-900 text-white relative">
+      {/* Studio Sonore Custom Overlay Layout - Avoids nested Dialog focus bounds */}
+      {isLibraryOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)} />
+          <div className="w-full max-w-4xl h-[85vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 animate-in zoom-in-95 duration-200">
+            <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-4">
                 <Volume2 className="h-7 w-7 md:h-8 md:w-8 text-amber-400" />
@@ -487,9 +483,11 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 </div>
               )}
             </ScrollArea>
+              )}
+            </ScrollArea>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

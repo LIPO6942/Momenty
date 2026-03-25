@@ -39,17 +39,21 @@ export async function POST(request: Request) {
     const fileBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(fileBuffer);
 
+    const isAudio = file.type.startsWith('audio/') || file.name.match(/\.(webm|mp4|m4a|mp3|ogg)$/i);
+    const options = isAudio 
+      ? { resource_type: 'video' as const } 
+      : { 
+          resource_type: 'auto' as const,
+          transformation: [
+            { angle: "auto_right" },
+            { quality: "auto:best" },
+            { fetch_format: "auto" }
+          ]
+        };
+
     const stream = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { 
-            resource_type: 'auto',
-            // Use a smart pipeline for transformations to handle all cases
-            transformation: [
-              { angle: "auto_right" }, // Reliable auto-rotation
-              { quality: "auto:best" }, // Best quality
-              { fetch_format: "auto" } // Automatic format selection
-            ]
-          },
+          options,
           (error, result) => {
             if (error) {
               return reject(error);
