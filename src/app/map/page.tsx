@@ -342,11 +342,18 @@ export default function MapPage() {
     }, [locationsWithCoords]);
     
     const totalCountriesCount = useMemo(() => {
-        const countries = Object.keys(locationsByCountry).filter(c => c !== 'Lieux non classés');
-        return countries.length;
-    }, [locationsByCountry]);
+        const countriesSet = new Set<string>();
+        allLocations.forEach(location => {
+            const parts = location.name.split(',').map(p => p.trim());
+            const country = parts.length > 1 ? parts[parts.length - 1] : 'Lieux non classés';
+            if (country !== 'Lieux non classés') {
+                countriesSet.add(country);
+            }
+        });
+        return countriesSet.size;
+    }, [allLocations]);
 
-    const totalCitiesCount = useMemo(() => locationsWithCoords.length, [locationsWithCoords]);
+    const totalCitiesCount = useMemo(() => allLocations.length, [allLocations]);
 
     const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
 

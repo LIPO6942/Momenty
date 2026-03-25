@@ -129,6 +129,7 @@ export const PassportView = ({
   const getCountry = (loc: string) => {
     if (!loc) return "";
     const parts = loc.split(",");
+    if (parts.length <= 1) return "";
     return parts[parts.length - 1].trim();
   };
 
@@ -169,18 +170,38 @@ export const PassportView = ({
   }, [instants, manualLocations]);
 
   const cityVisas = useMemo(() => {
-    const citiesSet = new Set<string>();
-    instants.forEach(i => { const c = getCity(i.location); if (c) citiesSet.add(c); });
-    manualLocations.forEach(m => { const c = getCity(m.name); if (c) citiesSet.add(c); });
+    const locationsMap = new Map<string, { firstVisit: string; name: string }>();
     
-    return Array.from(citiesSet).sort().map(name => {
-      let firstVisit = new Date().toISOString();
-      const iDates = instants.filter(i => getCity(i.location) === name).map(i => i.date);
-      const mDates = manualLocations.filter(m => getCity(m.name) === name).map(m => m.startDate);
-      const allDates = [...iDates, ...mDates].filter(Boolean).sort() as string[];
-      if (allDates.length > 0) firstVisit = allDates[0];
-      return { name, firstVisit, type: 'city' } as VisaData;
+    instants.forEach(i => {
+      const key = i.location.toLowerCase().trim();
+      if (!key) return;
+      if (!locationsMap.has(key) || i.date < locationsMap.get(key)!.firstVisit) {
+        locationsMap.set(key, { 
+          firstVisit: i.date, 
+          name: getCity(i.location) || i.location 
+        });
+      }
     });
+    
+    manualLocations.forEach(m => {
+      const key = m.name.toLowerCase().trim();
+      if (!key) return;
+      const mDate = m.startDate || new Date().toISOString();
+      if (!locationsMap.has(key) || mDate < locationsMap.get(key)!.firstVisit) {
+        locationsMap.set(key, { 
+          firstVisit: mDate, 
+          name: getCity(m.name) || m.name 
+        });
+      }
+    });
+    
+    return Array.from(locationsMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(entry => ({
+        name: entry.name,
+        firstVisit: entry.firstVisit,
+        type: 'city'
+      } as VisaData));
   }, [instants, manualLocations]);
 
   const explorerGrade = useMemo(() => {
