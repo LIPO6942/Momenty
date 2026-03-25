@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Mic, Square, Play, Pause, Trash2, Library, Music, Info, Check, CloudUpload, Loader2, Search, X, Volume2, Wind, TreePine, Coffee, Ghost, Headphones, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { searchHearthis, getPopularHearthis, searchITunes, type RemoteSound } from "@/lib/audio-service";
@@ -305,8 +305,13 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
 
           {/* Studio Sonore Library Modal (Proper Radix Dialog to handle Focus Trap) */}
           <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-          <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999]">
-          <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
+          <DialogContent 
+            onPointerDownOutside={(e) => e.preventDefault()}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999]"
+          >
+            <DialogTitle className="sr-only">Studio Sonore - Bibliothèque Audio</DialogTitle>
+            <DialogDescription className="sr-only">Trouvez et choisissez l'ambiance sonore parfaite pour vos instants.</DialogDescription>
+            <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0 z-50">
             <div className="flex items-center justify-between">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-3">
                 <Volume2 className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-amber-400" />
@@ -325,12 +330,12 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
             <p className="text-slate-400 text-xs font-medium mt-1">Ambiances pour vos souvenirs.</p>
 
             <form 
-              onSubmit={(e) => {
-                e.preventDefault();
+              onSubmit={(e) => { 
+                e.preventDefault(); 
                 e.stopPropagation();
                 handleManualSearch();
               }}
-              className="mt-6 md:mt-8 relative max-w-xl flex gap-x-3"
+              className="mt-6 md:mt-8 relative max-w-xl flex gap-x-3 z-[100]"
             >
               <div className="relative flex-1">
                 <input 
@@ -345,14 +350,18 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                     e.stopPropagation();
                     setSearchTerm(e.target.value);
                   }}
-                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 !text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100] !pointer-events-auto"
+                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 !text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[110] !pointer-events-auto"
                 />
-                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-[120]" />
                 {searchTerm && (
                   <button 
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setSearchTerm(""); searchInputRef.current?.focus(); }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setSearchTerm(""); 
+                      document.getElementById("studio-sonore-search")?.focus(); 
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 z-[120] !pointer-events-auto"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -361,7 +370,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               <Button 
                 type="submit"
                 disabled={isSearching}
-                className="h-12 md:h-14 px-6 md:px-8 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50"
+                className="h-12 md:h-14 px-6 md:px-8 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-2xl shadow-lg shadow-amber-200/50 transition-all flex-shrink-0 relative z-[110] !pointer-events-auto"
               >
                 {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Chercher"}
               </Button>
@@ -403,7 +412,6 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                         e.stopPropagation();
                         if (isSearching) return;
                         setActiveCategory(cat.id);
-                        setSearchTerm(cat.label);
                         setRemoteSounds([]);
                         setIsSearching(true);
                         
@@ -441,26 +449,28 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <div className="flex flex-col gap-4 max-w-3xl mx-auto pb-12">
                   {remoteSounds.map((item: any) => (
                     <Card key={item.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-white group ring-1 ring-slate-200/50">
-                      <CardContent className="p-4 flex items-center gap-4">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="h-14 w-14 rounded-2xl flex-shrink-0 bg-slate-50 group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors shadow-sm"
-                          onClick={() => togglePreview(item.url)}
-                        >
-                          {activeAudio === item.url && isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
-                        </Button>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-900 truncate text-base md:text-lg tracking-tight">{item.name}</h4>
-                          <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 mt-0.5 truncate uppercase font-bold tracking-tight opacity-70">
-                            {item.artist}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">
-                              {item.category}
-                            </span>
+                      <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex-shrink-0 bg-slate-50 group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors shadow-sm"
+                            onClick={() => togglePreview(item.url)}
+                          >
+                            {activeAudio === item.url && isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 ml-0.5" />}
+                          </Button>
+                          
+                          <div className="flex-1 min-w-0 pr-2">
+                            <h4 className="font-bold text-slate-900 truncate text-sm sm:text-base md:text-lg tracking-tight leading-tight">{item.name}</h4>
+                            <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 truncate uppercase font-bold tracking-tight opacity-70">
+                              {item.artist}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                              <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">
+                                {item.category}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -468,7 +478,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           type="button"
                           variant="default" 
                           size="sm"
-                          className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold px-4 md:px-6 flex-shrink-0"
+                          className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold px-4 md:px-6 w-full sm:w-auto justify-center"
                           onClick={(e) => {
                             e.preventDefault();
                             let safeUrl = item.url;
