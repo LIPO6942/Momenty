@@ -108,8 +108,15 @@ export const InstantSidebar = ({
                         {/* Timeline Instants - Miniaturized */}
                         {instants.length > 0 ? (
                             instants.map(instant => {
-                                const instantDate = parseISO(instant.date);
-                                const formattedDate = format(instantDate, "d MMM yyyy", { locale: fr });
+                                let formattedDate = "Date inconnue";
+                                try {
+                                    if (instant.date) {
+                                        const instantDate = parseISO(instant.date);
+                                        formattedDate = format(instantDate, "d MMM yyyy", { locale: fr });
+                                    }
+                                } catch (e) {
+                                    console.error("Error parsing date", e);
+                                }
                                 const aiDescription = generateLocationInstantDescription(location, instant);
 
                                 return (

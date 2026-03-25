@@ -60,6 +60,19 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
 
   const stampColor = color === 'emerald' ? "text-emerald-700/40" : "text-blue-700/40";
 
+  let formattedDateShort = "??.??.??";
+  let formattedDateLong = "Date inconnue";
+  
+  try {
+    if (visa.firstVisit) {
+      const dateObj = parseISO(visa.firstVisit);
+      formattedDateShort = format(dateObj, 'dd.MM.yy');
+      formattedDateLong = format(dateObj, 'd MMMM yyyy', { locale: fr });
+    }
+  } catch (e) {
+    console.error("Error formatting visa date", e);
+  }
+
   return (
     <div 
       className={cn(
@@ -74,7 +87,7 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
       )} style={{ transform: `rotate(${rotation}deg)` }}>
           <div className="border-4 border-current rounded-full p-2 flex flex-col items-center justify-center w-28 h-28 transform rotate-12">
               <span className="text-[8px] font-bold uppercase tracking-widest">ADMIS</span>
-              <span className="text-[10px] font-black my-0.5">{format(parseISO(visa.firstVisit), 'dd.MM.yy')}</span>
+              <span className="text-[10px] font-black my-0.5">{formattedDateShort}</span>
               <div className="h-[1px] w-full bg-current mb-0.5" />
               <span className="text-[10px] font-serif font-black uppercase text-center leading-tight truncate px-1 max-w-full">{visa.name}</span>
           </div>
@@ -88,7 +101,7 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
         
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
           <Calendar className="h-3 w-3" />
-          <span>Visé le {format(parseISO(visa.firstVisit), 'd MMMM yyyy', { locale: fr })}</span>
+          <span>Visé le {formattedDateLong}</span>
         </div>
 
         <div className="mt-2 flex justify-end">
@@ -148,8 +161,8 @@ export const PassportView = ({
     return Array.from(countries).sort().map(name => {
       let firstVisit = new Date().toISOString();
       const iDates = instants.filter(i => getCountry(i.location) === name).map(i => i.date);
-      const mDates = manualLocations.filter(m => getCountry(m.name) === name).map(m => m.date);
-      const allDates = [...iDates, ...mDates].sort();
+      const mDates = manualLocations.filter(m => getCountry(m.name) === name).map(m => m.startDate);
+      const allDates = [...iDates, ...mDates].filter(Boolean).sort() as string[];
       if (allDates.length > 0) firstVisit = allDates[0];
       return { name, firstVisit, type: 'country' } as VisaData;
     });
@@ -163,8 +176,8 @@ export const PassportView = ({
     return Array.from(citiesSet).sort().map(name => {
       let firstVisit = new Date().toISOString();
       const iDates = instants.filter(i => getCity(i.location) === name).map(i => i.date);
-      const mDates = manualLocations.filter(m => getCity(m.name) === name).map(m => m.date);
-      const allDates = [...iDates, ...mDates].sort();
+      const mDates = manualLocations.filter(m => getCity(m.name) === name).map(m => m.startDate);
+      const allDates = [...iDates, ...mDates].filter(Boolean).sort() as string[];
       if (allDates.length > 0) firstVisit = allDates[0];
       return { name, firstVisit, type: 'city' } as VisaData;
     });
