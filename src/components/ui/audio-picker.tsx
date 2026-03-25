@@ -101,16 +101,15 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     };
   }, []);
 
-  // Force focus when the library opens
+  // Robust focus management for the search input
   useEffect(() => {
     if (isLibraryOpen) {
+      // Slight delay to ensure the dialog/portal is fully rendered
       const t = setTimeout(() => {
-        const input = document.getElementById("studio-sonore-search") as HTMLInputElement;
-        if (input) {
-          input.focus();
-          input.click();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
         }
-      }, 500);
+      }, 400);
       return () => clearTimeout(t);
     }
   }, [isLibraryOpen]);
@@ -308,8 +307,6 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <DialogContent 
               className="w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999] [&>button]:hidden"
-              onInteractOutside={(e) => e.preventDefault()}
-              onKeyDown={(e) => e.stopPropagation()}
             >
               <DialogTitle className="sr-only">Studio Sonore</DialogTitle>
               <DialogDescription className="sr-only">Bibliothèque d'ambiances sonores</DialogDescription>
@@ -341,19 +338,15 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                   className="mt-5 md:mt-6 flex gap-3"
                 >
                   <div className="relative flex-1">
-                    <input 
+                    <Input 
                       ref={searchInputRef}
                       type="text"
                       id="studio-sonore-search"
                       placeholder="Rechercher (ex: Piano, Mer...)"
                       value={searchTerm}
                       autoComplete="off"
-                      autoFocus
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setSearchTerm(e.target.value);
-                      }}
-                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md"
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20 focus-visible:border-amber-400 transition-all shadow-md"
                     />
                     <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     {searchTerm && (
