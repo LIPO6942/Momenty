@@ -55,6 +55,10 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     loadPopular();
   }, []);
 
+  // Search effect with debounce
+  useEffect(() => {
+    if (!searchTerm.trim()) return;
+    
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true);
       // Search both for better coverage
@@ -66,10 +70,12 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
       setIsSearching(false);
     }, 800);
 
-
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
+  const handleManualSearch = async () => {
+    if (!searchTerm.trim()) return;
+    setIsSearching(true);
     const [hearthisRes, itunesRes] = await Promise.all([
       searchHearthis(searchTerm),
       searchITunes(searchTerm)
@@ -103,6 +109,9 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+        }
+      };
+
       mediaRecorder.onstop = async () => {
         const mimeType = mediaRecorder.mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
@@ -135,6 +144,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     const formData = new FormData();
     formData.append('file', blob);
 
+    try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
