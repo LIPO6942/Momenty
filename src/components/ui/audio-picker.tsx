@@ -500,6 +500,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               </div>
             </DialogContent>
           </Dialog>
+        </>
+      )}
     </div>
   );
 }
