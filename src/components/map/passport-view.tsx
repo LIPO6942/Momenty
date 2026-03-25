@@ -23,7 +23,9 @@ import {
 import { 
   countryToContinent, 
   continents as continentData, 
-  getExplorerGrade 
+  getExplorerGrade,
+  getContinentBadges,
+  ContinentBadge
 } from "@/lib/continents";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -212,6 +214,31 @@ export const PassportView = ({
     return getExplorerGrade(countryVisas.length, cityVisas.length);
   }, [countryVisas, cityVisas]);
 
+  const earnedBadges = useMemo(() => {
+    const badges: { title: string; icon: string; color: string; description: string }[] = [];
+    
+    // Continent Badges
+    Object.entries(continentStats).forEach(([id, stats]) => {
+      const continentBadges = getContinentBadges(id, stats.visited);
+      continentBadges.forEach(b => {
+        badges.push({ 
+          title: b.title, 
+          icon: b.icon, 
+          color: b.color,
+          description: `Débloqué pour ${stats.visited} pays en ${id}`
+        });
+      });
+    });
+
+    // Activity Badges
+    if (dishes.length >= 10) badges.push({ title: "Grand Gourmand", icon: "🍱", color: "text-orange-500", description: "Plus de 10 plats dégustés" });
+    if (encounters.length >= 10) badges.push({ title: "L'Ami du Monde", icon: "🤝", color: "text-blue-500", description: "Plus de 10 rencontres" });
+    if (instants.filter(i => i.photos && i.photos.length > 0).length >= 50) badges.push({ title: "Grand Reporteur", icon: "📸", color: "text-slate-600", description: "Plus de 50 photos capturées" });
+    if (Object.keys(continentStats).filter(id => continentStats[id].visited > 0).length >= 5) badges.push({ title: "Intercontinental", icon: "✈️", color: "text-cyan-600", description: "5 continents visités" });
+
+    return badges;
+  }, [continentStats, dishes, encounters, instants]);
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-2 sm:p-6">
       <Card className="w-full max-w-5xl h-[90vh] sm:h-[85vh] overflow-hidden flex flex-col bg-[#FDF5E6] border-[#8B4513] border-4 sm:border-8 shadow-2xl relative rounded-3xl">
@@ -303,6 +330,33 @@ export const PassportView = ({
                 })}
             </div>
           </div>
+
+          <div className="h-px w-full bg-[#8B4513]/10" />
+
+          {/* New Badges Section */}
+          {earnedBadges.length > 0 && (
+            <div className="space-y-6 sm:space-y-10">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg sm:text-2xl font-serif font-black text-amber-900 uppercase tracking-widest flex items-center gap-3">
+                  <Award className="h-6 w-6 text-amber-600" />
+                  Mes Trophées & Achievements
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {earnedBadges.map((badge, i) => (
+                  <div key={i} className="bg-white/60 p-4 rounded-2xl border border-amber-200/50 shadow-sm flex items-center gap-4 hover:scale-105 transition-transform cursor-default group max-w-xs">
+                    <div className="h-12 w-12 rounded-full bg-white shadow-inner flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">
+                      {badge.icon}
+                    </div>
+                    <div>
+                      <h4 className={cn("font-bold text-sm leading-tight", badge.color)}>{badge.title}</h4>
+                      <p className="text-[10px] text-slate-500 font-medium italic mt-0.5">{badge.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="h-px w-full bg-[#8B4513]/10" />
 
