@@ -64,12 +64,29 @@ export function ImageLightbox({
 
   // Audio Playback Logic
   useEffect(() => {
-    if (isOpen && audioUrl && audioRef.current) {
-      audioRef.current.play().catch(err => console.log("Audio autoplay blocked or failed", err));
-      setIsPlaying(true);
-    } else if (!isOpen && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    const playAudio = async () => {
+      if (isOpen && audioUrl && audioRef.current) {
+        try {
+          // Reset and play
+          audioRef.current.currentTime = 0;
+          await audioRef.current.play();
+          setIsPlaying(true);
+        } catch (err) {
+          console.log("Audio autoplay failed, likely blocked by browser:", err);
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    if (isOpen) {
+      // Small delay to ensure Dialog content is fully in DOM and audioRef is attached
+      const timer = setTimeout(playAudio, 100);
+      return () => clearTimeout(timer);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsPlaying(false);
     }
   }, [isOpen, audioUrl]);
@@ -136,6 +153,7 @@ export function ImageLightbox({
                 ref={audioRef} 
                 src={audioUrl} 
                 muted={isMuted} 
+                crossOrigin="anonymous"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}

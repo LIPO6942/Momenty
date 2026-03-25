@@ -14,11 +14,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CATEGORIES = [
+  { id: 'popular', label: 'Populaires', icon: <Volume2 className="h-4 w-4" />, query: '' },
+  { id: 'samples', label: 'Samples & SFX', icon: <Ghost className="h-4 w-4" />, query: 'sound effect sfx short sample' },
   { id: 'nature', label: 'Nature', icon: <TreePine className="h-4 w-4" />, query: 'nature ambience' },
   { id: 'city', label: 'Ville', icon: <Coffee className="h-4 w-4" />, query: 'city street ambience' },
   { id: 'relax', label: 'Relax', icon: <Headphones className="h-4 w-4" />, query: 'meditation' },
-  { id: 'lofi', label: 'Lofi', icon: <Music className="h-4 w-4" />, query: 'lofi hip hop' },
-  { id: 'weather', label: 'Météo', icon: <Wind className="h-4 w-4" />, query: 'rain thunder' },
+  { id: 'lofi', label: 'Musique Lofi', icon: <Music className="h-4 w-4" />, query: 'lofi hip hop' },
 ];
 
 interface AudioPickerProps {
@@ -56,19 +57,28 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
 
   // Search effect with debounce
   useEffect(() => {
-    if (!searchTerm.trim()) return;
+    if (!searchTerm.trim()) {
+      // If search is cleared, reload popular if we were in popular mode or just clear
+      return;
+    }
     
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true);
       const results = await searchHearthis(searchTerm);
-      if (results.length > 0) {
-        setRemoteSounds(results);
-      }
+      setRemoteSounds(results);
       setIsSearching(false);
     }, 800);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
+
+  const handleManualSearch = async () => {
+    if (!searchTerm.trim()) return;
+    setIsSearching(true);
+    const results = await searchHearthis(searchTerm);
+    setRemoteSounds(results);
+    setIsSearching(false);
+  };
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -255,16 +265,27 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 </DialogTitle>
                 <p className="text-slate-400 text-base font-medium mt-1">Donnez une âme à vos instants avec une ambiance unique.</p>
 
-                <div className="mt-8 relative max-w-xl">
-                  <Input 
-                    placeholder="Qu'entendez-vous ? (ex: Paris, Mer, Pluie, Piano...)"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 pl-14 text-lg rounded-2xl ring-offset-slate-900 focus-visible:ring-amber-400"
-                  />
-                  <Search className="h-6 w-6 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                <div className="mt-8 relative max-w-xl flex gap-2">
+                  <div className="relative flex-1">
+                    <Input 
+                      placeholder="Ex: Explosion, Vent, Mer, Piano..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                      className="h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 pl-14 text-lg rounded-2xl ring-offset-slate-900 focus-visible:ring-amber-400"
+                    />
+                    <Search className="h-6 w-6 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                  </div>
+                  <Button 
+                    onClick={handleManualSearch}
+                    className="h-14 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                  >
+                    Chercher
+                  </Button>
                   {isSearching && (
-                    <Loader2 className="h-5 w-5 absolute right-5 top-1/2 -translate-y-1/2 text-amber-400 animate-spin" />
+                    <div className="absolute -bottom-6 left-0 text-[10px] text-amber-400 font-bold uppercase tracking-widest animate-pulse">
+                      Recherche en cours...
+                    </div>
                   )}
                 </div>
               </div>
@@ -280,6 +301,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                       onClick={() => {
                         setActiveCategory('popular');
                         setSearchTerm('');
+                        setRemoteSounds([]);
                         setIsSearching(true);
                         getPopularHearthis().then(res => {
                           setRemoteSounds(res);
@@ -297,6 +319,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                         onClick={() => {
                           setActiveCategory(cat.id);
                           setSearchTerm(cat.label);
+                          setRemoteSounds([]);
                           setIsSearching(true);
                           searchHearthis(cat.query).then(res => {
                             setRemoteSounds(res);
