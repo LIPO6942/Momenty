@@ -101,18 +101,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     };
   }, []);
 
-  // Robust focus management for the search input
-  useEffect(() => {
-    if (isLibraryOpen) {
-      // Slight delay to ensure the dialog/portal is fully rendered
-      const t = setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus();
-        }
-      }, 400);
-      return () => clearTimeout(t);
-    }
-  }, [isLibraryOpen]);
+  // Focus is now handled natively via onOpenAutoFocus in the DialogContent
 
   const startRecording = async () => {
     try {
@@ -307,6 +296,11 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <DialogContent 
               className="w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999] [&>button]:hidden"
+              onOpenAutoFocus={(e) => {
+                e.preventDefault();
+                // Delay slightly just for mobile browsers to catch up with animations
+                setTimeout(() => searchInputRef.current?.focus(), 150);
+              }}
             >
               <DialogTitle className="sr-only">Studio Sonore</DialogTitle>
               <DialogDescription className="sr-only">Bibliothèque d'ambiances sonores</DialogDescription>
@@ -329,8 +323,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <p className="text-slate-400 text-xs font-medium mt-1">Ambiances pour vos souvenirs.</p>
 
                 {/* Search */}
-                <div className="mt-5 md:mt-6 flex gap-3">
-                  <div className="relative flex-1">
+                <div className="mt-5 md:mt-6 flex gap-3 relative z-[10000] pointer-events-auto">
+                  <div className="relative flex-1 pointer-events-auto">
                     <Input 
                       ref={searchInputRef}
                       type="text"
@@ -346,9 +340,9 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           handleManualSearch();
                         }
                       }}
-                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20 focus-visible:border-amber-400 transition-all shadow-md relative z-20"
+                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20 focus-visible:border-amber-400 transition-all shadow-md relative z-[10001] cursor-text pointer-events-auto"
                     />
-                    <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-30" />
+                    <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-[10002]" />
                     {searchTerm && (
                       <button 
                         type="button"
@@ -357,7 +351,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           setSearchTerm(""); 
                           searchInputRef.current?.focus(); 
                         }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 z-30"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 z-[10002] pointer-events-auto"
                       >
                         <X className="h-4 w-4" />
                       </button>
