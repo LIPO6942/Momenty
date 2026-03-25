@@ -4,7 +4,8 @@
 
 import React, { useContext, useState } from "react";
 import Image from "next/image";
-import { MoreVertical, Edit, Trash2, MapPin, Tag, Music } from "lucide-react";
+import { MoreVertical, Edit, Trash2, MapPin, Tag, Music, Play, Pause } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -354,7 +355,34 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
         )
     }
 
-    // Card for instants without a photo
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const toggleAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+        } else if (instant.audio) {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(instant.audio);
+                audioRef.current.onended = () => setIsPlaying(false);
+            }
+            audioRef.current.play();
+            setIsPlaying(true);
+        }
+    };
+
+    // Clean up audio on unmount
+    React.useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
     return (
         <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
@@ -362,9 +390,16 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0 relative", instant.color)}>
                         {instant.icon && React.cloneElement(instant.icon as React.ReactElement, { className: "h-7 w-7 text-white" })}
                         {instant.audio && (
-                            <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-                                <Music className="h-3 w-3 text-primary animate-pulse" />
-                            </div>
+                            <button 
+                                onClick={toggleAudio}
+                                className="absolute -top-1 -right-1 bg-white rounded-full p-1 shadow-md hover:scale-110 transition-transform cursor-pointer z-10"
+                            >
+                                {isPlaying ? (
+                                    <Pause className="h-3 w-3 text-primary animate-pulse" />
+                                ) : (
+                                    <Play className="h-3 w-3 text-primary" />
+                                )}
+                            </button>
                         )}
                     </div>
                     <div className="flex flex-col">

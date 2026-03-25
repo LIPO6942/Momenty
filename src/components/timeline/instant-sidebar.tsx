@@ -1,6 +1,7 @@
 "use client";
 
-import { X, Calendar, MapPin } from "lucide-react";
+import { X, Calendar, MapPin, Play, Pause } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -149,9 +150,12 @@ export const InstantSidebar = ({
 
                                                 {/* Content */}
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="font-semibold text-sm text-foreground line-clamp-2 mb-1">
-                                                        {instant.title}
-                                                    </h3>
+                                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                                        <h3 className="font-semibold text-sm text-foreground line-clamp-2">
+                                                            {instant.title}
+                                                        </h3>
+                                                        {instant.audio && <SidebarAudioPlayer url={instant.audio} />}
+                                                    </div>
 
                                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
                                                         <Calendar className="h-3 w-3" />
@@ -201,3 +205,46 @@ export const InstantSidebar = ({
         </>
     );
 };
+
+// Sub-component for individual audio player to isolate state
+const SidebarAudioPlayer = ({ url }: { url: string }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const toggleAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+        } else {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(url);
+                audioRef.current.onended = () => setIsPlaying(false);
+            }
+            audioRef.current.play();
+            setIsPlaying(true);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-full bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+            onClick={toggleAudio}
+        >
+            {isPlaying ? <Pause className="h-3 w-3 animate-pulse" /> : <Play className="h-3 w-3" />}
+        </Button>
+    );
+};
+
+

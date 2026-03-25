@@ -2,11 +2,13 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Play, Pause, Trash2, Library, Music, Info, Check, CloudUpload, Loader2 } from "lucide-react";
+import { Mic, Square, Play, Pause, Trash2, Library, Music, Info, Check, CloudUpload, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { searchHearthis, getPopularHearthis, type RemoteSound } from "@/lib/audio-service";
 
 const AUDIO_LIBRARY = [
   { id: 'waves', name: 'Vagues & Mer', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/waves.mp3', icon: '🌊', category: 'Nature' },
@@ -30,6 +32,36 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
   const [activeAudio, setActiveAudio] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Library search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [remoteSounds, setRemoteSounds] = useState<RemoteSound[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Load popular sounds initially
+  useEffect(() => {
+    const loadPopular = async () => {
+        const popular = await getPopularHearthis();
+        setRemoteSounds(popular);
+    };
+    loadPopular();
+  }, []);
+
+  // Search effect with debounce
+  useEffect(() => {
+    if (!searchTerm.trim()) return;
+    
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      const results = await searchHearthis(searchTerm);
+      if (results.length > 0) {
+        setRemoteSounds(results);
+      }
+      setIsSearching(false);
+    }, 800);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -209,8 +241,23 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               <div className="p-4 border-b bg-slate-50 rounded-t-2xl">
                 <h4 className="font-serif font-black uppercase text-sm tracking-widest text-slate-900">Bibliothèque Sonore</h4>
                 <p className="text-[10px] text-slate-500 italic">Ajouter une ambiance à votre souvenir</p>
+                
+                <div className="mt-4 relative">
+                  <Input 
+                    placeholder="Rechercher (ex: Ocean, Lofi, Paris...)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-8 py-0 pl-8 rounded-lg text-xs"
+                  />
+                  {isSearching ? (
+                    <Loader2 className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-primary animate-spin" />
+                  ) : (
+                    <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  )}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+              <div className="max-h-80 overflow-y-auto p-2 space-y-1 scrollbar-hide">
+                <p className="text-[9px] font-black uppercase text-slate-400 px-2 py-1 tracking-widest">Favoris Momenty</p>
                 {AUDIO_LIBRARY.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition-colors group">
                     <div className="flex items-center gap-3">
@@ -244,6 +291,49 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                     </div>
                   </div>
                 ))}
+
+                {remoteSounds.length > 0 && (
+                   <>
+                    <div className="h-px bg-slate-100 my-2 mx-2"></div>
+                    <p className="text-[9px] font-black uppercase text-slate-400 px-2 py-1 tracking-widest">Résultats Hearthis.at</p>
+                    {remoteSounds.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition-colors group">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className="text-xl flex-shrink-0">{item.icon}</span>
+                          <div className="overflow-hidden">
+                            <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{item.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <Badge variant="outline" className="text-[7px] py-0 px-1 uppercase opacity-50">{item.category}</Badge>
+                                <span className="text-[8px] text-slate-400 truncate max-w-[80px]">by {item.artist}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => togglePreview(item.url)}
+                          >
+                            {activeAudio === item.url && isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="default"
+                            className="h-8 w-8 rounded-full bg-slate-900"
+                            onClick={() => {
+                              onChange(item.url);
+                              if (audioRef.current) audioRef.current.pause();
+                              setIsPlaying(false);
+                            }}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                   </>
+                )}
               </div>
             </PopoverContent>
           </Popover>

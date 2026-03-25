@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     const stream = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           { 
+            resource_type: 'auto',
             // Use a smart pipeline for transformations to handle all cases
             transformation: [
               { angle: "auto_right" }, // Reliable auto-rotation

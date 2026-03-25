@@ -830,24 +830,16 @@ export default function MapPage() {
                     </DialogContent>
                 </Dialog>
 
-                <Button 
-                    variant="outline" 
-                    size="lg"
-                    className="w-full sm:w-auto rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white border-none shadow-xl px-8 py-6 transition-all hover:scale-105 group"
-                    onClick={() => setIsPassportOpen(true)}
-                    disabled={!user}
-                >
-                    <PassportIcon className="mr-3 h-5 w-5 group-hover:rotate-12 transition-transform" />
-                    Mon Passeport Momenty
-                </Button>
             </div>
 
-            {/* Mobile-only floating button for Passport */}
-            <div className="fixed bottom-24 right-6 z-40 sm:hidden">
+
+            {/* Floating button for Passport (The "Bulle") */}
+            <div className="fixed bottom-24 right-6 z-40">
                  <Button 
                     variant="outline" 
                     size="icon"
-                    className="h-16 w-16 rounded-full bg-amber-500 text-white shadow-2xl border-4 border-white animate-bounce-slow"
+                    title="Mon Passeport Momenty"
+                    className="h-16 w-16 rounded-full bg-amber-500 hover:bg-amber-600 text-white shadow-2xl border-4 border-white transition-all hover:scale-110 active:scale-95 animate-bounce-slow"
                     onClick={() => setIsPassportOpen(true)}
                     disabled={!user}
                 >
