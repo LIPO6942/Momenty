@@ -2,22 +2,23 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Play, Pause, Trash2, Library, Music, Info, Check, CloudUpload, Loader2, Search } from "lucide-react";
+import { Mic, Square, Play, Pause, Trash2, Library, Music, Info, Check, CloudUpload, Loader2, Search, X, Volume2, Wind, TreePine, Coffee, Ghost, Headphones, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { searchHearthis, getPopularHearthis, type RemoteSound } from "@/lib/audio-service";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const AUDIO_LIBRARY = [
-  { id: 'waves', name: 'Vagues & Mer', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/waves.mp3', icon: '🌊', category: 'Nature' },
-  { id: 'forest', name: 'Forêt & Oiseaux', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/forest.mp3', icon: '🌲', category: 'Nature' },
-  { id: 'rain', name: 'Pluie Douce', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/rain.mp3', icon: '🌧️', category: 'Météo' },
-  { id: 'cafe', name: 'Café Parisien', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/cafe.mp3', icon: '☕', category: 'Ville' },
-  { id: 'city', name: 'Bruit de la Ville', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/city.mp3', icon: '🏙️', category: 'Ville' },
-  { id: 'lofi', name: 'Lofi Chill', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/lofi.mp3', icon: '🎹', category: 'Musique' },
-  { id: 'adventure', name: 'Épopée', url: 'https://res.cloudinary.com/dmpp9v690/video/upload/v1711200000/momenty/ambience/adventure.mp3', icon: '⚔️', category: 'Musique' },
+const CATEGORIES = [
+  { id: 'nature', label: 'Nature', icon: <TreePine className="h-4 w-4" />, query: 'nature ambience' },
+  { id: 'city', label: 'Ville', icon: <Coffee className="h-4 w-4" />, query: 'city street ambience' },
+  { id: 'relax', label: 'Relax', icon: <Headphones className="h-4 w-4" />, query: 'meditation' },
+  { id: 'lofi', label: 'Lofi', icon: <Music className="h-4 w-4" />, query: 'lofi hip hop' },
+  { id: 'weather', label: 'Météo', icon: <Wind className="h-4 w-4" />, query: 'rain thunder' },
 ];
 
 interface AudioPickerProps {
@@ -33,16 +34,22 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [selectedSoundName, setSelectedSoundName] = useState<string | null>(null);
+
   // Library search state
   const [searchTerm, setSearchTerm] = useState("");
   const [remoteSounds, setRemoteSounds] = useState<RemoteSound[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("popular");
   
   // Load popular sounds initially
   useEffect(() => {
     const loadPopular = async () => {
+        setIsSearching(true);
         const popular = await getPopularHearthis();
         setRemoteSounds(popular);
+        setIsSearching(false);
     };
     loadPopular();
   }, []);
@@ -168,8 +175,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               <Music className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-primary/60">Audio sélectionné</p>
-              <p className="text-sm font-bold truncate max-w-[150px]">Souvenir Sonore</p>
+              <p className="text-xs font-black uppercase tracking-widest text-primary/60">Ambiance sélectionnée</p>
+              <p className="text-sm font-bold truncate max-w-[200px]">{selectedSoundName || "Souvenir Sonore"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -226,8 +233,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           </Button>
 
           {/* Library Button */}
-          <Popover>
-            <PopoverTrigger asChild>
+          <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+            <DialogTrigger asChild>
               <Button
                 type="button"
                 variant="outline"
@@ -236,109 +243,157 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <Library className="h-8 w-8" />
                 <span className="text-[10px] font-black uppercase mt-1">Bibliothèque</span>
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 rounded-2xl shadow-2xl border-none">
-              <div className="p-4 border-b bg-slate-50 rounded-t-2xl">
-                <h4 className="font-serif font-black uppercase text-sm tracking-widest text-slate-900">Bibliothèque Sonore</h4>
-                <p className="text-[10px] text-slate-500 italic">Ajouter une ambiance à votre souvenir</p>
-                
-                <div className="mt-4 relative">
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white">
+              <div className="p-8 bg-slate-900 text-white relative">
+                 <div className="absolute top-0 right-0 p-8 h-full flex items-center opacity-10 pointer-events-none">
+                    <Music className="h-40 w-40 rotate-12" />
+                 </div>
+                <DialogTitle className="text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-4">
+                  <Volume2 className="h-8 w-8 text-amber-400" />
+                  Studio Sonore
+                </DialogTitle>
+                <p className="text-slate-400 text-base font-medium mt-1">Donnez une âme à vos instants avec une ambiance unique.</p>
+
+                <div className="mt-8 relative max-w-xl">
                   <Input 
-                    placeholder="Rechercher (ex: Ocean, Lofi, Paris...)"
+                    placeholder="Qu'entendez-vous ? (ex: Paris, Mer, Pluie, Piano...)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-8 py-0 pl-8 rounded-lg text-xs"
+                    className="h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 pl-14 text-lg rounded-2xl ring-offset-slate-900 focus-visible:ring-amber-400"
                   />
-                  {isSearching ? (
-                    <Loader2 className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-primary animate-spin" />
-                  ) : (
-                    <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search className="h-6 w-6 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                  {isSearching && (
+                    <Loader2 className="h-5 w-5 absolute right-5 top-1/2 -translate-y-1/2 text-amber-400 animate-spin" />
                   )}
                 </div>
               </div>
-              <div className="max-h-80 overflow-y-auto p-2 space-y-1 scrollbar-hide">
-                <p className="text-[9px] font-black uppercase text-slate-400 px-2 py-1 tracking-widest">Favoris Momenty</p>
-                {AUDIO_LIBRARY.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{item.icon}</span>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">{item.name}</p>
-                        <Badge variant="outline" className="text-[8px] py-0 px-1 uppercase opacity-50">{item.category}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => togglePreview(item.url)}
-                      >
-                        {activeAudio === item.url && isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="default"
-                        className="h-8 w-8 rounded-full bg-slate-900"
+
+              <div className="flex-1 flex overflow-hidden">
+                {/* Categories */}
+                <div className="w-56 bg-white border-r p-6 hidden md:block">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest leading-none">Inspirations</p>
+                  <div className="space-y-2">
+                    <Button 
+                      variant={activeCategory === 'popular' ? 'secondary' : 'ghost'} 
+                      className={cn("w-full justify-start gap-3 text-sm font-bold rounded-xl h-12", activeCategory === 'popular' && "bg-slate-100")}
+                      onClick={() => {
+                        setActiveCategory('popular');
+                        setSearchTerm('');
+                        setIsSearching(true);
+                        getPopularHearthis().then(res => {
+                          setRemoteSounds(res);
+                          setIsSearching(false);
+                        });
+                      }}
+                    >
+                      <Volume2 className="h-5 w-5" /> Populaires
+                    </Button>
+                    {CATEGORIES.map(cat => (
+                      <Button 
+                        key={cat.id}
+                        variant={activeCategory === cat.id ? 'secondary' : 'ghost'} 
+                        className={cn("w-full justify-start gap-3 text-sm font-bold rounded-xl h-12", activeCategory === cat.id && "bg-slate-100")}
                         onClick={() => {
-                          onChange(item.url);
-                          if (audioRef.current) audioRef.current.pause();
-                          setIsPlaying(false);
+                          setActiveCategory(cat.id);
+                          setSearchTerm(cat.label);
+                          setIsSearching(true);
+                          searchHearthis(cat.query).then(res => {
+                            setRemoteSounds(res);
+                            setIsSearching(false);
+                          });
                         }}
                       >
-                        <Check className="h-4 w-4" />
+                       <span className="text-slate-500">{cat.icon}</span> {cat.label}
                       </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {remoteSounds.length > 0 && (
-                   <>
-                    <div className="h-px bg-slate-100 my-2 mx-2"></div>
-                    <p className="text-[9px] font-black uppercase text-slate-400 px-2 py-1 tracking-widest">Résultats Hearthis.at</p>
-                    {remoteSounds.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition-colors group">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <span className="text-xl flex-shrink-0">{item.icon}</span>
-                          <div className="overflow-hidden">
-                            <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{item.name}</p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                                <Badge variant="outline" className="text-[7px] py-0 px-1 uppercase opacity-50">{item.category}</Badge>
-                                <span className="text-[8px] text-slate-400 truncate max-w-[80px]">by {item.artist}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => togglePreview(item.url)}
-                          >
-                            {activeAudio === item.url && isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="default"
-                            className="h-8 w-8 rounded-full bg-slate-900"
-                            onClick={() => {
-                              onChange(item.url);
-                              if (audioRef.current) audioRef.current.pause();
-                              setIsPlaying(false);
-                            }}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
                     ))}
-                   </>
-                )}
+                  </div>
+                </div>
+
+                {/* Sounds Result */}
+                <ScrollArea className="flex-1 p-8">
+                  {isSearching ? (
+                    <div className="flex flex-col items-center justify-center py-32 gap-6">
+                      <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+                      </div>
+                      <p className="text-base font-serif italic text-slate-500">Extraction des fréquences...</p>
+                    </div>
+                  ) : remoteSounds.length === 0 ? (
+                    <div className="text-center py-32 flex flex-col items-center">
+                      <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center mb-6">
+                        <AlertCircle className="h-10 w-10 text-slate-200" />
+                      </div>
+                      <p className="text-lg font-serif italic text-slate-600">Le silence est d'or, mais nous n'avons rien trouvé.</p>
+                      <Button variant="outline" onClick={() => setSearchTerm("")} className="mt-6 rounded-xl">Retour aux favoris</Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
+                      {remoteSounds.map((item) => (
+                        <Card key={item.id} className="relative overflow-hidden group hover:shadow-xl transition-all border-slate-100 rounded-3xl hover:-translate-y-1 bg-white">
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-5">
+                              <div 
+                                className={cn(
+                                  "h-16 w-16 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer",
+                                  activeAudio === item.url && isPlaying ? "bg-amber-100 shadow-inner" : "bg-slate-50 group-hover:bg-amber-50"
+                                )}
+                                onClick={() => togglePreview(item.url)}
+                              >
+                                {activeAudio === item.url && isPlaying ? (
+                                  <Pause className="h-8 w-8 text-amber-600 animate-pulse" />
+                                ) : (
+                                  <Play className="h-8 w-8 text-slate-300 group-hover:text-amber-500 opacity-60 group-hover:opacity-100" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="text-base font-bold text-slate-900 truncate tracking-tight">{item.name}</h5>
+                                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                                    <Headphones className="h-3 w-3" /> par {item.artist}
+                                </p>
+                                <div className="mt-3">
+                                  <Badge variant="secondary" className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 border-none px-2 rounded-lg">
+                                    {item.category}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+
+                            <Button 
+                              variant="default" 
+                              className="w-full mt-6 h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold group"
+                              onClick={() => {
+                                // Fix URL for https
+                                let safeUrl = item.url;
+                                if (safeUrl.startsWith('http:')) {
+                                  safeUrl = safeUrl.replace('http:', 'https:');
+                                }
+                                onChange(safeUrl);
+                                setSelectedSoundName(item.name);
+                                if (audioRef.current) audioRef.current.pause();
+                                setIsPlaying(false);
+                                setIsLibraryOpen(false);
+                                toast({ 
+                                  title: "Ambiance capturée !", 
+                                  description: `"${item.name}" a été ajouté à votre instant.` 
+                                });
+                              }}
+                            >
+                              Capturer ce son
+                              <Check className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
               </div>
-            </PopoverContent>
-          </Popover>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>
   );
 }
+
