@@ -58,15 +58,6 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     loadPopular();
   }, []);
 
-  // Force focus on search input when library opens
-  useEffect(() => {
-    if (isLibraryOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-        console.log("Library opened, focused search input:", searchInputRef.current);
-      }, 300);
-    }
-  }, [isLibraryOpen]);
 
   // Search is now manual via triggers only to avoid race conditions with categories
   const handleManualSearch = async () => {
@@ -314,7 +305,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
 
           {/* Studio Sonore Library Modal (Proper Radix Dialog to handle Focus Trap) */}
           <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 h-[85vh] sm:h-[90vh] flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl !fixed !inset-x-0 !mx-auto !top-[5vh]">
+          <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999]">
           <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-3">
