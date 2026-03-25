@@ -254,42 +254,46 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {/* Recording Button */}
           <Button
             type="button"
-            variant="outline"
-            className={cn(
-              "h-24 rounded-2xl flex flex-col gap-2 border-dashed transition-all",
-              isRecording ? "border-red-500 bg-red-50" : "hover:border-primary hover:bg-primary/5"
-            )}
+            variant="ghost"
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isUploading}
+            className={cn(
+              "h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden group border border-slate-200",
+              isRecording 
+                ? "bg-red-50 border-red-200 text-red-600 shadow-inner" 
+                : "bg-white hover:bg-slate-50 text-slate-500 hover:text-red-500 hover:border-red-200"
+            )}
           >
             {isUploading ? (
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             ) : isRecording ? (
-              <div className="flex flex-col items-center animate-pulse text-red-600">
-                <Square className="h-8 w-8" />
-                <span className="text-[10px] font-black uppercase mt-1">{formatTime(recordingTime)}</span>
-              </div>
+              <>
+                <div className="h-6 w-6 rounded-full bg-red-500 animate-pulse flex items-center justify-center">
+                  <Square className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-tighter">{formatTime(recordingTime)}</span>
+              </>
             ) : (
-              <div className="flex flex-col items-center text-slate-500">
-                <Mic className="h-8 w-8" />
-                <span className="text-[10px] font-black uppercase mt-1">Enregistrer</span>
-              </div>
+              <>
+                <Mic className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-tighter">Enregistrer</span>
+              </>
             )}
           </Button>
 
           {/* Library Button */}
           <Button
             type="button"
-            variant="outline"
-            className="h-24 rounded-2xl flex flex-col gap-2 border-dashed hover:border-primary hover:bg-primary/5 text-slate-500"
+            variant="ghost"
             onClick={() => setIsLibraryOpen(true)}
+            className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-200/50 group"
           >
-            <Library className="h-8 w-8" />
-            <span className="text-[10px] font-black uppercase mt-1">Bibliothèque</span>
+            <Library className="h-6 w-6 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Bibliothèque</span>
           </Button>
         </div>
       )}
@@ -322,58 +326,48 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
             </div>
             <p className="text-slate-400 text-[10px] md:text-xs font-medium mt-1">Sublimez vos souvenirs.</p>
 
-            <div className="mt-6 md:mt-8 relative max-w-xl flex gap-x-2">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleManualSearch();
+              }}
+              className="mt-6 md:mt-8 relative max-w-xl flex gap-x-3"
+            >
               <div className="relative flex-1">
                 <input 
                   ref={searchInputRef}
                   type="text"
                   id="studio-sonore-search"
-                  name="q"
-                  placeholder="Rechercher..."
+                  name="audio-search-input"
+                  placeholder="Rechercher (ex: Piano, Mer...)"
                   value={searchTerm}
-                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.focus(); }}
-                  onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.focus(); }}
-                  onClick={(e) => { e.stopPropagation(); e.target instanceof HTMLInputElement && e.target.focus(); }}
                   autoComplete="off"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     e.stopPropagation();
                     setSearchTerm(e.target.value);
                   }}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    e.stopPropagation(); // Extreme isolation
-                    if (e.key === 'Tab') return;
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleManualSearch();
-                    }
-                  }}
-                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-slate-900 placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100] !pointer-events-auto"
+                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 !text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100]"
                 />
-                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 {searchTerm && (
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setSearchTerm(""); searchInputRef.current?.focus(); }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
               <Button 
-                type="button"
+                type="submit"
                 disabled={isSearching}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleManualSearch();
-                }}
-                className="h-12 md:h-14 px-4 md:px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold flex-shrink-0"
+                className="h-12 md:h-14 px-6 md:px-8 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Chercher"}
               </Button>
-            </div>
+            </form>
             {isSearching && (
               <p className="text-[10px] text-amber-400 font-black uppercase mt-2 animate-pulse">Extraction des sons en cours... Veuillez patienter.</p>
             )}
@@ -437,71 +431,57 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
             </div>
 
             {/* Sounds Result */}
-            <ScrollArea className="flex-1 p-4 md:p-8">
+            <ScrollArea className="flex-1 p-4 md:p-6 bg-slate-50">
               {isSearching ? (
-                <div className="flex flex-col items-center justify-center py-20 md:py-32 gap-6">
-                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                <div className="flex flex-col items-center justify-center py-20 gap-6">
+                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center shadow-inner">
                     <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
                   </div>
-                  <p className="text-base font-serif italic text-slate-500">Extraction des fréquences...</p>
+                  <p className="text-sm font-bold uppercase tracking-widest text-slate-400 animate-pulse">Extraction des ondes...</p>
                 </div>
               ) : remoteSounds.length === 0 ? (
-                <div className="text-center py-20 md:py-32 flex flex-col items-center">
-                  <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center mb-6">
-                    <AlertCircle className="h-10 w-10 text-slate-200" />
+                <div className="flex flex-col items-center justify-center p-8 py-16 text-center">
+                  <div className="bg-slate-100 p-8 rounded-full mb-6 text-slate-200">
+                    <Search className="h-12 w-12" />
                   </div>
-                  <p className="text-lg font-serif italic text-slate-600">Le silence est d'or, mais nous n'avons rien trouvé.</p>
-                  <Button variant="outline" onClick={() => setSearchTerm("")} className="mt-6 rounded-xl">Retour aux favoris</Button>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Aucun son capturé</h3>
+                  <p className="text-slate-500 max-w-xs mx-auto text-sm">Précisez votre recherche ou explorez les catégories à gauche.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 pb-12">
+                <div className="flex flex-col gap-4 max-w-3xl mx-auto pb-12">
                   {remoteSounds.map((item) => (
-                    <Card key={item.id} className="relative overflow-hidden group hover:shadow-xl transition-all border-slate-100 rounded-2xl md:rounded-3xl hover:-translate-y-1 bg-white">
-                      <CardContent className="p-4 md:p-6">
-                        <div className="flex items-start gap-4 md:gap-5">
-                          <div 
-                            className={cn(
-                              "h-14 w-14 md:h-16 md:w-16 flex-shrink-0 rounded-xl md:rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer overflow-hidden",
-                              activeAudio === item.url && isPlaying ? "bg-amber-100 shadow-inner" : "bg-slate-50 group-hover:bg-amber-50"
-                            )}
-                            onClick={() => togglePreview(item.url)}
-                          >
-                            {item.artwork ? (
-                              <div className="relative w-full h-full">
-                                <img src={item.artwork} alt={item.name} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                   {activeAudio === item.url && isPlaying ? (
-                                    <Pause className="h-6 w-6 md:h-8 md:w-8 text-white animate-pulse" />
-                                  ) : (
-                                    <Play className="h-6 w-6 md:h-8 md:w-8 text-white opacity-80" />
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              activeAudio === item.url && isPlaying ? (
-                                <Pause className="h-6 w-6 md:h-8 md:w-8 text-amber-600 animate-pulse" />
-                              ) : (
-                                <Play className="h-6 w-6 md:h-8 md:w-8 text-slate-300 group-hover:text-amber-500 opacity-60 group-hover:opacity-100" />
-                              )
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h5 className="text-sm md:text-base font-bold text-slate-900 truncate tracking-tight">{item.name}</h5>
-                            <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                                <Headphones className="h-3 w-3" /> par {item.artist}
-                            </p>
-                            <div className="mt-2 md:mt-3">
-                              <Badge variant="secondary" className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 border-none px-2 rounded-lg">
-                                {item.category}
-                              </Badge>
-                            </div>
+                    <Card key={item.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-white group ring-1 ring-slate-200/50">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="h-14 w-14 rounded-2xl flex-shrink-0 bg-slate-50 group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors shadow-sm"
+                          onClick={(e) => { 
+                            e.stopPropagation();
+                            togglePreview(item.url);
+                          }}
+                        >
+                          {activeAudio === item.url && isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                        </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-900 truncate text-base md:text-lg tracking-tight">{item.name}</h4>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1.5 opacity-70">
+                            {item.artist}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="secondary" className="text-[9px] font-black uppercase bg-slate-100 text-slate-400 border-none px-2 rounded-lg">
+                              {item.category}
+                            </Badge>
                           </div>
                         </div>
 
                         <Button 
                           type="button"
                           variant="default" 
-                          className="w-full mt-4 md:mt-6 h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold group"
+                          size="sm"
+                          className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold px-6 flex-shrink-0 shadow-lg shadow-slate-900/10 active:scale-95 transition-all"
                           onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
                           onClick={(e: React.MouseEvent) => {
                             e.preventDefault();
@@ -517,12 +497,11 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                             setIsLibraryOpen(false);
                             toast({ 
                               title: "Ambiance capturée !", 
-                              description: `"${item.name}" a été ajouté à votre instant.` 
+                              description: `"${item.name}" ajouté.` 
                             });
                           }}
                         >
-                          Capturer ce son
-                          <Check className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          Capturer
                         </Button>
                       </CardContent>
                     </Card>
