@@ -8,18 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { searchHearthis, getPopularHearthis, type RemoteSound } from "@/lib/audio-service";
+import { searchHearthis, getPopularHearthis, searchITunes, type RemoteSound } from "@/lib/audio-service";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CATEGORIES = [
   { id: 'popular', label: 'Populaires', icon: <Volume2 className="h-4 w-4" />, query: '' },
+  { id: 'music', label: 'Chansons', icon: <Music className="h-4 w-4" />, query: 'songs' },
   { id: 'samples', label: 'Samples & SFX', icon: <Ghost className="h-4 w-4" />, query: 'sound effect sfx short sample' },
   { id: 'nature', label: 'Nature', icon: <TreePine className="h-4 w-4" />, query: 'nature ambience' },
   { id: 'city', label: 'Ville', icon: <Coffee className="h-4 w-4" />, query: 'city street ambience' },
-  { id: 'relax', label: 'Relax', icon: <Headphones className="h-4 w-4" />, query: 'meditation' },
-  { id: 'lofi', label: 'Musique Lofi', icon: <Music className="h-4 w-4" />, query: 'lofi hip hop' },
 ];
 
 interface AudioPickerProps {
@@ -64,10 +63,15 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true);
-      const results = await searchHearthis(searchTerm);
-      setRemoteSounds(results);
+      // Search both for better coverage
+      const [hearthisRes, itunesRes] = await Promise.all([
+        searchHearthis(searchTerm),
+        searchITunes(searchTerm)
+      ]);
+      setRemoteSounds([...itunesRes, ...hearthisRes]);
       setIsSearching(false);
     }, 800);
+
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
@@ -75,8 +79,11 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
   const handleManualSearch = async () => {
     if (!searchTerm.trim()) return;
     setIsSearching(true);
-    const results = await searchHearthis(searchTerm);
-    setRemoteSounds(results);
+    const [hearthisRes, itunesRes] = await Promise.all([
+      searchHearthis(searchTerm),
+      searchITunes(searchTerm)
+    ]);
+    setRemoteSounds([...itunesRes, ...hearthisRes]);
     setIsSearching(false);
   };
 
@@ -321,10 +328,18 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           setSearchTerm(cat.label);
                           setRemoteSounds([]);
                           setIsSearching(true);
-                          searchHearthis(cat.query).then(res => {
-                            setRemoteSounds(res);
-                            setIsSearching(false);
-                          });
+                          
+                          if (cat.id === 'music') {
+                            searchITunes(cat.query).then(res => {
+                              setRemoteSounds(res);
+                              setIsSearching(false);
+                            });
+                          } else {
+                            searchHearthis(cat.query).then(res => {
+                              setRemoteSounds(res);
+                              setIsSearching(false);
+                            });
+                          }
                         }}
                       >
                        <span className="text-slate-500">{cat.icon}</span> {cat.label}
@@ -358,15 +373,28 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                             <div className="flex items-start gap-5">
                               <div 
                                 className={cn(
-                                  "h-16 w-16 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer",
+                                  "h-16 w-16 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl transition-all cursor-pointer overflow-hidden",
                                   activeAudio === item.url && isPlaying ? "bg-amber-100 shadow-inner" : "bg-slate-50 group-hover:bg-amber-50"
                                 )}
                                 onClick={() => togglePreview(item.url)}
                               >
-                                {activeAudio === item.url && isPlaying ? (
-                                  <Pause className="h-8 w-8 text-amber-600 animate-pulse" />
+                                {item.artwork ? (
+                                  <div className="relative w-full h-full">
+                                    <img src={item.artwork} alt={item.name} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                       {activeAudio === item.url && isPlaying ? (
+                                        <Pause className="h-8 w-8 text-white animate-pulse" />
+                                      ) : (
+                                        <Play className="h-8 w-8 text-white opacity-80" />
+                                      )}
+                                    </div>
+                                  </div>
                                 ) : (
-                                  <Play className="h-8 w-8 text-slate-300 group-hover:text-amber-500 opacity-60 group-hover:opacity-100" />
+                                  activeAudio === item.url && isPlaying ? (
+                                    <Pause className="h-8 w-8 text-amber-600 animate-pulse" />
+                                  ) : (
+                                    <Play className="h-8 w-8 text-slate-300 group-hover:text-amber-500 opacity-60 group-hover:opacity-100" />
+                                  )
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
