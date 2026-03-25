@@ -42,33 +42,52 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [remoteSounds, setRemoteSounds] = useState<RemoteSound[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("popular");
+  const [activeCategory, setActiveCategory] = useState<string | null>("popular");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Load popular sounds initially
   useEffect(() => {
     const loadPopular = async () => {
         setIsSearching(true);
+        console.log("Loading popular sounds...");
         const popular = await getPopularHearthis();
         setRemoteSounds(popular);
         setIsSearching(false);
+        console.log("Popular sounds loaded:", popular.length);
     };
     loadPopular();
   }, []);
 
+  // Force focus on search input when library opens
+  useEffect(() => {
+    if (isLibraryOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        console.log("Library opened, focused search input:", searchInputRef.current);
+      }, 300);
+    }
+  }, [isLibraryOpen]);
+
   // Search is now manual via triggers only to avoid race conditions with categories
   const handleManualSearch = async () => {
     if (!searchTerm.trim()) return;
+    toast({ title: "Recherche en cours...", description: `Exploration de Studio Sonore pour "${searchTerm}"` });
     setIsSearching(true);
     setRemoteSounds([]);
+    setActiveCategory(null);
     try {
       const [hearthisRes, itunesRes] = await Promise.all([
         searchHearthis(searchTerm),
         searchITunes(searchTerm)
       ]);
-      setRemoteSounds([...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)]);
+      const combined = [...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)];
+      setRemoteSounds(combined);
+      if (combined.length === 0) {
+        toast({ variant: "destructive", title: "Aucun résultat", description: "Essayez d'autres mots clés comme 'piano', 'mer' ou 'vent'." });
+      }
     } catch (err) {
       console.error("Search failed:", err);
-      toast({ variant: "destructive", title: "La recherche a échoué", description: "Veuillez réessayer dans un instant." });
+      toast({ variant: "destructive", title: "Erreur de connexion", description: "Impossible de joindre Studio Sonore." });
     } finally {
       setIsSearching(false);
     }
@@ -306,20 +325,37 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
             <div className="mt-6 md:mt-8 relative max-w-xl flex gap-x-2">
               <div className="relative flex-1">
                 <input 
+                  ref={searchInputRef}
                   type="text"
-                  placeholder="Ex: Explosion, Vent, Mer, Piano..."
+                  id="studio-sonore-search"
+                  name="q"
+                  placeholder="Ex: Piano, Mer, Nature, Jazz..."
                   value={searchTerm}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  autoComplete="off"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    e.stopPropagation();
+                    setSearchTerm(e.target.value);
+                  }}
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    e.stopPropagation(); // prevent form submit from bubbling to parent dialog
+                    e.stopPropagation();
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       handleManualSearch();
                     }
                   }}
-                  className="w-full h-12 md:h-14 bg-white/10 border border-white/20 text-white placeholder:text-white/40 pl-12 md:pl-14 pr-4 text-base md:text-lg rounded-2xl outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full h-12 md:h-14 bg-slate-800 border-2 border-slate-700 text-white placeholder:text-slate-500 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400/50 transition-all shadow-inner"
                 />
-                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                {searchTerm && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSearchTerm(""); searchInputRef.current?.focus(); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               <Button 
                 type="button"
