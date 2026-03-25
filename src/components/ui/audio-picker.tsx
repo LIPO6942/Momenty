@@ -59,6 +59,45 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     loadPopular();
   }, []);
 
+  // CRITICAL: Defeat the parent Radix Dialog's focus trap when Studio Sonore is open.
+  // Radix uses document-level 'focusin' listeners (bubble phase) to detect focus leaving.
+  // We intercept at CAPTURE phase (fires first) and stop propagation for our portal elements.
+  // Also remove body scroll lock so results can scroll.
+  useEffect(() => {
+    if (!isLibraryOpen) return;
+
+    const portalId = 'studio-sonore-portal';
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const portal = document.getElementById(portalId);
+      if (portal && portal.contains(e.target as Node)) {
+        e.stopImmediatePropagation();
+      }
+    };
+
+    // Intercept at capture phase — fires before Radix's bubble-phase listener
+    document.addEventListener('focusin', handleFocusIn, true);
+
+    // Remove body scroll lock that Radix Dialog applies
+    const originalOverflow = document.body.style.overflow;
+    const originalPR = document.body.style.paddingRight;
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+
+    // Focus the search input after a brief delay (after Radix's initial focus steal)
+    const focusTimer = setTimeout(() => {
+      const input = document.getElementById('studio-sonore-search') as HTMLInputElement;
+      if (input) input.focus();
+    }, 100);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn, true);
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPR;
+      clearTimeout(focusTimer);
+    };
+  }, [isLibraryOpen]);
+
 
   // Search is now manual via triggers only to avoid race conditions with categories
   const handleManualSearch = async () => {
@@ -306,7 +345,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
 
           {/* Studio Sonore Library Modal — Custom Portal (no Radix focus trap) */}
           {isLibraryOpen && createPortal(
-            <div className="fixed inset-0 z-[9999]" style={{ pointerEvents: 'auto' }}>
+            <div id="studio-sonore-portal" className="fixed inset-0 z-[9999]" style={{ pointerEvents: 'auto' }}>
               {/* Backdrop */}
               <div 
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
