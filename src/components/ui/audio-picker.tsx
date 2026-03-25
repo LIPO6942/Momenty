@@ -109,6 +109,20 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     };
   }, []);
 
+  // Force focus when the library opens
+  useEffect(() => {
+    if (isLibraryOpen) {
+      const t = setTimeout(() => {
+        const input = document.getElementById("studio-sonore-search") as HTMLInputElement;
+        if (input) {
+          input.focus();
+          input.click();
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [isLibraryOpen]);
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -295,22 +309,13 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
             <Library className="h-6 w-6 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-tighter">Bibliothèque</span>
           </Button>
-        </div>
-      )}
-
-      {/* Studio Sonore Custom Overlay Layout - Avoids nested Dialog focus bounds */}
-      {isLibraryOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)} />
-          <div 
-            className="w-full max-w-4xl h-[85vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
+        </div>      {/* Studio Sonore Library Modal (Proper Radix Dialog to handle Focus Trap) */}
+      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 h-[85vh] sm:h-[90vh] flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl !fixed !inset-x-0 !mx-auto !top-[5vh]">
+          <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-1 sm:gap-4">
-                <Volume2 className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8 text-amber-400" />
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-3">
+                <Volume2 className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-amber-400" />
                 Studio Sonore
               </h2>
               <Button 
@@ -318,13 +323,12 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 variant="ghost" 
                 size="icon" 
                 className="text-white/60 hover:text-white hover:bg-white/10 rounded-full h-10 w-10 flex-shrink-0"
-                onPointerDown={(e) => { e.stopPropagation(); }}
-                onClick={(e) => { e.stopPropagation(); setIsLibraryOpen(false); }}
+                onClick={() => setIsLibraryOpen(false)}
               >
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="text-slate-400 text-[10px] md:text-xs font-medium mt-1">Sublimez vos souvenirs.</p>
+            <p className="text-slate-400 text-xs font-medium mt-1">Ambiances pour vos souvenirs.</p>
 
             <form 
               onSubmit={(e) => {
@@ -347,7 +351,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                     e.stopPropagation();
                     setSearchTerm(e.target.value);
                   }}
-                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 !text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100]"
+                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 !text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100] !pointer-events-auto"
                 />
                 <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 {searchTerm && (
@@ -368,25 +372,20 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Chercher"}
               </Button>
             </form>
-            {isSearching && (
-              <p className="text-[10px] text-amber-400 font-black uppercase mt-2 animate-pulse">Extraction des sons en cours... Veuillez patienter.</p>
-            )}
           </div>
 
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
             {/* Categories */}
             <div className="md:w-56 bg-slate-50 md:bg-white border-b md:border-b-0 md:border-r flex-shrink-0">
-              <div className="p-3 md:p-6">
-                <p className="hidden md:block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest leading-none">Inspirations</p>
-                <div className="flex overflow-x-auto md:flex-col gap-2 pb-1 md:pb-0 scrollbar-hide">
+              <ScrollArea className="h-full">
+                <div className="p-3 md:p-6 space-y-1 md:space-y-2 flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 scrollbar-hide">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-3 mb-4 hidden md:block">Inspirations</p>
                   <Button 
                     type="button"
                     variant={activeCategory === 'popular' ? 'secondary' : 'ghost'} 
                     className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12 transition-colors", activeCategory === 'popular' && "bg-slate-200 md:bg-slate-100")}
-                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      e.preventDefault();
                       if (isSearching) return;
                       setActiveCategory('popular');
                       setSearchTerm('');
@@ -406,10 +405,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                       type="button"
                       variant={activeCategory === cat.id ? 'secondary' : 'ghost'} 
                       className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12 transition-colors", activeCategory === cat.id && "bg-slate-200 md:bg-slate-100")}
-                      onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
                         if (isSearching) return;
                         setActiveCategory(cat.id);
                         setSearchTerm(cat.label);
@@ -427,29 +424,28 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                     </Button>
                   ))}
                 </div>
-              </div>
+              </ScrollArea>
             </div>
 
-            {/* Sounds Result */}
-            <ScrollArea className="flex-1 p-4 md:p-6 bg-slate-50">
+            {/* Sounds Result List */}
+            <ScrollArea className="flex-1 p-4 md:p-8 bg-slate-50">
               {isSearching ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-6">
-                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center shadow-inner">
+                <div className="flex flex-col items-center justify-center py-24 gap-6">
+                  <div className="h-16 w-16 rounded-full bg-white flex items-center justify-center shadow-md">
                     <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
                   </div>
-                  <p className="text-sm font-bold uppercase tracking-widest text-slate-400 animate-pulse">Extraction des ondes...</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 animate-pulse">Extraction des sons...</p>
                 </div>
               ) : remoteSounds.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 py-16 text-center">
+                <div className="flex flex-col items-center justify-center py-24 text-center">
                   <div className="bg-slate-100 p-8 rounded-full mb-6 text-slate-200">
                     <Search className="h-12 w-12" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 mb-2">Aucun son capturé</h3>
-                  <p className="text-slate-500 max-w-xs mx-auto text-sm">Précisez votre recherche ou explorez les catégories à gauche.</p>
+                  <p className="text-slate-500 max-w-xs mx-auto text-sm font-medium italic">Le silence est d'or, mais essayez une autre recherche.</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4 max-w-3xl mx-auto pb-12">
-                  {remoteSounds.map((item) => (
+                  {remoteSounds.map((item: any) => (
                     <Card key={item.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-white group ring-1 ring-slate-200/50">
                       <CardContent className="p-4 flex items-center gap-4">
                         <Button
@@ -457,23 +453,20 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           variant="secondary"
                           size="icon"
                           className="h-14 w-14 rounded-2xl flex-shrink-0 bg-slate-50 group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors shadow-sm"
-                          onClick={(e) => { 
-                            e.stopPropagation();
-                            togglePreview(item.url);
-                          }}
+                          onClick={() => togglePreview(item.url)}
                         >
                           {activeAudio === item.url && isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
                         </Button>
                         
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-slate-900 truncate text-base md:text-lg tracking-tight">{item.name}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5 truncate flex items-center gap-1.5 opacity-70">
+                          <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 mt-0.5 truncate uppercase font-bold tracking-tight opacity-70">
                             {item.artist}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="text-[9px] font-black uppercase bg-slate-100 text-slate-400 border-none px-2 rounded-lg">
+                            <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">
                               {item.category}
-                            </Badge>
+                            </span>
                           </div>
                         </div>
 
@@ -481,11 +474,9 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           type="button"
                           variant="default" 
                           size="sm"
-                          className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold px-6 flex-shrink-0 shadow-lg shadow-slate-900/10 active:scale-95 transition-all"
-                          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-                          onClick={(e: React.MouseEvent) => {
+                          className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold px-4 md:px-6 flex-shrink-0"
+                          onClick={(e) => {
                             e.preventDefault();
-                            e.stopPropagation();
                             let safeUrl = item.url;
                             if (safeUrl.startsWith('http:')) {
                               safeUrl = safeUrl.replace('http:', 'https:');
@@ -495,10 +486,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                             if (audioRef.current) audioRef.current.pause();
                             setIsPlaying(false);
                             setIsLibraryOpen(false);
-                            toast({ 
-                              title: "Ambiance capturée !", 
-                              description: `"${item.name}" ajouté.` 
-                            });
+                            toast({ title: "Ambiance capturée !", description: `"${item.name}" ajouté.` });
                           }}
                         >
                           Capturer
@@ -510,9 +498,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               )}
             </ScrollArea>
           </div>
-        </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
