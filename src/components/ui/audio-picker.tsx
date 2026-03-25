@@ -320,7 +320,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="text-slate-400 text-sm md:text-base font-medium mt-1">Donnez une âme à vos instants avec une ambiance unique.</p>
+            <p className="text-slate-400 text-[10px] md:text-xs font-medium mt-1">Sublimez vos souvenirs.</p>
 
             <div className="mt-6 md:mt-8 relative max-w-xl flex gap-x-2">
               <div className="relative flex-1">
@@ -329,22 +329,25 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                   type="text"
                   id="studio-sonore-search"
                   name="q"
-                  placeholder="Ex: Piano, Mer, Nature, Jazz..."
+                  placeholder="Rechercher..."
                   value={searchTerm}
-                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.focus(); }}
+                  onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.focus(); }}
+                  onClick={(e) => { e.stopPropagation(); e.target instanceof HTMLInputElement && e.target.focus(); }}
                   autoComplete="off"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     e.stopPropagation();
                     setSearchTerm(e.target.value);
                   }}
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Extreme isolation
+                    if (e.key === 'Tab') return;
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       handleManualSearch();
                     }
                   }}
-                  className="w-full h-12 md:h-14 bg-slate-800 border-2 border-slate-700 text-white placeholder:text-slate-500 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400/50 transition-all shadow-inner"
+                  className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-slate-900 placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus:ring-4 focus:ring-amber-400/20 focus:border-amber-400 transition-all shadow-md relative z-[100] !pointer-events-auto"
                 />
                 <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 {searchTerm && (
