@@ -55,13 +55,6 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     loadPopular();
   }, []);
 
-  // Search effect with debounce
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      // If search is cleared, reload popular if we were in popular mode or just clear
-      return;
-    }
-    
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true);
       // Search both for better coverage
@@ -69,7 +62,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
         searchHearthis(searchTerm),
         searchITunes(searchTerm)
       ]);
-      setRemoteSounds([...itunesRes, ...hearthisRes]);
+      setRemoteSounds([...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)]);
       setIsSearching(false);
     }, 800);
 
@@ -77,14 +70,11 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  const handleManualSearch = async () => {
-    if (!searchTerm.trim()) return;
-    setIsSearching(true);
     const [hearthisRes, itunesRes] = await Promise.all([
       searchHearthis(searchTerm),
       searchITunes(searchTerm)
     ]);
-    setRemoteSounds([...itunesRes, ...hearthisRes]);
+    setRemoteSounds([...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)]);
     setIsSearching(false);
   };
 
@@ -113,11 +103,9 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-        }
-      };
-
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         await handleUpload(audioBlob);
         stream.getTracks().forEach(track => track.stop());
       };
@@ -147,12 +135,16 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     const formData = new FormData();
     formData.append('file', blob);
 
-    try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       const result = await response.json();
+      
+      if (!response.ok || !result.secure_url) {
+        throw new Error(result.message || result.error || "Upload failed");
+      }
+
       onChange(result.secure_url);
       setSelectedSoundName("Enregistrement vocal");
       toast({ title: "Enregistrement vocal sauvegardé !" });
@@ -283,10 +275,13 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
       )}
 
       {/* Studio Sonore Dialog - Always rendered, controlled by isLibraryOpen */}
-      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={false}>
         <DialogContent 
           className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white [&>button]:hidden"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            // allows clicking outside to close
+          }}
         >
           <div className="p-6 md:p-8 bg-slate-900 text-white relative">
             <div className="flex items-center justify-between">
