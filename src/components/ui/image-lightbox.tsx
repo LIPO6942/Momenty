@@ -64,29 +64,22 @@ export function ImageLightbox({
 
   // Audio Playback Logic
   useEffect(() => {
-    const playAudio = async () => {
-      if (isOpen && audioUrl && audioRef.current) {
-        try {
-          // Reset and play
-          audioRef.current.currentTime = 0;
-          await audioRef.current.play();
-          setIsPlaying(true);
-        } catch (err) {
-          console.log("Audio autoplay failed, likely blocked by browser:", err);
-          setIsPlaying(false);
-        }
-      }
-    };
+    const audio = audioRef.current;
+    if (!audio || !audioUrl) return;
 
     if (isOpen) {
-      // Small delay to ensure Dialog content is fully in DOM and audioRef is attached
-      const timer = setTimeout(playAudio, 100);
+      // Small timeout to ensure browser is ready after the click that opened the dialog
+      const timer = setTimeout(() => {
+        audio.currentTime = 0;
+        audio.play().catch(err => {
+          console.error("Autoplay prevented:", err);
+        });
+        setIsPlaying(true);
+      }, 50);
       return () => clearTimeout(timer);
     } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      audio.pause();
+      audio.currentTime = 0;
       setIsPlaying(false);
     }
   }, [isOpen, audioUrl]);
@@ -146,20 +139,23 @@ export function ImageLightbox({
             <DialogTitle>{alt}</DialogTitle>
           </VisuallyHidden>
 
+          {/* Audio Element - Rendered inside to be near controls but handled by ref */}
+          {audioUrl && (
+            <audio 
+              ref={audioRef} 
+              src={audioUrl} 
+              muted={isMuted} 
+              crossOrigin="anonymous"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+              loop
+              className="hidden"
+            />
+          )}
+
           <div className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
-            {/* Audio Element Hidden */}
-            {audioUrl && (
-              <audio 
-                ref={audioRef} 
-                src={audioUrl} 
-                muted={isMuted} 
-                crossOrigin="anonymous"
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-                loop
-              />
-            )}
+
 
             {/* Header Controls */}
             <div className="absolute top-4 left-4 right-4 z-[60] flex justify-between items-center pointer-events-none">
@@ -169,12 +165,23 @@ export function ImageLightbox({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                        "h-10 w-10 rounded-full bg-black/40 text-white backdrop-blur-sm transition-all",
-                        isPlaying && !isMuted && "ring-2 ring-primary animate-pulse"
+                        "h-10 w-10 rounded-full bg-black/60 text-white backdrop-blur-sm transition-all border border-white/10 hover:bg-black/80 hover:scale-110",
+                        isPlaying && "animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.5)] border-amber-400/50 text-amber-400"
                     )}
-                    onClick={toggleMute}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isPlaying) {
+                        if (audioRef.current) audioRef.current.pause();
+                        setIsPlaying(false);
+                      } else {
+                        if (audioRef.current) {
+                          audioRef.current.play().catch(err => console.error("Play failed:", err));
+                        }
+                        setIsPlaying(true);
+                      }
+                    }}
                   >
-                    {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
                   </Button>
                 )}
               </div>

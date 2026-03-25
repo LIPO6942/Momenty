@@ -12,6 +12,7 @@ import { searchHearthis, getPopularHearthis, searchITunes, type RemoteSound } fr
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const CATEGORIES = [
   { id: 'popular', label: 'Populaires', icon: <Volume2 className="h-4 w-4" />, query: '' },
@@ -261,40 +262,45 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <span className="text-[10px] font-black uppercase mt-1">Bibliothèque</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white">
+            <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white focus:outline-none">
               <div className="p-8 bg-slate-900 text-white relative">
-                 <div className="absolute top-0 right-0 p-8 h-full flex items-center opacity-10 pointer-events-none">
-                    <Music className="h-40 w-40 rotate-12" />
-                 </div>
                 <DialogTitle className="text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-4">
                   <Volume2 className="h-8 w-8 text-amber-400" />
                   Studio Sonore
                 </DialogTitle>
                 <p className="text-slate-400 text-base font-medium mt-1">Donnez une âme à vos instants avec une ambiance unique.</p>
 
-                <div className="mt-8 relative max-w-xl flex gap-2">
+                <div className="mt-8 relative max-w-xl flex gap-x-2 z-[100]">
                   <div className="relative flex-1">
                     <Input 
                       placeholder="Ex: Explosion, Vent, Mer, Piano..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-                      className="h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 pl-14 text-lg rounded-2xl ring-offset-slate-900 focus-visible:ring-amber-400"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleManualSearch();
+                        }
+                      }}
+                      autoFocus
+                      className="h-14 bg-white/10 border-white/20 text-white placeholder:text-white/40 pl-14 text-lg rounded-2xl ring-offset-slate-900 focus-visible:ring-amber-400 relative z-[110]"
                     />
-                    <Search className="h-6 w-6 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                    <Search className="h-6 w-6 absolute left-5 top-1/2 -translate-y-1/2 text-white/40 z-[120]" />
                   </div>
                   <Button 
-                    onClick={handleManualSearch}
-                    className="h-14 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleManualSearch();
+                    }}
+                    className="h-14 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold relative z-[110]"
                   >
                     Chercher
                   </Button>
-                  {isSearching && (
-                    <div className="absolute -bottom-6 left-0 text-[10px] text-amber-400 font-bold uppercase tracking-widest animate-pulse">
-                      Recherche en cours...
-                    </div>
-                  )}
                 </div>
+                {isSearching && (
+                  <p className="text-[10px] text-amber-400 font-black uppercase mt-2 animate-pulse">Recherche en cours...</p>
+                )}
               </div>
 
               <div className="flex-1 flex overflow-hidden">
