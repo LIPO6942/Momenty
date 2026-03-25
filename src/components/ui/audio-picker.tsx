@@ -15,11 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const CATEGORIES = [
-  { id: 'popular', label: 'Populaires', icon: <Volume2 className="h-4 w-4" />, query: '' },
   { id: 'music', label: 'Chansons', icon: <Music className="h-4 w-4" />, query: 'songs' },
   { id: 'samples', label: 'Samples & SFX', icon: <Ghost className="h-4 w-4" />, query: 'sound effect sfx short sample' },
   { id: 'nature', label: 'Nature', icon: <TreePine className="h-4 w-4" />, query: 'nature ambience' },
   { id: 'city', label: 'Ville', icon: <Coffee className="h-4 w-4" />, query: 'city street ambience' },
+  { id: 'rain', label: 'Pluie', icon: <Wind className="h-4 w-4" />, query: 'rain relaxing' },
 ];
 
 interface AudioPickerProps {
@@ -303,54 +303,56 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 )}
               </div>
 
-              <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                 {/* Categories */}
-                <div className="w-56 bg-white border-r p-6 hidden md:block">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest leading-none">Inspirations</p>
-                  <div className="space-y-2">
-                    <Button 
-                      variant={activeCategory === 'popular' ? 'secondary' : 'ghost'} 
-                      className={cn("w-full justify-start gap-3 text-sm font-bold rounded-xl h-12", activeCategory === 'popular' && "bg-slate-100")}
-                      onClick={() => {
-                        setActiveCategory('popular');
-                        setSearchTerm('');
-                        setRemoteSounds([]);
-                        setIsSearching(true);
-                        getPopularHearthis().then(res => {
-                          setRemoteSounds(res);
-                          setIsSearching(false);
-                        });
-                      }}
-                    >
-                      <Volume2 className="h-5 w-5" /> Populaires
-                    </Button>
-                    {CATEGORIES.map(cat => (
+                <div className="md:w-56 bg-slate-50 md:bg-white border-b md:border-b-0 md:border-r flex-shrink-0">
+                  <div className="p-4 md:p-6">
+                    <p className="hidden md:block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest leading-none">Inspirations</p>
+                    <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 scrollbar-hide">
                       <Button 
-                        key={cat.id}
-                        variant={activeCategory === cat.id ? 'secondary' : 'ghost'} 
-                        className={cn("w-full justify-start gap-3 text-sm font-bold rounded-xl h-12", activeCategory === cat.id && "bg-slate-100")}
+                        variant={activeCategory === 'popular' ? 'secondary' : 'ghost'} 
+                        className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-10 md:h-12", activeCategory === 'popular' && "bg-slate-200 md:bg-slate-100")}
                         onClick={() => {
-                          setActiveCategory(cat.id);
-                          setSearchTerm(cat.label);
+                          setActiveCategory('popular');
+                          setSearchTerm('');
                           setRemoteSounds([]);
                           setIsSearching(true);
-                          
-                          if (cat.id === 'music') {
-                            searchITunes(cat.query).then(res => {
-                              setRemoteSounds(res);
-                              setIsSearching(false);
-                            });
-                          } else {
-                            searchHearthis(cat.query).then(res => {
-                              setRemoteSounds(res);
-                              setIsSearching(false);
-                            });
-                          }
+                          getPopularHearthis().then(res => {
+                            setRemoteSounds(res);
+                            setIsSearching(false);
+                          });
                         }}
                       >
-                       <span className="text-slate-500">{cat.icon}</span> {cat.label}
+                        <Volume2 className="h-4 w-4 md:h-5 md:w-5" /> Populaires
                       </Button>
-                    ))}
+                      {CATEGORIES.map(cat => (
+                        <Button 
+                          key={cat.id}
+                          variant={activeCategory === cat.id ? 'secondary' : 'ghost'} 
+                          className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-10 md:h-12", activeCategory === cat.id && "bg-slate-200 md:bg-slate-100")}
+                          onClick={() => {
+                            setActiveCategory(cat.id);
+                            setSearchTerm(cat.label);
+                            setRemoteSounds([]);
+                            setIsSearching(true);
+                            
+                            if (cat.id === 'music') {
+                              searchITunes(cat.query).then(res => {
+                                setRemoteSounds(res);
+                                setIsSearching(false);
+                              });
+                            } else {
+                              searchHearthis(cat.query).then(res => {
+                                setRemoteSounds(res);
+                                setIsSearching(false);
+                              });
+                            }
+                          }}
+                        >
+                         <span className="text-slate-500 text-xs md:text-base">{cat.icon}</span> {cat.label}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

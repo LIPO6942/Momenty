@@ -145,7 +145,6 @@ export function ImageLightbox({
               ref={audioRef} 
               src={audioUrl} 
               muted={isMuted} 
-              crossOrigin="anonymous"
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}

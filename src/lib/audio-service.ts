@@ -17,7 +17,7 @@ export interface RemoteSound {
 
 export const searchITunes = async (query: string): Promise<RemoteSound[]> => {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=15`);
+        const response = await fetch(`/api/audio/search?q=${encodeURIComponent(query)}&source=itunes`);
         
         if (!response.ok) {
             throw new Error('iTunes API response was not ok');
@@ -45,7 +45,7 @@ export const searchITunes = async (query: string): Promise<RemoteSound[]> => {
 
 export const searchHearthis = async (query: string): Promise<RemoteSound[]> => {
     try {
-        const response = await fetch(`https://api-v2.hearthis.at/search/?t=${encodeURIComponent(query)}&count=15&page=1`);
+        const response = await fetch(`/api/audio/search?q=${encodeURIComponent(query)}&source=hearthis`);
         
         if (!response.ok) {
             throw new Error('Hearthis API response was not ok');
@@ -72,7 +72,7 @@ export const searchHearthis = async (query: string): Promise<RemoteSound[]> => {
 
 export const getPopularHearthis = async (): Promise<RemoteSound[]> => {
     try {
-        const response = await fetch(`https://api-v2.hearthis.at/feed/?type=popular&count=10&page=1`);
+        const response = await fetch(`/api/audio/popular`);
         
         if (!response.ok) {
             throw new Error('Hearthis API response was not ok');
