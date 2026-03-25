@@ -268,49 +268,52 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {/* Recording Button */}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isUploading}
-            className={cn(
-              "h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden group border border-slate-200",
-              isRecording 
-                ? "bg-red-50 border-red-200 text-red-600 shadow-inner" 
-                : "bg-white hover:bg-slate-50 text-slate-500 hover:text-red-500 hover:border-red-200"
-            )}
-          >
-            {isUploading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-            ) : isRecording ? (
-              <>
-                <div className="h-6 w-6 rounded-full bg-red-500 animate-pulse flex items-center justify-center">
-                  <Square className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-tighter">{formatTime(recordingTime)}</span>
-              </>
-            ) : (
-              <>
-                <Mic className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-[10px] font-black uppercase tracking-tighter">Enregistrer</span>
-              </>
-            )}
-          </Button>
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Recording Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isUploading}
+              className={cn(
+                "h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden group border border-slate-200",
+                isRecording 
+                  ? "bg-red-50 border-red-200 text-red-600 shadow-inner" 
+                  : "bg-white hover:bg-slate-50 text-slate-500 hover:text-red-500 hover:border-red-200"
+              )}
+            >
+              {isUploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+              ) : isRecording ? (
+                <>
+                  <div className="h-6 w-6 rounded-full bg-red-500 animate-pulse flex items-center justify-center">
+                    <Square className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-tighter">{formatTime(recordingTime)}</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-tighter">Enregistrer</span>
+                </>
+              )}
+            </Button>
 
-          {/* Library Button */}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setIsLibraryOpen(true)}
-            className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-200/50 group"
-          >
-            <Library className="h-6 w-6 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Bibliothèque</span>
-          </Button>
-        </div>      {/* Studio Sonore Library Modal (Proper Radix Dialog to handle Focus Trap) */}
-      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+            {/* Library Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsLibraryOpen(true)}
+              className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-200/50 group"
+            >
+              <Library className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Bibliothèque</span>
+            </Button>
+          </div>
+
+          {/* Studio Sonore Library Modal (Proper Radix Dialog to handle Focus Trap) */}
+          <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 h-[85vh] sm:h-[90vh] flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl !fixed !inset-x-0 !mx-auto !top-[5vh]">
           <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -500,7 +503,9 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </>
+    )}
+  </div>
+);
 }
 
