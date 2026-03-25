@@ -425,7 +425,10 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                     </div>
 
                     {/* Results */}
-                    <div className="flex-1 overflow-y-auto bg-slate-50">
+                    <div 
+                      className="flex-1 overflow-y-auto bg-slate-50"
+                      style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+                    >
                       <div className="p-4 md:p-8">
                         {isSearching ? (
                           <div className="flex flex-col items-center justify-center py-24 gap-4">
