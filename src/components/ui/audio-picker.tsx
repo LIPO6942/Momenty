@@ -84,6 +84,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     setIsSearching(false);
   };
 
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -483,9 +484,8 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 </div>
               )}
             </ScrollArea>
-              )}
-            </ScrollArea>
           </div>
+        </div>
         </div>
       )}
     </div>
