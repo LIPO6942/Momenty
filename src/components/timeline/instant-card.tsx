@@ -281,6 +281,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
     const [isTextVisible, setIsTextVisible] = useState(true);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const emotions = Array.isArray(instant.emotion) ? instant.emotion : [instant.emotion];
     const categories = Array.isArray(instant.category) ? instant.category : (instant.category ? [instant.category] : []);
@@ -303,18 +304,22 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <EditNoteDialog instantToEdit={instant}>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        <span>Modifier</span>
-                                    </DropdownMenuItem>
-                                </EditNoteDialog>
+                                <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Modifier</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     <span>Supprimer</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <EditNoteDialog 
+                            instantToEdit={instant} 
+                            open={isEditDialogOpen} 
+                            onOpenChange={setIsEditDialogOpen} 
+                        />
                     </div>
                 </CardHeader>
 
@@ -414,18 +419,22 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <EditNoteDialog instantToEdit={instant}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Modifier</span>
-                            </DropdownMenuItem>
-                        </EditNoteDialog>
+                        <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Modifier</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => deleteInstant(instant.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                             <Trash2 className="mr-2 h-4 w-4" />
                             <span>Supprimer</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+
+                <EditNoteDialog 
+                    instantToEdit={instant} 
+                    open={isEditDialogOpen} 
+                    onOpenChange={setIsEditDialogOpen} 
+                />
             </CardHeader>
 
             <CardContent className="p-4">

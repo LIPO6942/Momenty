@@ -295,11 +295,15 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
           {/* Studio Sonore Library Modal — Standard Radix Dialog to fix nesting bugs */}
           <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
             <DialogContent 
-              className="w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[9999] [&>button]:hidden"
+              className="w-[95vw] sm:max-w-4xl h-[85vh] sm:h-[90vh] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl rounded-3xl z-[11000] [&>button]:hidden"
               onOpenAutoFocus={(e) => {
                 e.preventDefault();
                 // Delay slightly just for mobile browsers to catch up with animations
                 setTimeout(() => searchInputRef.current?.focus(), 150);
+              }}
+              onInteractOutside={(e) => {
+                // Prevent closing when clicking on parent dialogs or context menus
+                e.preventDefault();
               }}
             >
               <DialogTitle className="sr-only">Studio Sonore</DialogTitle>

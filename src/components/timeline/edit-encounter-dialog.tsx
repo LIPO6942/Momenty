@@ -53,11 +53,16 @@ const moods = [
 interface EditEncounterDialogProps {
   children?: ReactNode;
   encounterToEdit: Encounter;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditEncounterDialog({ children, encounterToEdit }: EditEncounterDialogProps) {
+export function EditEncounterDialog({ children, encounterToEdit, open: controlledOpen, onOpenChange: setControlledOpen }: EditEncounterDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+  
   const { updateEncounter } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,10 +205,17 @@ export function EditEncounterDialog({ children, encounterToEdit }: EditEncounter
           setOpen(isOpen);
           if(!isOpen) cleanup();
       }}>
+      {children && (
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      )}
+      <DialogContent 
+        className="sm:max-w-lg max-h-[90vh] flex flex-col z-[5000]"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
          <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader className="shrink-0">
             <DialogTitle>Modifier la rencontre</DialogTitle>

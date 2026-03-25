@@ -34,8 +34,10 @@ import type { DisplayTransform } from "@/lib/types";
 
 
 interface EditNoteDialogProps {
-  children: ReactNode;
+  children?: ReactNode;
   instantToEdit: Instant;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const moods = [
@@ -67,9 +69,12 @@ const toDateTimeLocal = (isoString: string) => {
 };
 
 
-export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps) {
+export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, onOpenChange: setControlledOpen }: EditNoteDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+  
   const { updateInstant } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -280,10 +285,18 @@ export function EditNoteDialog({ children, instantToEdit }: EditNoteDialogProps)
       setOpen(isOpen);
       if (!isOpen) cleanup(); // Reset state if dialog is closed
     }}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
+      <DialogContent 
+        className="sm:max-w-lg max-h-[90vh] flex flex-col z-[5000]"
+        onInteractOutside={(e) => {
+          // If we are editing, we don't want the parent dropdown/context to block us
+          e.preventDefault();
+        }}
+      >
         <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader className="shrink-0">
             <DialogTitle>Modifier l'instant</DialogTitle>

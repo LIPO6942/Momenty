@@ -53,11 +53,16 @@ const moods = [
 interface EditAccommodationDialogProps {
   children?: ReactNode;
   accommodationToEdit: Accommodation;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditAccommodationDialog({ children, accommodationToEdit }: EditAccommodationDialogProps) {
+export function EditAccommodationDialog({ children, accommodationToEdit, open: controlledOpen, onOpenChange: setControlledOpen }: EditAccommodationDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+  
   const { updateAccommodation } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,10 +205,17 @@ export function EditAccommodationDialog({ children, accommodationToEdit }: EditA
           setOpen(isOpen);
           if(!isOpen) cleanup();
       }}>
+      {children && (
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      )}
+      <DialogContent 
+        className="sm:max-w-lg max-h-[90vh] flex flex-col z-[5000]"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
          <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader className="shrink-0">
             <DialogTitle>Modifier le logement</DialogTitle>

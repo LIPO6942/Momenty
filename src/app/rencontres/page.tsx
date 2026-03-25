@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useContext } from "react";
 import Image from "next/image";
-import { type Encounter } from "@/lib/idb";
+import { type Encounter } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO } from "date-fns";
@@ -36,6 +36,8 @@ import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 export default function EncountersPage() {
   const { encounters, deleteEncounter } = useContext(TimelineContext);
   const { toast } = useToast();
+  const [activeEncounterForEdit, setActiveEncounterForEdit] = useState<Encounter | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleDelete = (id: string) => {
     deleteEncounter(id);
@@ -89,12 +91,13 @@ export default function EncountersPage() {
                            </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <EditEncounterDialog encounterToEdit={encounter}>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Modifier</span>
-                                </DropdownMenuItem>
-                            </EditEncounterDialog>
+                            <DropdownMenuItem onSelect={() => {
+                                setActiveEncounterForEdit(encounter);
+                                setIsEditDialogOpen(true);
+                            }}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Modifier</span>
+                            </DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
@@ -141,6 +144,13 @@ export default function EncountersPage() {
             Utilisez le bouton '+' et l'icône de rencontre pour en ajouter une.
           </p>
         </div>
+      )}
+      {activeEncounterForEdit && (
+        <EditEncounterDialog 
+            open={isEditDialogOpen} 
+            onOpenChange={setIsEditDialogOpen} 
+            encounterToEdit={activeEncounterForEdit} 
+        />
       )}
     </div>
   );

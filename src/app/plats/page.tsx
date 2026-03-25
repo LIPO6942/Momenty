@@ -4,6 +4,7 @@
 import { useContext, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import type { Dish } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -48,6 +49,8 @@ function PlatsContent() {
     const searchParams = useSearchParams();
     const [textVisibility, setTextVisibility] = useState<{ [key: string]: boolean }>({});
     const [highlightedId, setHighlightedId] = useState<string | null>(null);
+    const [activeDishForEdit, setActiveDishForEdit] = useState<Dish | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     useEffect(() => {
         const id = searchParams.get('id');
@@ -125,11 +128,17 @@ function PlatsContent() {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
                                         <div className="absolute top-2 right-2 flex gap-2">
-                                            <EditDishDialog dishToEdit={dish}>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                            </EditDishDialog>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white"
+                                                onClick={() => {
+                                                    setActiveDishForEdit(dish);
+                                                    setIsEditDialogOpen(true);
+                                                }}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
@@ -213,12 +222,13 @@ function PlatsContent() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <EditDishDialog dishToEdit={dish}>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Modifier</span>
-                                                        </DropdownMenuItem>
-                                                    </EditDishDialog>
+                                                    <DropdownMenuItem onSelect={() => {
+                                                        setActiveDishForEdit(dish);
+                                                        setIsEditDialogOpen(true);
+                                                    }}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        <span>Modifier</span>
+                                                    </DropdownMenuItem>
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
@@ -268,6 +278,13 @@ function PlatsContent() {
                         Utilisez le bouton '+' et l'icône de plat pour en ajouter un.
                     </p>
                 </div>
+            )}
+            {activeDishForEdit && (
+                <EditDishDialog 
+                    open={isEditDialogOpen} 
+                    onOpenChange={setIsEditDialogOpen} 
+                    dishToEdit={activeDishForEdit} 
+                />
             )}
         </div>
     );

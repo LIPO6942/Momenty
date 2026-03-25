@@ -68,11 +68,16 @@ const moods = [
 interface EditDishDialogProps {
   children?: ReactNode;
   dishToEdit: Dish;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
+export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onOpenChange: setControlledOpen }: EditDishDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+  
   const { updateDish } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,10 +264,17 @@ export function EditDishDialog({ children, dishToEdit }: EditDishDialogProps) {
       setOpen(isOpen);
       if (!isOpen) cleanup();
     }}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
+      <DialogContent 
+        className="sm:max-w-lg max-h-[90vh] flex flex-col z-[5000]"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader className="shrink-0">
             <DialogTitle>Modifier le plat</DialogTitle>
