@@ -148,7 +148,11 @@ export const PassportView = ({
     instants.forEach(i => { const c = getCountry(i.location); if (c) visitedCountries.add(c); });
     manualLocations.forEach(m => { const c = getCountry(m.name); if (c) visitedCountries.add(c); });
     visitedCountries.forEach(country => {
-      const continent = countryToContinent[country];
+      // Try exact, then try with trimmed whitespace
+      const normalizedCountry = country.trim();
+      const continent = countryToContinent[normalizedCountry] || 
+                        countryToContinent[normalizedCountry.charAt(0).toUpperCase() + normalizedCountry.slice(1).toLowerCase()];
+      
       if (continent && stats[continent]) stats[continent].visited += 1;
     });
     return stats;

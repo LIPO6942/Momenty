@@ -1,43 +1,43 @@
 export const countryToContinent: Record<string, string> = {
   // Europe
-  "France": "Europe", "Germany": "Europe", "Italy": "Europe", "Spain": "Europe", "United Kingdom": "Europe",
-  "Portugal": "Europe", "Belgium": "Europe", "Netherlands": "Europe", "Switzerland": "Europe", "Austria": "Europe",
-  "Greece": "Europe", "Sweden": "Europe", "Norway": "Europe", "Denmark": "Europe", "Finland": "Europe",
-  "Ireland": "Europe", "Poland": "Europe", "Czech Republic": "Europe", "Hungary": "Europe", "Romania": "Europe",
-  "Bulgaria": "Europe", "Croatia": "Europe", "Slovakia": "Europe", "Slovenia": "Europe", "Estonia": "Europe",
-  "Latvia": "Europe", "Lithuania": "Europe", "Cyprus": "Europe", "Malta": "Europe", "Iceland": "Europe",
-  "Russia": "Europe", "Ukraine": "Europe", "Belarus": "Europe", "Moldova": "Europe", "Albania": "Europe",
-  "Serbia": "Europe", "Bosnia and Herzegovina": "Europe", "Montenegro": "Europe", "Macedonia": "Europe",
-  "Andorra": "Europe", "Monaco": "Europe", "San Marino": "Europe", "Vatican City": "Europe",
+  "France": "Europe", "Allemagne": "Europe", "Germany": "Europe", "Italie": "Europe", "Italy": "Europe", "Espagne": "Europe", "Spain": "Europe", "Royaume-Uni": "Europe", "United Kingdom": "Europe",
+  "Portugal": "Europe", "Belgique": "Europe", "Belgium": "Europe", "Pays-Bas": "Europe", "Netherlands": "Europe", "Suisse": "Europe", "Switzerland": "Europe", "Autriche": "Europe", "Austria": "Europe",
+  "Grèce": "Europe", "Greece": "Europe", "Suède": "Europe", "Sweden": "Europe", "Norvège": "Europe", "Norway": "Europe", "Danemark": "Europe", "Denmark": "Europe", "Finlande": "Europe", "Finland": "Europe",
+  "Irlande": "Europe", "Ireland": "Europe", "Pologne": "Europe", "Poland": "Europe", "République Tchèque": "Europe", "Czech Republic": "Europe", "Hongrie": "Europe", "Hungary": "Europe", "Roumanie": "Europe", "Romania": "Europe",
+  "Bulgarie": "Europe", "Bulgaria": "Europe", "Croatie": "Europe", "Croatia": "Europe", "Slovaquie": "Europe", "Slovakia": "Europe", "Slovénie": "Europe", "Slovenia": "Europe", "Estonie": "Europe", "Estonia": "Europe",
+  "Lettonie": "Europe", "Latvia": "Europe", "Lituanie": "Europe", "Lithuania": "Europe", "Chypre": "Europe", "Cyprus": "Europe", "Malte": "Europe", "Malta": "Europe", "Islande": "Europe", "Iceland": "Europe",
+  "Russie": "Europe", "Russia": "Europe", "Ukraine": "Europe", "Biélorussie": "Europe", "Belarus": "Europe", "Moldavie": "Europe", "Moldova": "Europe", "Albanie": "Europe", "Albania": "Europe",
+  "Serbie": "Europe", "Serbia": "Europe", "Bosnie-Herzégovine": "Europe", "Bosnia and Herzegovina": "Europe", "Monténégro": "Europe", "Montenegro": "Europe", "Macédoine": "Europe", "Macedonia": "Europe",
+  "Andorre": "Europe", "Andorra": "Europe", "Monaco": "Europe", "Saint-Marin": "Europe", "San Marino": "Europe", "Vatican": "Europe", "Vatican City": "Europe",
 
   // Asia
-  "China": "Asie", "Japan": "Asie", "South Korea": "Asie", "India": "Asie", "Thailand": "Asie",
-  "Vietnam": "Asie", "Indonesia": "Asie", "Malaysia": "Asie", "Singapore": "Asie", "Philippines": "Asie",
-  "Turkey": "Asie", "Saudi Arabia": "Asie", "United Arab Emirates": "Asie", "Israel": "Asie", "Jordan": "Asie",
-  "Lebanon": "Asie", "Pakistan": "Asie", "Bangladesh": "Asie", "Sri Lanka": "Asie", "Nepal": "Asie",
-  "Kazakhstan": "Asie", "Uzbekistan": "Asie", "Cambodia": "Asie", "Laos": "Asie", "Myanmar": "Asie",
-  "Mongolia": "Asie", "Taiwan": "Asie", "Hong Kong": "Asie", "Armenia": "Asie", "Georgia": "Asie",
-  "Azerbaijan": "Asie", "Qatar": "Asie", "Kuwait": "Asie", "Oman": "Asie",
+  "Chine": "Asie", "China": "Asie", "Japon": "Asie", "Japan": "Asie", "Corée du Sud": "Asie", "South Korea": "Asie", "Inde": "Asie", "India": "Asie", "Thaïlande": "Asie", "Thailand": "Asie",
+  "Vietnam": "Asie", "Indonésie": "Asie", "Indonesia": "Asie", "Malaisie": "Asie", "Malaysia": "Asie", "Singapour": "Asie", "Singapore": "Asie", "Philippines": "Asie",
+  "Turquie": "Asie", "Turkey": "Asie", "Arabie Saoudite": "Asie", "Saudi Arabia": "Asie", "Émirats Arabes Unis": "Asie", "United Arab Emirates": "Asie", "Israël": "Asie", "Israel": "Asie", "Jordanie": "Asie", "Jordan": "Asie",
+  "Liban": "Asie", "Lebanon": "Asie", "Pakistan": "Asie", "Bangladesh": "Asie", "Sri Lanka": "Asie", "Népal": "Asie", "Nepal": "Asie",
+  "Kazakhstan": "Asie", "Ouzbékistan": "Asie", "Uzbekistan": "Asie", "Cambodge": "Asie", "Cambodia": "Asie", "Laos": "Asie", "Birmanie": "Asie", "Myanmar": "Asie",
+  "Mongolie": "Asie", "Mongolia": "Asie", "Taïwan": "Asie", "Taiwan": "Asie", "Hong Kong": "Asie", "Arménie": "Asie", "Armenia": "Asie", "Géorgie": "Asie", "Georgia": "Asie",
+  "Azerbaïdjan": "Asie", "Azerbaijan": "Asie", "Qatar": "Asie", "Koweït": "Asie", "Kuwait": "Asie", "Oman": "Asie",
 
   // Africa
-  "Morocco": "Afrique", "Egypt": "Afrique", "South Africa": "Afrique", "Nigeria": "Afrique", "Kenya": "Afrique",
-  "Algeria": "Afrique", "Tunisia": "Afrique", "Ethiopia": "Afrique", "Ghana": "Afrique", "Senegal": "Afrique",
-  "Tanzania": "Afrique", "Uganda": "Afrique", "Madagascar": "Afrique", "Mauritius": "Afrique", "Ivory Coast": "Afrique",
-  "Cameroon": "Afrique", "Angola": "Afrique", "Zambia": "Afrique", "Zimbabwe": "Afrique", "Namibia": "Afrique",
+  "Maroc": "Afrique", "Morocco": "Afrique", "Égypte": "Afrique", "Egypt": "Afrique", "Afrique du Sud": "Afrique", "South Africa": "Afrique", "Nigéria": "Afrique", "Nigeria": "Afrique", "Kenya": "Afrique",
+  "Algérie": "Afrique", "Algeria": "Afrique", "Tunisie": "Afrique", "Tunisia": "Afrique", "Éthiopie": "Afrique", "Ethiopia": "Afrique", "Ghana": "Afrique", "Sénégal": "Afrique", "Senegal": "Afrique",
+  "Tanzanie": "Afrique", "Tanzania": "Afrique", "Ouganda": "Afrique", "Uganda": "Afrique", "Madagascar": "Afrique", "Maurice": "Afrique", "Mauritius": "Afrique", "Côte d'Ivoire": "Afrique", "Ivory Coast": "Afrique",
+  "Cameroun": "Afrique", "Cameroon": "Afrique", "Angola": "Afrique", "Zambie": "Afrique", "Zambia": "Afrique", "Zimbabwe": "Afrique", "Namibie": "Afrique", "Namibia": "Afrique",
 
   // North America
-  "United States": "Amérique du Nord", "Canada": "Amérique du Nord", "Mexico": "Amérique du Nord",
-  "Cuba": "Amérique du Nord", "Jamaica": "Amérique du Nord", "Costa Rica": "Amérique du Nord", "Panama": "Amérique du Nord",
-  "Guatemala": "Amérique du Nord", "Bahamas": "Amérique du Nord", "Dominican Republic": "Amérique du Nord",
+  "États-Unis": "Amérique du Nord", "United States": "Amérique du Nord", "Canada": "Amérique du Nord", "Mexique": "Amérique du Nord", "Mexico": "Amérique du Nord",
+  "Cuba": "Amérique du Nord", "Jamaïque": "Amérique du Nord", "Jamaica": "Amérique du Nord", "Costa Rica": "Amérique du Nord", "Panama": "Amérique du Nord",
+  "Guatemala": "Amérique du Nord", "Bahamas": "Amérique du Nord", "République Dominicaine": "Amérique du Nord", "Dominican Republic": "Amérique du Nord",
 
   // South America
-  "Brazil": "Amérique du Sud", "Argentina": "Amérique du Sud", "Chile": "Amérique du Sud", "Colombia": "Amérique du Sud",
-  "Peru": "Amérique du Sud", "Uruguay": "Amérique du Sud", "Bolivia": "Amérique du Sud", "Ecuador": "Amérique du Sud",
+  "Brésil": "Amérique du Sud", "Brazil": "Amérique du Sud", "Argentine": "Amérique du Sud", "Argentina": "Amérique du Sud", "Chili": "Amérique du Sud", "Chile": "Amérique du Sud", "Colombie": "Amérique du Sud", "Colombia": "Amérique du Sud",
+  "Pérou": "Amérique du Sud", "Peru": "Amérique du Sud", "Uruguay": "Amérique du Sud", "Bolivie": "Amérique du Sud", "Bolivia": "Amérique du Sud", "Équateur": "Amérique du Sud", "Ecuador": "Amérique du Sud",
   "Paraguay": "Amérique du Sud", "Venezuela": "Amérique du Sud",
 
   // Oceania
-  "Australia": "Océanie", "New Zealand": "Océanie", "Fiji": "Océanie", "Papua New Guinea": "Océanie",
-  "French Polynesia": "Océanie",
+  "Australie": "Océanie", "Australia": "Océanie", "Nouvelle-Zélande": "Océanie", "New Zealand": "Océanie", "Fidji": "Océanie", "Fiji": "Océanie", "Papouasie-Nouvelle-Guinée": "Océanie", "Papua New Guinea": "Océanie",
+  "Polynésie Française": "Océanie", "French Polynesia": "Océanie",
 
   // Antarctica
   "Antarctica": "Antarctique"
