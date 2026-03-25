@@ -55,33 +55,23 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
     loadPopular();
   }, []);
 
-  // Search effect with debounce
-  useEffect(() => {
+  // Search is now manual via triggers only to avoid race conditions with categories
+  const handleManualSearch = async () => {
     if (!searchTerm.trim()) return;
-    
-    const delayDebounceFn = setTimeout(async () => {
-      setIsSearching(true);
-      // Search both for better coverage
+    setIsSearching(true);
+    setRemoteSounds([]);
+    try {
       const [hearthisRes, itunesRes] = await Promise.all([
         searchHearthis(searchTerm),
         searchITunes(searchTerm)
       ]);
       setRemoteSounds([...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)]);
+    } catch (err) {
+      console.error("Search failed:", err);
+      toast({ variant: "destructive", title: "La recherche a échoué", description: "Veuillez réessayer dans un instant." });
+    } finally {
       setIsSearching(false);
-    }, 800);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
-
-  const handleManualSearch = async () => {
-    if (!searchTerm.trim()) return;
-    setIsSearching(true);
-    const [hearthisRes, itunesRes] = await Promise.all([
-      searchHearthis(searchTerm),
-      searchITunes(searchTerm)
-    ]);
-    setRemoteSounds([...itunesRes.slice(0, 5), ...hearthisRes.slice(0, 5)]);
-    setIsSearching(false);
+    }
   };
 
 
@@ -289,19 +279,24 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
       {isLibraryOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)} />
-          <div className="w-full max-w-4xl h-[85vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 animate-in zoom-in-95 duration-200">
+          <div 
+            className="w-full max-w-4xl h-[85vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <div className="p-6 md:p-8 bg-slate-900 text-white relative flex-shrink-0">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-4">
-                <Volume2 className="h-7 w-7 md:h-8 md:w-8 text-amber-400" />
+              <h2 className="text-base sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight flex items-center gap-1 sm:gap-4">
+                <Volume2 className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8 text-amber-400" />
                 Studio Sonore
-              </DialogTitle>
+              </h2>
               <Button 
                 type="button" 
                 variant="ghost" 
                 size="icon" 
-                className="text-white/60 hover:text-white hover:bg-white/10 rounded-full h-10 w-10"
-                onClick={() => setIsLibraryOpen(false)}
+                className="text-white/60 hover:text-white hover:bg-white/10 rounded-full h-10 w-10 flex-shrink-0"
+                onPointerDown={(e) => { e.stopPropagation(); }}
+                onClick={(e) => { e.stopPropagation(); setIsLibraryOpen(false); }}
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -316,6 +311,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                   value={searchTerm}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    e.stopPropagation(); // prevent form submit from bubbling to parent dialog
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       handleManualSearch();
@@ -327,17 +323,20 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
               </div>
               <Button 
                 type="button"
+                disabled={isSearching}
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleManualSearch();
                 }}
-                className="h-12 md:h-14 px-4 md:px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                className="h-12 md:h-14 px-4 md:px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold flex-shrink-0"
               >
-                Chercher
+                {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Chercher"}
               </Button>
             </div>
             {isSearching && (
-              <p className="text-[10px] text-amber-400 font-black uppercase mt-2 animate-pulse">Recherche en cours...</p>
+              <p className="text-[10px] text-amber-400 font-black uppercase mt-2 animate-pulse">Extraction des sons en cours... Veuillez patienter.</p>
             )}
           </div>
 
@@ -348,9 +347,14 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <p className="hidden md:block text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest leading-none">Inspirations</p>
                 <div className="flex overflow-x-auto md:flex-col gap-2 pb-1 md:pb-0 scrollbar-hide">
                   <Button 
+                    type="button"
                     variant={activeCategory === 'popular' ? 'secondary' : 'ghost'} 
-                    className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12", activeCategory === 'popular' && "bg-slate-200 md:bg-slate-100")}
-                    onClick={() => {
+                    className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12 transition-colors", activeCategory === 'popular' && "bg-slate-200 md:bg-slate-100")}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (isSearching) return;
                       setActiveCategory('popular');
                       setSearchTerm('');
                       setRemoteSounds([]);
@@ -358,7 +362,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                       getPopularHearthis().then(res => {
                         setRemoteSounds(res);
                         setIsSearching(false);
-                      });
+                      }).catch(() => setIsSearching(false));
                     }}
                   >
                     <Volume2 className="h-4 w-4 md:h-5 md:w-5" /> Populaires
@@ -366,25 +370,24 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                   {CATEGORIES.map(cat => (
                     <Button 
                       key={cat.id}
+                      type="button"
                       variant={activeCategory === cat.id ? 'secondary' : 'ghost'} 
-                      className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12", activeCategory === cat.id && "bg-slate-200 md:bg-slate-100")}
-                      onClick={() => {
+                      className={cn("flex-shrink-0 md:w-full justify-start gap-2 md:gap-3 text-sm font-bold rounded-xl h-9 md:h-12 transition-colors", activeCategory === cat.id && "bg-slate-200 md:bg-slate-100")}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (isSearching) return;
                         setActiveCategory(cat.id);
                         setSearchTerm(cat.label);
                         setRemoteSounds([]);
                         setIsSearching(true);
                         
-                        if (cat.id === 'music') {
-                          searchITunes(cat.query).then(res => {
-                            setRemoteSounds(res);
-                            setIsSearching(false);
-                          });
-                        } else {
-                          searchHearthis(cat.query).then(res => {
-                            setRemoteSounds(res);
-                            setIsSearching(false);
-                          });
-                        }
+                        const searchPromise = cat.id === 'music' ? searchITunes(cat.query) : searchHearthis(cat.query);
+                        searchPromise.then(res => {
+                          setRemoteSounds(res);
+                          setIsSearching(false);
+                        }).catch(() => setIsSearching(false));
                       }}
                     >
                      <span className="text-slate-500 text-xs md:text-base">{cat.icon}</span> {cat.label}
@@ -457,9 +460,13 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                         </div>
 
                         <Button 
+                          type="button"
                           variant="default" 
                           className="w-full mt-4 md:mt-6 h-10 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-black text-white font-bold group"
-                          onClick={() => {
+                          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+                          onClick={(e: React.MouseEvent) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             let safeUrl = item.url;
                             if (safeUrl.startsWith('http:')) {
                               safeUrl = safeUrl.replace('http:', 'https:');
