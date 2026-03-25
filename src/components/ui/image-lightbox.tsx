@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { X, ZoomIn, ChevronLeft, ChevronRight, Volume2, VolumeX, Music } from "lucide-react";
+import { X, ZoomIn, ChevronLeft, ChevronRight, Volume2, VolumeX, Music, Play, Pause } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
