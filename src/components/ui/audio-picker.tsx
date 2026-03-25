@@ -329,14 +329,7 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                 <p className="text-slate-400 text-xs font-medium mt-1">Ambiances pour vos souvenirs.</p>
 
                 {/* Search */}
-                <form 
-                  onSubmit={(e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation();
-                    handleManualSearch();
-                  }}
-                  className="mt-5 md:mt-6 flex gap-3"
-                >
+                <div className="mt-5 md:mt-6 flex gap-3">
                   <div className="relative flex-1">
                     <Input 
                       ref={searchInputRef}
@@ -346,9 +339,16 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                       value={searchTerm}
                       autoComplete="off"
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20 focus-visible:border-amber-400 transition-all shadow-md"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleManualSearch();
+                        }
+                      }}
+                      className="w-full h-12 md:h-14 bg-white border-2 border-slate-300 text-black placeholder:text-slate-400 pl-12 md:pl-14 pr-12 text-base md:text-lg rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20 focus-visible:border-amber-400 transition-all shadow-md relative z-20"
                     />
-                    <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <Search className="h-5 w-5 md:h-6 md:w-6 absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-30" />
                     {searchTerm && (
                       <button 
                         type="button"
@@ -357,20 +357,25 @@ export function AudioPicker({ value, onChange }: AudioPickerProps) {
                           setSearchTerm(""); 
                           searchInputRef.current?.focus(); 
                         }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 z-30"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <button 
-                    type="submit"
+                  <Button 
+                    type="button"
                     disabled={isSearching}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleManualSearch();
+                    }}
                     className="h-12 md:h-14 px-6 md:px-8 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-2xl shadow-lg transition-all flex-shrink-0 disabled:opacity-50"
                   >
                     {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Chercher"}
-                  </button>
-                </form>
+                  </Button>
+                </div>
               </div>
 
               {/* Content */}
