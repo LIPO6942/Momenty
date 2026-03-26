@@ -111,6 +111,15 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     }
   }, [open, instantToEdit]);
 
+  // Handle 3 photos auto-layout combination (landscape, fill, center)
+  useEffect(() => {
+    if (photos.length === 3) {
+      setDisplayPreset('landscape');
+      setDisplayCrop('fill');
+      setDisplayGravity('center');
+    }
+  }, [photos.length]);
+
 
   const handleAnalyzePhoto = async (photoDataUri: string) => {
     setIsAnalyzing(true);
@@ -187,7 +196,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
 
       const finalDescription = description || "Note";
 
-      updateInstant(instantToEdit.id, {
+      await updateInstant(instantToEdit.id, {
         title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
         description,
         photos: finalPhotoUrls.length > 0 ? finalPhotoUrls : null,

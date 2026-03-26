@@ -75,6 +75,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={index}
+                                showAudioIcon={index === 0}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
@@ -124,6 +125,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={1}
+                                showAudioIcon={false}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -146,6 +148,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={2}
+                                showAudioIcon={false}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -174,6 +177,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={index}
+                                showAudioIcon={index === 0}
                                 alt={`${title} ${index + 1}`}
                                 width={t.w}
                                 height={t.h}
@@ -227,6 +231,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={1}
+                                showAudioIcon={false}
                                 alt={`${title} 2`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}
@@ -249,6 +254,7 @@ const PhotoCollage = ({ photos, title, displayTransform, audioUrl }: { photos: s
                                 photos={photos.map(p => clTransform(p, { w: 1200, h: 1200, c: "fit" }))}
                                 audioUrl={audioUrl}
                                 initialIndex={2}
+                                showAudioIcon={false}
                                 alt={`${title} 3`}
                                 width={t.w}
                                 height={Math.round(t.h * 0.66)}

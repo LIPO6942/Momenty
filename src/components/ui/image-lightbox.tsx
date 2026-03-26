@@ -21,6 +21,7 @@ interface ImageLightboxProps {
   height?: number;
   className?: string;
   children?: React.ReactNode;
+  showAudioIcon?: boolean;
 }
 
 export function ImageLightbox({
@@ -32,7 +33,8 @@ export function ImageLightbox({
   width,
   height,
   className,
-  children
+  children,
+  showAudioIcon = true
 }: ImageLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -134,7 +136,7 @@ export function ImageLightbox({
         )}
 
         {/* Badge Mélodie Permanent */}
-        {audioUrl && (
+        {audioUrl && showAudioIcon && (
           <div className="absolute top-3 left-3 z-30 flex items-center justify-center h-6 w-6 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-none group-hover:bg-primary/80 transition-colors duration-300">
             <Music className="h-3 w-3 text-white animate-pulse" />
           </div>
@@ -143,8 +145,8 @@ export function ImageLightbox({
         {/* Overlay avec icône de zoom au survol */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="bg-white/90 rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300 relative">
-            <ZoomIn className={cn("h-6 w-6 text-gray-800", audioUrl && "mr-1")} />
-            {audioUrl && <Music className="h-3 w-3 text-primary absolute bottom-2 right-2 animate-bounce" />}
+            <ZoomIn className={cn("h-6 w-6 text-gray-800", (audioUrl && showAudioIcon) && "mr-1")} />
+            {audioUrl && showAudioIcon && <Music className="h-3 w-3 text-primary absolute bottom-2 right-2 animate-bounce" />}
           </div>
         </div>
       </div>

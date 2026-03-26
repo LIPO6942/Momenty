@@ -87,6 +87,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [isAccommodation, setIsAccommodation] = useState(false);
     const [accommodationName, setAccommodationName] = useState("");
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
+    const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
+    const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
 
     // Kol Youm API State
     const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
@@ -104,6 +107,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isConverting, setIsConverting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Handle 3 photos auto-layout combination (landscape, fill, center)
+    useEffect(() => {
+        if (photos.length === 3) {
+            setDisplayPreset('landscape');
+            setDisplayCrop('fill');
+            setDisplayGravity('center');
+        }
+    }, [photos.length]);
 
     useEffect(() => {
         // Skip this effect when in dish mode - we manage location manually for restaurant selection
@@ -358,6 +370,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setAccommodationName("");
         setIsSubmitting(false);
         setAudioUrl(null);
+        setDisplayPreset("landscape");
+        setDisplayCrop("fit");
+        setDisplayGravity("auto");
     }
 
     const handleGetLocation = () => {
@@ -495,6 +510,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
                 const newId = await addEncounter(newEncounter);
 
@@ -523,6 +539,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                     audio: audioUrl,
+                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
                 const newId = await addDish(newDish);
 
@@ -562,6 +579,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                     audio: audioUrl,
+                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
                 const newId = await addAccommodation(newAccommodation);
 
@@ -597,7 +615,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photos: uploadedPhotoUrls,
                     category: ['Note'], // Default category, will be updated by context
-                    audio: audioUrl
+                    audio: audioUrl,
+                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity }
                 };
                 const newId = await addInstant(newInstant);
                 
@@ -791,6 +810,34 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     <div className="space-y-2">
                                         <Label className="text-muted-foreground">Mémoire Sonore</Label>
                                         <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
+                                    </div>
+
+                                    <div>
+                                        <Label className="text-muted-foreground flex items-center gap-2">Affichage (persistant)</Label>
+                                        <div className="grid grid-cols-3 gap-2 mt-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Format</Label>
+                                                <select className="w-full border rounded-md h-9 px-2 text-sm" value={displayPreset} onChange={(e) => setDisplayPreset(e.target.value as any)} disabled={isLoading}>
+                                                    <option value="landscape">Paysage</option>
+                                                    <option value="portrait">Portrait</option>
+                                                    <option value="square">Carré</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Recadrage</Label>
+                                                <select className="w-full border rounded-md h-9 px-2 text-sm" value={displayCrop} onChange={(e) => setDisplayCrop(e.target.value as any)} disabled={isLoading}>
+                                                    <option value="fill">Remplir</option>
+                                                    <option value="fit">Ajuster</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Gravité</Label>
+                                                <select className="w-full border rounded-md h-9 px-2 text-sm" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
+                                                    <option value="auto">Auto</option>
+                                                    <option value="center">Centre</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {isAccommodation && (
