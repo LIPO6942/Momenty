@@ -38,13 +38,9 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       onFocusOutside={(e) => {
-        // Allow focus to leave the dialog (e.g. for portaled modals like Studio Sonore)
-        e.preventDefault();
         onFocusOutside?.(e);
       }}
       onInteractOutside={(e) => {
-        // Allow interaction outside the dialog (e.g. for portaled modals)
-        e.preventDefault();
         onInteractOutside?.(e);
       }}
       className={cn(

@@ -196,6 +196,8 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
 
       const finalDescription = description || "Note";
 
+      setOpen(false); // Close the dialog immediately for better responsiveness
+      
       await updateInstant(instantToEdit.id, {
         title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
         description,
@@ -208,7 +210,6 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         audio: audioUrl,
       });
 
-      setOpen(false); // Close the dialog
       toast({ title: "Instant mis à jour !" });
     } catch (error) {
       console.error(error);
@@ -301,10 +302,6 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       )}
       <DialogContent 
         className="sm:max-w-lg max-h-[90vh] flex flex-col z-[5000]"
-        onInteractOutside={(e) => {
-          // If we are editing, we don't want the parent dropdown/context to block us
-          e.preventDefault();
-        }}
       >
         <form onSubmit={handleFormSubmit} className="flex flex-col overflow-hidden h-full">
           <DialogHeader className="shrink-0">

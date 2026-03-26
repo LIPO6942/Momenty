@@ -298,6 +298,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
     if (validPhotos.length > 0) {
         return (
+            <>
             <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 <CardHeader className="p-0 relative">
                     <PhotoCollage photos={validPhotos} title={instant.title} displayTransform={instant.displayTransform} audioUrl={instant.audio} />
@@ -322,11 +323,6 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <EditNoteDialog 
-                            instantToEdit={instant} 
-                            open={isEditDialogOpen} 
-                            onOpenChange={setIsEditDialogOpen} 
-                        />
                     </div>
                 </CardHeader>
 
@@ -364,6 +360,12 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                 </div>
             </Card>
+            <EditNoteDialog 
+                instantToEdit={instant} 
+                open={isEditDialogOpen} 
+                onOpenChange={setIsEditDialogOpen} 
+            />
+            </>
         )
     }
 
@@ -396,6 +398,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     }, []);
 
     return (
+        <>
         <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
                 <div className="flex items-start gap-4">
@@ -425,7 +428,6 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </div>
                     </div>
                 </div>
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary focus-visible:text-foreground">
@@ -443,12 +445,6 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-
-                <EditNoteDialog 
-                    instantToEdit={instant} 
-                    open={isEditDialogOpen} 
-                    onOpenChange={setIsEditDialogOpen} 
-                />
             </CardHeader>
 
             <CardContent className="p-4">
@@ -486,5 +482,11 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                 </div>
             </CardFooter>
         </Card>
+        <EditNoteDialog 
+            instantToEdit={instant} 
+            open={isEditDialogOpen} 
+            onOpenChange={setIsEditDialogOpen} 
+        />
+    </>
     );
 }
