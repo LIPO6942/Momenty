@@ -95,6 +95,8 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
   const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
+  const [displayPositionX, setDisplayPositionX] = useState<number>(50);
+  const [displayPositionY, setDisplayPositionY] = useState<number>(50);
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
   useEffect(() => {
@@ -108,6 +110,8 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
       setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
+      setDisplayPositionX(instantToEdit.displayTransform?.positionX ?? 50);
+      setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
       setAudioUrl(instantToEdit.audio || null);
     }
   }, [open, instantToEdit]);
@@ -207,7 +211,13 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         emotion: emotions.length > 0 ? emotions : ["Neutre"],
         date: dateToSave.toISOString(), // Ensure date is in ISO format
         category: categories, // Pass the manually selected categories
-        displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+        displayTransform: { 
+          preset: displayPreset, 
+          crop: displayCrop, 
+          gravity: displayGravity,
+          positionX: displayPositionX,
+          positionY: displayPositionY
+        },
         audio: audioUrl,
       });
 
@@ -323,8 +333,20 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                       <PhotoCollage 
                         photos={photos} 
                         title="Aperçu du moment" 
-                        displayTransform={{ preset: displayPreset, crop: displayCrop, gravity: displayGravity }}
+                        displayTransform={{ 
+                          preset: displayPreset, 
+                          crop: displayCrop, 
+                          gravity: displayGravity,
+                          positionX: displayPositionX,
+                          positionY: displayPositionY
+                        }}
                         audioUrl={audioUrl}
+                        interactive={false}
+                        onPositionChange={(index, x, y) => {
+                          if (displayGravity !== 'custom') setDisplayGravity('custom');
+                          setDisplayPositionX(x);
+                          setDisplayPositionY(y);
+                        }}
                       />
                     </div>
                     {photos.length > 1 && (
@@ -373,9 +395,19 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                     <select className="w-full border rounded-md h-9 px-2" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
                       <option value="auto">Auto</option>
                       <option value="center">Centre</option>
+                      <option value="custom">Manuel</option>
                     </select>
                   </div>
                 </div>
+                {displayGravity === 'custom' && (
+                  <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                       <Label className="text-[10px] uppercase font-bold text-slate-500">Ajustement Manuel</Label>
+                       <span className="text-[10px] font-mono text-slate-400">{Math.round(displayPositionX)}% , {Math.round(displayPositionY)}%</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic mb-0">Faîtes glisser la photo ci-dessus avec votre doigt pour l'ajuster.</p>
+                  </div>
+                )}
               </div>
 
               <div>

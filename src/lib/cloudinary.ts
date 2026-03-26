@@ -38,20 +38,31 @@ export function clTransform(
 export type DisplayTransform = {
   preset?: 'landscape' | 'portrait' | 'square';
   crop?: 'fill' | 'fit';
-  gravity?: 'auto' | 'center';
+  gravity?: 'auto' | 'center' | 'custom';
+  positionX?: number;
+  positionY?: number;
 };
 
-export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: 'auto' | 'center' } {
+export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: string } {
   const preset = dt?.preset ?? 'landscape';
   const crop = (dt?.crop ?? 'fit') as 'fill' | 'fit';
-  const gravity = (dt?.gravity ?? 'auto') as 'auto' | 'center';
+  const gravity = dt?.gravity ?? 'auto';
+  
+  let g = gravity;
+  if (gravity === 'custom' && dt?.positionX !== undefined && dt?.positionY !== undefined) {
+    // Cloudinary uses gravity xy_center for manual offsets
+    // But actually g_custom is not a thing, it should be g_north, etc.
+    // Or we use the CSS object-position for simplicity and just tell Cloudinary 'auto' or 'center'
+    g = 'auto'; 
+  }
+
   switch (preset) {
     case 'portrait':
-      return { w: 900, h: 1200, c: crop, g: gravity };
+      return { w: 900, h: 1200, c: crop, g: g };
     case 'square':
-      return { w: 1000, h: 1000, c: crop, g: gravity };
+      return { w: 1000, h: 1000, c: crop, g: g };
     case 'landscape':
     default:
-      return { w: 1200, h: 900, c: crop, g: gravity };
+      return { w: 1200, h: 900, c: crop, g: g };
   }
 }

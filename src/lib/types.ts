@@ -3,9 +3,11 @@ import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
 
 export interface DisplayTransform {
-    preset?: 'landscape' | 'portrait' | 'square';
-    crop?: 'fill' | 'fit';
-    gravity?: 'auto' | 'center';
+    preset: 'landscape' | 'portrait' | 'square';
+    crop: 'fill' | 'fit';
+    gravity: 'auto' | 'center' | 'custom';
+    positionX?: number; // 0-100 percentage
+    positionY?: number; // 0-100 percentage
 }
 
 // --- Itinerary Flow Types ---
