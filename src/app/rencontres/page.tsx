@@ -29,9 +29,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { cn, getCity, getCountry } from "@/lib/utils";
 import { EditEncounterDialog } from "@/components/timeline/edit-encounter-dialog";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
+
+import { useToast } from "@/hooks/use-toast";
 
 export default function EncountersPage() {
   const { encounters, deleteEncounter } = useContext(TimelineContext);
@@ -81,7 +83,7 @@ export default function EncountersPage() {
                         <CardTitle className="text-2xl">{encounter.name}</CardTitle>
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                             <MapPin className="h-4 w-4" />
-                            Rencontré(e) à {encounter.location}
+                            Rencontré(e) à {getCity(encounter.location)}, {getCountry(encounter.location)}
                         </p>
                     </div>
                      <DropdownMenu>

@@ -28,7 +28,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, getCity, getCountry } from "@/lib/utils";
 import type { Accommodation } from "@/lib/types";
 import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
 
@@ -123,7 +123,7 @@ export default function AccommodationsPage() {
                                                 <p className="text-sm text-white/80 mt-1 italic">"{accommodation.description}"</p>
                                                 <div className="flex items-center gap-1.5 mt-3">
                                                     <MapPin className="h-4 w-4 text-white/90" />
-                                                    <span className="font-semibold text-sm">Séjour à {accommodation.location}</span>
+                                                    <span className="font-semibold text-sm">Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
                                                     <div className="flex gap-2 flex-wrap">
@@ -145,7 +145,7 @@ export default function AccommodationsPage() {
                                                 <CardTitle className="text-2xl">{accommodation.name}</CardTitle>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                                                     <MapPin className="h-4 w-4" />
-                                                    Séjour à {accommodation.location}
+                                                    Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}
                                                 </p>
                                             </div>
                                             <DropdownMenu>

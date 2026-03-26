@@ -22,6 +22,7 @@ export const getCountry = (loc: string) => {
     "tunisie": "Tunisie",
     "turkey": "Turquie",
     "turquie": "Turquie",
+    "turkiye": "Turquie",
     "indonesia": "Indonésie",
     "indonesie": "Indonésie",
     "indonésie": "Indonésie",
@@ -52,7 +53,18 @@ export const getCountry = (loc: string) => {
     "suisse": "Suisse",
     "switzerland": "Suisse",
     "belgium": "Belgique",
-    "belgique": "Belgique"
+    "belgique": "Belgique",
+    "china": "Chine",
+    "chine": "Chine",
+    "japan": "Japon",
+    "japon": "Japon",
+    "south korea": "Corée du Sud",
+    "corée du sud": "Corée du Sud",
+    "brazil": "Brésil",
+    "brésil": "Brésil",
+    "mexico": "Mexique",
+    "mexique": "Mexique",
+    "canada": "Canada"
   };
 
   if (aliases[lower]) return aliases[lower];

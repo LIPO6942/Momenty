@@ -167,25 +167,27 @@ export const PassportView = ({
     
     instants.forEach(i => {
       const cityName = getCity(i.location);
+      const countryName = getCountry(i.location);
       if (!cityName) return;
-      const key = cityName.toLowerCase();
+      const key = `${cityName}, ${countryName}`.toLowerCase();
       if (!locationsMap.has(key) || i.date < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: i.date, 
-          name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+          name: cityName
         });
       }
     });
     
     manualLocations.forEach(m => {
       const cityName = getCity(m.name);
+      const countryName = getCountry(m.name);
       if (!cityName) return;
-      const key = cityName.toLowerCase();
+      const key = `${cityName}, ${countryName}`.toLowerCase();
       const mDate = m.startDate || new Date().toISOString();
       if (!locationsMap.has(key) || mDate < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: mDate, 
-          name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+          name: cityName
         });
       }
     });

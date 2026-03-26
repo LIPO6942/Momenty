@@ -133,6 +133,14 @@ export function ImageLightbox({
           ) : null
         )}
 
+        {/* Badge Sonore Permanent */}
+        {audioUrl && (
+          <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-none group-hover:bg-primary/80 transition-colors duration-300">
+            <Music className="h-3 w-3 text-white animate-pulse" />
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Sonore</span>
+          </div>
+        )}
+
         {/* Overlay avec icône de zoom au survol */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="bg-white/90 rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300 relative">
@@ -156,28 +164,41 @@ export function ImageLightbox({
             <div className="absolute top-4 left-4 right-4 z-[60] flex justify-between items-center pointer-events-none">
               <div className="flex gap-2 pointer-events-auto">
                 {audioUrl && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                        "h-10 w-10 rounded-full bg-black/60 text-white backdrop-blur-sm transition-all border border-white/10 hover:bg-black/80 hover:scale-110",
-                        isPlaying && "animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.5)] border-amber-400/50 text-amber-400"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isPlaying) {
-                        if (audioRef.current) audioRef.current.pause();
-                        setIsPlaying(false);
-                      } else {
-                        if (audioRef.current) {
-                          audioRef.current.play().catch(err => console.error("Play failed:", err));
+                  <div className="flex items-center gap-2 pointer-events-auto">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                          "h-10 w-10 rounded-full bg-black/60 text-white backdrop-blur-sm transition-all border border-white/10 hover:bg-black/80 hover:scale-110",
+                          isPlaying && "animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.5)] border-amber-400/50 text-amber-400"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isPlaying) {
+                          if (audioRef.current) audioRef.current.pause();
+                          setIsPlaying(false);
+                        } else {
+                          if (audioRef.current) {
+                            audioRef.current.play().catch(err => console.error("Play failed:", err));
+                          }
+                          setIsPlaying(true);
                         }
-                        setIsPlaying(true);
-                      }
-                    }}
-                  >
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-                  </Button>
+                      }}
+                    >
+                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                    </Button>
+                    <div className={cn(
+                      "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-500",
+                      isPlaying ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+                    )}>
+                      <div className="flex gap-1 justify-center items-center h-3">
+                        <div className="w-1 h-3 bg-amber-400 animate-[bounce_1s_infinite_100ms] rounded-full" />
+                        <div className="w-1 h-5 bg-amber-400 animate-[bounce_1s_infinite_300ms] rounded-full" />
+                        <div className="w-1 h-2 bg-amber-400 animate-[bounce_1s_infinite_500ms] rounded-full" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">Studio Sonore Actif</span>
+                    </div>
+                  </div>
                 )}
               </div>
 

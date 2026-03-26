@@ -4,7 +4,7 @@
 
 import React, { useContext, useState } from "react";
 import Image from "next/image";
-import { MoreVertical, Edit, Trash2, MapPin, Tag, Music, Play, Pause } from "lucide-react";
+import { MoreVertical, Edit, Trash2, MapPin, Tag, Music, Play, Pause, Volume2 } from "lucide-react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
-import { cn } from "@/lib/utils";
+import { cn, getCity, getCountry } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import type { DisplayTransform } from "@/lib/types";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
@@ -408,7 +409,15 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         )}
                     </div>
                     <div className="flex flex-col">
-                        <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue">{instant.title}</p>
+                        <div className="flex items-center gap-2">
+                            <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue">{instant.title}</p>
+                            {instant.audio && (
+                                <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-indigo-50 text-indigo-600 border-indigo-100 flex items-center gap-1 font-medium">
+                                    <Volume2 className="h-2.5 w-2.5" />
+                                    Sonore
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -450,7 +459,9 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
                             <MapPin className="h-4 w-4 text-indigo-500" />
-                            <span className="font-semibold text-sm text-foreground">{instant.location}</span>
+                            <span className="font-semibold text-sm text-foreground">
+                                {getCity(instant.location)}, {getCountry(instant.location)}
+                            </span>
                         </div>
                         <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
                     </div>

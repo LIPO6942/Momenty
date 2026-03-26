@@ -30,7 +30,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, getCity, getCountry } from "@/lib/utils";
 import { EditDishDialog } from "@/components/timeline/edit-dish-dialog";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
@@ -177,13 +177,9 @@ function PlatsContent() {
                                                 <div className="mt-3 space-y-0.5">
                                                     <div className="flex items-center gap-1.5 font-semibold text-sm">
                                                         <MapPin className="h-4 w-4 text-white/90 shrink-0" />
-                                                        <span>Dégusté à {dish.location}</span>
+                                                        <span>Dégusté à {getCity(dish.location)}, {getCountry(dish.location)}</span>
                                                     </div>
-                                                    {dish.city && (
-                                                        <div className="text-xs text-white/70 ml-[22px]">
-                                                            à {dish.city}
-                                                        </div>
-                                                    )}
+
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
                                                     <div className="flex gap-2 flex-wrap">
@@ -206,13 +202,9 @@ function PlatsContent() {
                                                 <div className="mt-1 space-y-0.5">
                                                     <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                                                         <MapPin className="h-4 w-4 shrink-0" />
-                                                        Dégusté à {dish.location}
+                                                        Dégusté à {getCity(dish.location)}, {getCountry(dish.location)}
                                                     </div>
-                                                    {dish.city && (
-                                                        <div className="text-xs text-muted-foreground ml-[22px]">
-                                                            à {dish.city}
-                                                        </div>
-                                                    )}
+
                                                 </div>
                                             </div>
                                             <DropdownMenu>
