@@ -60,7 +60,7 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
     amber: "text-amber-700/60 border-amber-700/60 bg-amber-50 text-amber-900 border-amber-200",
   };
 
-  const stampColor = color === 'emerald' ? "text-emerald-700/40" : "text-blue-700/40";
+  const stampColor = color === 'emerald' ? "text-emerald-800/70" : "text-blue-800/70";
 
   let formattedDateShort = "??.??.??";
   let formattedDateLong = "Date inconnue";
@@ -84,7 +84,7 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
     >
       {/* The Stamp Background */}
       <div className={cn(
-        "absolute -top-2 -right-2 pointer-events-none opacity-20 transform-gpu group-hover:scale-110 transition-transform duration-500",
+        "absolute -top-2 -right-2 pointer-events-none opacity-40 transform-gpu group-hover:scale-110 transition-transform duration-500",
         stampColor
       )} style={{ transform: `rotate(${rotation}deg)` }}>
           <div className="border-4 border-current rounded-full p-2 flex flex-col items-center justify-center w-28 h-28 transform rotate-12">
@@ -131,8 +131,56 @@ export const PassportView = ({
   const getCountry = (loc: string) => {
     if (!loc) return "";
     const parts = loc.split(",");
-    if (parts.length <= 1) return "";
-    return parts[parts.length - 1].trim();
+    const rawCountry = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
+    if (!rawCountry) return "";
+
+    const lower = rawCountry.toLowerCase();
+    const aliases: Record<string, string> = {
+      "russia": "Russie",
+      "russie": "Russie",
+      "russian federation": "Russie",
+      "malaysia": "Malaisie",
+      "malaisie": "Malaisie",
+      "tunisia": "Tunisie",
+      "tunisie": "Tunisie",
+      "turkey": "Turquie",
+      "turquie": "Turquie",
+      "indonesia": "Indonésie",
+      "indonesie": "Indonésie",
+      "indonésie": "Indonésie",
+      "thailand": "Thaïlande",
+      "thaïlande": "Thaïlande",
+      "philippines": "Philippines",
+      "singapore": "Singapour",
+      "singapour": "Singapour",
+      "maroc": "Maroc",
+      "morocco": "Maroc",
+      "algeria": "Algérie",
+      "algérie": "Algérie",
+      "egypt": "Égypte",
+      "égypte": "Égypte",
+      "spain": "Espagne",
+      "espagne": "Espagne",
+      "italy": "Italie",
+      "italie": "Italie",
+      "germany": "Allemagne",
+      "allemagne": "Allemagne",
+      "england": "Royaume-Uni",
+      "uk": "Royaume-Uni",
+      "united kingdom": "Royaume-Uni",
+      "royaume-uni": "Royaume-Uni",
+      "usa": "États-Unis",
+      "united states": "États-Unis",
+      "états-unis": "États-Unis",
+      "suisse": "Suisse",
+      "switzerland": "Suisse",
+      "belgium": "Belgique",
+      "belgique": "Belgique"
+    };
+
+    if (aliases[lower]) return aliases[lower];
+
+    return rawCountry.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
   };
 
   const getCity = (loc: string) => {
@@ -179,24 +227,26 @@ export const PassportView = ({
     const locationsMap = new Map<string, { firstVisit: string; name: string }>();
     
     instants.forEach(i => {
-      const key = i.location.toLowerCase().trim();
-      if (!key) return;
+      const cityName = getCity(i.location);
+      if (!cityName) return;
+      const key = cityName.toLowerCase();
       if (!locationsMap.has(key) || i.date < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: i.date, 
-          name: getCity(i.location) || i.location 
+          name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
         });
       }
     });
     
     manualLocations.forEach(m => {
-      const key = m.name.toLowerCase().trim();
-      if (!key) return;
+      const cityName = getCity(m.name);
+      if (!cityName) return;
+      const key = cityName.toLowerCase();
       const mDate = m.startDate || new Date().toISOString();
       if (!locationsMap.has(key) || mDate < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: mDate, 
-          name: getCity(m.name) || m.name 
+          name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
         });
       }
     });
@@ -297,13 +347,13 @@ export const PassportView = ({
               </Card>
 
               {/* World Coverage Card */}
-              <Card className="bg-[#5C3A21] text-[#FDF5E6] border-none shadow-xl p-6 sm:p-8 flex flex-col justify-center items-center text-center space-y-4 rounded-2xl">
-                <div className="h-16 w-16 rounded-full bg-white/10 flex items-center justify-center">
-                    <Target className="h-8 w-8 text-amber-200" />
+              <Card className="bg-[#5C3A21] text-[#FDF5E6] border-none shadow-xl p-4 sm:p-6 flex flex-col justify-center items-center text-center space-y-4 rounded-2xl">
+                <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center">
+                    <Target className="h-6 w-6 text-amber-200" />
                 </div>
                 <div>
                    <p className="text-[10px] uppercase font-black tracking-[0.2em] opacity-40">Couverture Mondiale</p>
-                   <h4 className="text-4xl sm:text-5xl font-black tracking-tighter">{Math.round((countryVisas.length / 195) * 100)}%</h4>
+                   <h4 className="text-3xl sm:text-4xl font-black tracking-tighter">{Math.round((countryVisas.length / 195) * 100)}%</h4>
                 </div>
                 <div className="w-full space-y-2">
                     <Progress value={(countryVisas.length / 195) * 100} className="h-2 bg-white/10" />
