@@ -22,6 +22,7 @@ import { TimelineContext } from "@/context/timeline-context";
 import type { Instant } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images, Tag, Check, ChevronsUpDown, X } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { PhotoCollage } from "@/components/timeline/photo-collage";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
@@ -312,17 +313,19 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Souvenirs visuels</Label>
                 {photos.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="relative group">
-                      <Image src={photos[0]} alt="Aperçu principal" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
-                      <div className="absolute top-2 right-2 flex gap-2">
-                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => photos[0].startsWith('data:') && handleAnalyzePhoto(photos[0])} disabled={isLoading || !photos[0].startsWith('data:')}>
+                  <div className="space-y-4">
+                    <div className="rounded-xl overflow-hidden border shadow-sm bg-slate-50 relative group">
+                      <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm" onClick={() => photos[0].startsWith('data:') && handleAnalyzePhoto(photos[0])} disabled={isLoading || !photos[0].startsWith('data:')}>
                           {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                         </Button>
-                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
+                      <PhotoCollage 
+                        photos={photos} 
+                        title="Aperçu du moment" 
+                        displayTransform={{ preset: displayPreset, crop: displayCrop, gravity: displayGravity }}
+                        audioUrl={audioUrl}
+                      />
                     </div>
                     {photos.length > 1 && (
                       <div className="flex flex-wrap gap-2">
