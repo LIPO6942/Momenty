@@ -133,11 +133,10 @@ export function ImageLightbox({
           ) : null
         )}
 
-        {/* Badge Sonore Permanent */}
+        {/* Badge Mélodie Permanent */}
         {audioUrl && (
-          <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-none group-hover:bg-primary/80 transition-colors duration-300">
+          <div className="absolute top-3 left-3 z-30 flex items-center justify-center h-6 w-6 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-none group-hover:bg-primary/80 transition-colors duration-300">
             <Music className="h-3 w-3 text-white animate-pulse" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Sonore</span>
           </div>
         )}
 

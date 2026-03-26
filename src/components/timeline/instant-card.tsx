@@ -412,10 +412,9 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         <div className="flex items-center gap-2">
                             <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue">{instant.title}</p>
                             {instant.audio && (
-                                <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] bg-indigo-50 text-indigo-600 border-indigo-100 flex items-center gap-1 font-medium">
-                                    <Volume2 className="h-2.5 w-2.5" />
-                                    Sonore
-                                </Badge>
+                                <div className="h-5 w-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shrink-0" title="Contient du son">
+                                    <Volume2 className="h-3 w-3" />
+                                </div>
                             )}
                         </div>
                     </div>
