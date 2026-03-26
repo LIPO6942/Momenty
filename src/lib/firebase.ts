@@ -3,7 +3,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from "firebase/firestore";
 
 
 // Your web app's Firebase configuration
@@ -20,7 +24,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 const messaging = () => {
     try {
       return getMessaging(app);

@@ -17,6 +17,7 @@ import {
 } from '@/lib/firestore';
 import { categorizeInstant } from '@/ai/flows/categorize-instant-flow';
 import { useAuth } from './auth-context';
+import { getPendingMedia, removeFromQueue } from '@/lib/offline-sync';
 
 
 interface GroupedInstants {
@@ -47,6 +48,8 @@ interface TimelineContextType {
     addAccommodation: (accommodation: Omit<Accommodation, 'id'>) => Promise<string>;
     updateAccommodation: (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => Promise<void>;
     deleteAccommodation: (id: string) => void;
+    isOnline: boolean;
+    isSyncing: boolean;
 }
 
 const getCategoryAttributes = (category?: string[]) => {
@@ -95,6 +98,8 @@ export const TimelineContext = createContext<TimelineContextType>({
     addAccommodation: () => { },
     updateAccommodation: async () => { },
     deleteAccommodation: () => { },
+    isOnline: true,
+    isSyncing: false,
 });
 
 interface TimelineProviderProps {
@@ -109,6 +114,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
     const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
     const [activeStay, setActiveStay] = useState<Trip | null>(null);
+    const [isOnline, setIsOnline] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const isTripExpired = useCallback((trip: Trip) => {
         if (!trip?.endDate) return false;
@@ -179,20 +186,93 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             }
         };
 
+        const handleOnline = () => {
+            setIsOnline(true);
+            syncMediaQueue();
+        };
+        const handleOffline = () => setIsOnline(false);
+
+        if (typeof window !== 'undefined') {
+            setIsOnline(navigator.onLine);
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+            syncMediaQueue(); // Try syncing on load
+        }
+
         syncActiveContextsFromStorage(); // Initial load
         window.addEventListener('storage', handleStorageChange);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         const intervalId = window.setInterval(() => {
             syncActiveContextsFromStorage();
+            if (navigator.onLine) syncMediaQueue();
         }, 60 * 60 * 1000);
 
         return () => {
             window.removeEventListener('storage', handleStorageChange);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
             window.clearInterval(intervalId);
         }
     }, [user, syncActiveContextsFromStorage]);
+
+    const syncMediaQueue = async () => {
+        if (!user || isSyncing || !navigator.onLine) return;
+        
+        const queue = await getPendingMedia();
+        if (queue.length === 0) return;
+
+        setIsSyncing(true);
+        console.log(`[OfflineSync] Found ${queue.length} items to sync.`);
+
+        for (const item of queue) {
+            try {
+                // 1. Upload to Cloudinary
+                const formData = new FormData();
+                const blob = item.data instanceof Blob ? item.data : await (await fetch(item.data)).blob();
+                formData.append('file', blob);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) throw new Error("Upload failed");
+                const result = await response.json();
+                const remoteUrl = result.secure_url;
+
+                // 2. Update Firestore
+                if (item.collection === 'instants') {
+                    const instant = instants.find(i => i.id === item.docId);
+                    if (instant) {
+                        const updatedPhotos = [...(instant.photos || [])];
+                        // Replace the temporary dataUrl or placeholder if needed, 
+                        // but here we just add/update the real one.
+                        // In regular add flow, we can push it.
+                        const newPhotos = updatedPhotos.map(p => p.startsWith('data:') ? remoteUrl : p);
+                        if (!newPhotos.includes(remoteUrl) && !updatedPhotos.some(p => p.startsWith('data:'))) {
+                            newPhotos.push(remoteUrl);
+                        }
+                        await saveInstant(user.uid, { ...instant, photos: newPhotos }, item.docId);
+                    }
+                } else {
+                    // Encounter, Dish, Accommodation
+                    const updateData = { [item.fieldName]: remoteUrl };
+                    if (item.collection === 'encounters') await saveEncounter(user.uid, updateData, item.docId);
+                    else if (item.collection === 'dishes') await saveDish(user.uid, updateData, item.docId);
+                    else if (item.collection === 'accommodations') await saveAccommodation(user.uid, updateData, item.docId);
+                }
+
+                // 3. Remove from queue
+                await removeFromQueue(item.id);
+                console.log(`[OfflineSync] Synced item ${item.id} successfully.`);
+            } catch (error) {
+                console.error(`[OfflineSync] Failed to sync item ${item.id}:`, error);
+            }
+        }
+        setIsSyncing(false);
+    };
 
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         if (!user) throw new Error("User not authenticated");
@@ -431,7 +511,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
 
     return (
-        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, updateEncounter, deleteEncounter, dishes, addDish, updateDish, deleteDish, accommodations, addAccommodation, updateAccommodation, deleteAccommodation }}>
+        <TimelineContext.Provider value={{ instants, groupedInstants, addInstant, updateInstant, deleteInstant, deleteInstantsByLocation, activeTrip, activeStay, encounters, addEncounter, updateEncounter, deleteEncounter, dishes, addDish, updateDish, deleteDish, accommodations, addAccommodation, updateAccommodation, deleteAccommodation, isOnline, isSyncing }}>
             {children}
         </TimelineContext.Provider>
     )

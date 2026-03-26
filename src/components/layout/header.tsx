@@ -3,7 +3,9 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, Settings, PlusSquare, Bookmark, Plane, Anchor, LogOut } from "lucide-react";
+import { User, Settings, PlusSquare, Bookmark, Plane, Anchor, LogOut, WifiOff, RefreshCw } from "lucide-react";
+import { useContext } from "react";
+import { TimelineContext } from "@/context/timeline-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +19,8 @@ import { useAuth } from "@/context/auth-context";
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { isOnline, isSyncing } = useContext(TimelineContext);
+
   return (
     <header className="fixed top-0 z-40 w-full p-4">
       <div className="container flex h-16 max-w-2xl items-center justify-between rounded-full bg-card/80 backdrop-blur-sm p-2 shadow-lg ring-1 ring-black/5 mx-auto">
@@ -24,6 +28,20 @@ export default function Header() {
             <Link href="/" className="text-2xl font-bold text-foreground">Momenty</Link>
         </div>
         <div className="flex items-center justify-end gap-2">
+            {!isOnline && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-medium animate-pulse">
+                <WifiOff className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Hors-ligne</span>
+              </div>
+            )}
+
+            {isSyncing && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <span className="hidden sm:inline">Synchro...</span>
+              </div>
+            )}
+
             <TripDialog>
               <Button variant="ghost" size="icon" className="rounded-full w-10 h-10">
                 <Plane className="h-5 w-5 text-blue-800" />
