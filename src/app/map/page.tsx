@@ -39,7 +39,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { countries } from "@/lib/countries";
-import { cn } from "@/lib/utils";
+import { cn, getCountry, getCity } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Accordion,
@@ -198,26 +198,44 @@ export default function MapPage() {
         }>();
 
         // Add manual locations
-        manualLocations.forEach(l => combined.set(l.name.toLowerCase(), {
-            ...l,
-            instants: []
-        }));
+        manualLocations.forEach(l => {
+            const cityName = getCity(l.name);
+            const countryName = getCountry(l.name);
+            if (!cityName || !countryName) return;
+            const standardLocation = `${cityName}, ${countryName}`;
+            const key = standardLocation.toLowerCase();
+            
+            combined.set(key, {
+                ...l,
+                name: standardLocation,
+                instants: []
+            });
+        });
 
         // Group filtered instants by location
         filteredInstants.forEach(instant => {
-            const key = instant.location.toLowerCase();
+            const cityName = getCity(instant.location);
+            const countryName = getCountry(instant.location);
+            if (!cityName || !countryName) return;
+            const standardLocation = `${cityName}, ${countryName}`;
+            const key = standardLocation.toLowerCase();
+            
             if (combined.has(key)) {
                 combined.get(key)!.instants.push(instant);
             } else {
                 combined.set(key, {
-                    name: instant.location,
+                    name: standardLocation,
                     instants: [instant]
                 });
             }
         });
 
         return Array.from(combined.values()).map(location => {
-            const isManual = manualLocations.some(ml => ml.name.toLowerCase() === location.name.toLowerCase());
+            const isManual = manualLocations.some(ml => {
+                const mlCity = getCity(ml.name);
+                const mlCountry = getCountry(ml.name);
+                return `${mlCity}, ${mlCountry}`.toLowerCase() === location.name.toLowerCase();
+            });
             return {
                 ...location,
                 count: location.instants.length,
@@ -321,8 +339,7 @@ export default function MapPage() {
     const locationsByCountry = useMemo(() => {
         const grouped: { [country: string]: LocationWithCoords[] } = {};
         locationsWithCoords.forEach(location => {
-            const parts = location.name.split(',').map(p => p.trim());
-            const country = parts.length > 1 ? parts[parts.length - 1] : 'Lieux non classés';
+            const country = getCountry(location.name) || 'Lieux non classés';
             if (!grouped[country]) {
                 grouped[country] = [];
             }
@@ -343,17 +360,21 @@ export default function MapPage() {
     
     const totalCountriesCount = useMemo(() => {
         const countriesSet = new Set<string>();
-        allLocations.forEach(location => {
-            const parts = location.name.split(',').map(p => p.trim());
-            const country = parts.length > 1 ? parts[parts.length - 1] : 'Lieux non classés';
-            if (country !== 'Lieux non classés') {
-                countriesSet.add(country);
-            }
+        allLocations.forEach((location: any) => {
+            const country = getCountry(location.name);
+            if (country) countriesSet.add(country.toLowerCase());
         });
         return countriesSet.size;
     }, [allLocations]);
 
-    const totalCitiesCount = useMemo(() => allLocations.length, [allLocations]);
+    const totalCitiesCount = useMemo(() => {
+        const citySet = new Set<string>();
+        allLocations.forEach((location: any) => {
+            const city = getCity(location.name);
+            if (city) citySet.add(city.toLowerCase());
+        });
+        return citySet.size;
+    }, [allLocations]);
 
     const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
 

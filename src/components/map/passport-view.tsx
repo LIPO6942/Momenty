@@ -33,7 +33,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { parseISO, getHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, getCountry, getCity } from "@/lib/utils";
 import { Instant, Dish, Encounter, Accommodation } from "@/lib/types";
 
 interface PassportViewProps {
@@ -127,67 +127,6 @@ export const PassportView = ({
   accommodations,
   manualLocations 
 }: PassportViewProps) => {
-
-  const getCountry = (loc: string) => {
-    if (!loc) return "";
-    const parts = loc.split(",");
-    const rawCountry = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
-    if (!rawCountry) return "";
-
-    const lower = rawCountry.toLowerCase();
-    const aliases: Record<string, string> = {
-      "russia": "Russie",
-      "russie": "Russie",
-      "russian federation": "Russie",
-      "malaysia": "Malaisie",
-      "malaisie": "Malaisie",
-      "tunisia": "Tunisie",
-      "tunisie": "Tunisie",
-      "turkey": "Turquie",
-      "turquie": "Turquie",
-      "indonesia": "Indonésie",
-      "indonesie": "Indonésie",
-      "indonésie": "Indonésie",
-      "thailand": "Thaïlande",
-      "thaïlande": "Thaïlande",
-      "philippines": "Philippines",
-      "singapore": "Singapour",
-      "singapour": "Singapour",
-      "maroc": "Maroc",
-      "morocco": "Maroc",
-      "algeria": "Algérie",
-      "algérie": "Algérie",
-      "egypt": "Égypte",
-      "égypte": "Égypte",
-      "spain": "Espagne",
-      "espagne": "Espagne",
-      "italy": "Italie",
-      "italie": "Italie",
-      "germany": "Allemagne",
-      "allemagne": "Allemagne",
-      "england": "Royaume-Uni",
-      "uk": "Royaume-Uni",
-      "united kingdom": "Royaume-Uni",
-      "royaume-uni": "Royaume-Uni",
-      "usa": "États-Unis",
-      "united states": "États-Unis",
-      "états-unis": "États-Unis",
-      "suisse": "Suisse",
-      "switzerland": "Suisse",
-      "belgium": "Belgique",
-      "belgique": "Belgique"
-    };
-
-    if (aliases[lower]) return aliases[lower];
-
-    return rawCountry.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  };
-
-  const getCity = (loc: string) => {
-    if (!loc) return "";
-    const parts = loc.split(",");
-    return parts[0].trim();
-  };
 
   const continentStats = useMemo(() => {
     const stats: Record<string, { visited: number; total: number; icon: string }> = {};
