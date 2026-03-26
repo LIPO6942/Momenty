@@ -67,17 +67,7 @@ export function ImageLightbox({
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
 
-    if (isOpen) {
-      // Small timeout to ensure browser is ready after the click that opened the dialog
-      const timer = setTimeout(() => {
-        audio.currentTime = 0;
-        audio.play().catch(err => {
-          console.error("Autoplay prevented:", err);
-        });
-        setIsPlaying(true);
-      }, 50);
-      return () => clearTimeout(timer);
-    } else {
+    if (!isOpen) {
       audio.pause();
       audio.currentTime = 0;
       setIsPlaying(false);
@@ -104,11 +94,31 @@ export function ImageLightbox({
 
   return (
     <>
+      {audioUrl && (
+        <audio 
+          ref={audioRef} 
+          src={audioUrl} 
+          muted={isMuted} 
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+          loop
+          className="hidden"
+        />
+      )}
       <div
         className="relative group cursor-zoom-in h-full w-full"
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(true);
+          
+          if (audioUrl && audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(err => {
+              console.error("Autoplay prevented:", err);
+            });
+            setIsPlaying(true);
+          }
         }}
       >
         {children || (
@@ -138,20 +148,6 @@ export function ImageLightbox({
           <VisuallyHidden>
             <DialogTitle>{alt}</DialogTitle>
           </VisuallyHidden>
-
-          {/* Audio Element - Rendered inside to be near controls but handled by ref */}
-          {audioUrl && (
-            <audio 
-              ref={audioRef} 
-              src={audioUrl} 
-              muted={isMuted} 
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
-              loop
-              className="hidden"
-            />
-          )}
 
           <div className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
 
