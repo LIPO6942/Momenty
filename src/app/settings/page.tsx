@@ -94,7 +94,11 @@ export default function SettingsPage() {
                 return;
             }
             try {
-                const permission = await Notification.requestPermission();
+                let permission = Notification.permission;
+                if (permission !== "granted") {
+                    permission = await Notification.requestPermission();
+                }
+                
                 if (permission === "granted") {
                     const msg = messaging();
                     if (msg) {

@@ -175,7 +175,7 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
     );
 };
 
-const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary: Itinerary; onSent: () => void; open: boolean; onOpenChange: (open: boolean) => void }) => {
+const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary: Itinerary | null; onSent: () => void; open: boolean; onOpenChange: (open: boolean) => void }) => {
     const [queryStr, setQueryStr] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -202,7 +202,7 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
     };
 
     const handleSendForReal = async (recipient: any) => {
-        if (!user || !itinerary.id) return;
+        if (!user || !itinerary?.id) return;
         setSending(recipient.uid);
         try {
             // 1. Create share token if not exists
@@ -270,7 +270,7 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
                 <DialogHeader>
                     <DialogTitle>Envoyer à un utilisateur</DialogTitle>
                     <div className="text-sm text-muted-foreground italic">
-                        Itinéraire : {itinerary.title}
+                        Itinéraire : {itinerary?.title}
                     </div>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
@@ -805,15 +805,12 @@ function SavedItinerariesContent() {
                     ))}
                 </Accordion>
             )}
-
-            {itineraryToSend && (
-                <SendToUserDialog
-                    itinerary={itineraryToSend}
-                    open={!!itineraryToSend}
-                    onOpenChange={(open) => !open && setItineraryToSend(null)}
-                    onSent={() => setItineraryToSend(null)}
-                />
-            )}
+            <SendToUserDialog
+                itinerary={itineraryToSend}
+                open={!!itineraryToSend}
+                onOpenChange={(open) => !open && setItineraryToSend(null)}
+                onSent={() => setItineraryToSend(null)}
+            />
         </div>
     );
 }
