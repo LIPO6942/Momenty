@@ -15,12 +15,31 @@ import {
 import { TripDialog } from "../timeline/trip-dialog";
 import { StayDialog } from "../timeline/stay-dialog";
 import { useAuth } from "@/context/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useState, useEffect } from "react";
 // Removed NotificationBell as per user request to move it to settings
 
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { isOnline, isSyncing } = useContext(TimelineContext);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+     if (!user) {
+         setUnreadCount(0);
+         return;
+     }
+     const q = query(
+        collection(db, "users", user.uid, "notifications"),
+        where("read", "==", false)
+     );
+     const unsubscribe = onSnapshot(q, (snapshot) => {
+        setUnreadCount(snapshot.docs.length);
+     });
+     return () => unsubscribe();
+  }, [user]);
 
   return (
     <header className="fixed top-0 z-40 w-full p-4">
@@ -66,8 +85,14 @@ export default function Header() {
             {user ? (
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full w-12 h-12">
+                    <Button variant="ghost" size="icon" className="relative rounded-full w-12 h-12">
                        <User className="h-7 w-7 text-yellow-400" />
+                       {unreadCount > 0 && (
+                          <span className="absolute top-1 right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-background"></span>
+                          </span>
+                       )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -78,9 +103,14 @@ export default function Header() {
                         </Link>
                      </DropdownMenuItem>
                      <DropdownMenuItem asChild>
-                        <Link href="/settings">
-                           <Settings className="mr-2 h-4 w-4" />
-                           <span>Paramètres</span>
+                        <Link href="/settings" className="relative flex items-center justify-between">
+                           <div className="flex items-center">
+                             <Settings className="mr-2 h-4 w-4" />
+                             <span>Paramètres</span>
+                           </div>
+                           {unreadCount > 0 && (
+                             <span className="ml-2 flex h-2 w-2 rounded-full bg-red-500" />
+                           )}
                         </Link>
                      </DropdownMenuItem>
                     <DropdownMenuItem onClick={logout}>

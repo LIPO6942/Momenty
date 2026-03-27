@@ -211,17 +211,21 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
                 itToken = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
                     ? (crypto as any).randomUUID()
                     : Math.random().toString(36).slice(2);
-                await setDoc(doc(db, 'shared_itineraries', itToken), {
-                    userId: user.uid,
-                    itineraryId: itinerary.id,
-                    sharedAt: new Date().toISOString(),
-                });
-                await setDoc(doc(db, 'users', user.uid, 'itineraries', itinerary.id), {
-                    shareEnabled: true,
-                    shareToken: itToken,
-                    sharedAt: new Date().toISOString()
-                }, { merge: true });
             }
+
+            // Always ensure the public mapping exists so the recipient can import it
+            await setDoc(doc(db, 'shared_itineraries', itToken), {
+                userId: user.uid,
+                itineraryId: itinerary.id,
+                sharedAt: new Date().toISOString(),
+            }, { merge: true });
+
+            // Always ensure sharing is enabled for this itinerary
+            await setDoc(doc(db, 'users', user.uid, 'itineraries', itinerary.id), {
+                shareEnabled: true,
+                shareToken: itToken,
+                sharedAt: new Date().toISOString()
+            }, { merge: true });
 
             // 2. Create internal notification
             const notifRefTarget = doc(collection(db, 'users', recipient.uid, 'notifications'));

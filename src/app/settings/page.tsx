@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Bell, User, Save, Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { messaging } from "@/lib/firebase";
+import { getToken } from "firebase/messaging";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, where } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
@@ -83,6 +85,37 @@ export default function SettingsPage() {
         }
     };
 
+    const handleNotificationToggle = async (checked: boolean) => {
+        setNotificationsEnabled(checked);
+        if (checked) {
+            if (!("Notification" in window) || !('serviceWorker' in navigator)) {
+                toast({ variant: "destructive", title: "Notifications non supportées" });
+                setNotificationsEnabled(false);
+                return;
+            }
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    const msg = messaging();
+                    if (msg) {
+                        const token = await getToken(msg, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY });
+                        if (token) {
+                            await updateProfile({ fcmToken: token, notificationsEnabled: true });
+                            toast({ title: "Notifications activées !" });
+                        }
+                    }
+                } else {
+                    toast({ variant: "destructive", title: "Permission refusée" });
+                    setNotificationsEnabled(false);
+                }
+            } catch (err) {
+                console.error("FCM token error:", err);
+                toast({ variant: "destructive", title: "Erreur", description: "Impossible d'activer vos notifications." });
+                setNotificationsEnabled(false);
+            }
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -153,7 +186,7 @@ export default function SettingsPage() {
                         </div>
                         <Switch 
                             checked={notificationsEnabled} 
-                            onCheckedChange={setNotificationsEnabled} 
+                            onCheckedChange={handleNotificationToggle} 
                         />
                     </div>
                 </CardContent>
