@@ -280,6 +280,7 @@ const SendToUserDialog = ({ itinerary, onSent }: { itinerary: Itinerary; onSent:
                             className="pl-9"
                             value={queryStr}
                             onChange={(e) => handleSearch(e.target.value)}
+                            autoFocus
                         />
                     </div>
                     <div className="max-h-[300px] overflow-y-auto space-y-2">
@@ -759,7 +760,9 @@ function SavedItinerariesContent() {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuSeparator />
-                                        <SendToUserDialog itinerary={itinerary} onSent={() => {}} />
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0">
+                                            <SendToUserDialog itinerary={itinerary} onSent={() => {}} />
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
