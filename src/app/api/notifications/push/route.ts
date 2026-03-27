@@ -30,6 +30,11 @@ export async function POST(req: Request) {
         title,
         body,
       },
+      webpush: {
+        fcmOptions: {
+          link: typeof data?.url === 'string' ? data.url : '/'
+        }
+      },
       data: data || {},
       token: fcmToken,
     };

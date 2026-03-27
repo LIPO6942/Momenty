@@ -21,3 +21,24 @@ messaging.onBackgroundMessage((payload) => {
   // FCM automatically shows a notification if the payload contains a "notification" object.
   // We do not need to call self.registration.showNotification manually unless handling data-only payloads.
 });
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || (event.notification.data?.FCM_MSG?.notification?.click_action) || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Try to focus an existing window or open a new one
+        for (var i = 0; i < windowClients.length; i++) {
+          var client = windowClients[i];
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});

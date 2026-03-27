@@ -121,7 +121,7 @@ export const PhotoCollage = ({
             case 1:
                 return (
                     <div className="max-h-[600px] sm:max-h-[70vh] w-full flex items-center justify-center bg-black/5 overflow-hidden">
-                        {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "max-h-[600px] sm:max-h-[70vh] md:h-[450px]", t.w, t.h)}
+                        {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "max-h-[600px] sm:max-h-[70vh] md:h-[450px]", t.w, t.h, true)}
                     </div>
                 );
             case 2:

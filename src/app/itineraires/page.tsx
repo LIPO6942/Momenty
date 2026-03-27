@@ -762,7 +762,11 @@ function SavedItinerariesContent() {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={() => setItineraryToSend(itinerary)}>
+                                        <DropdownMenuItem onSelect={(e) => { 
+                                            e.preventDefault(); 
+                                            // Delay dialog rendering to let Radix Dropdown clean up its body lock first
+                                            setTimeout(() => setItineraryToSend(itinerary), 10); 
+                                        }}>
                                             <Send className="mr-2 h-4 w-4" />
                                             <span>Envoyer à un utilisateur</span>
                                         </DropdownMenuItem>

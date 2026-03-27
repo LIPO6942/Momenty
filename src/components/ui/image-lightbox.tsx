@@ -145,8 +145,7 @@ export function ImageLightbox({
         {/* Overlay avec icône de zoom au survol */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="bg-white/90 rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300 relative">
-            <ZoomIn className={cn("h-6 w-6 text-gray-800", (audioUrl && showAudioIcon) && "mr-1")} />
-            {audioUrl && showAudioIcon && <Music className="h-3 w-3 text-primary absolute bottom-2 right-2 animate-bounce" />}
+            <ZoomIn className="h-6 w-6 text-gray-800" />
           </div>
         </div>
       </div>
