@@ -4,10 +4,14 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 // Initialize the Firebase app in the service worker by passing in the
-// messagingSenderId.
+// configuration via URL search parameters when registering the SW.
+const urlParams = new URLSearchParams(location.search);
+
 firebase.initializeApp({
-  apiKey: self.registration.scope.includes('localhost') ? '' : '', // Not needed for SW
-  messagingSenderId: "305128362624", // I should ideally get this from env but SW is static
+  apiKey: urlParams.get('apiKey') || '', 
+  projectId: urlParams.get('projectId') || '',
+  messagingSenderId: urlParams.get('messagingSenderId') || '305128362624',
+  appId: urlParams.get('appId') || '',
 });
 
 const messaging = firebase.messaging();

@@ -98,7 +98,12 @@ export default function SettingsPage() {
                 if (permission === "granted") {
                     const msg = messaging();
                     if (msg) {
-                        const token = await getToken(msg, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY });
+                        const swUrl = `/firebase-messaging-sw.js?apiKey=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}&projectId=${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}&messagingSenderId=${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}&appId=${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}`;
+                        const registration = await navigator.serviceWorker.register(swUrl);
+                        const token = await getToken(msg, { 
+                            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                            serviceWorkerRegistration: registration 
+                        });
                         if (token) {
                             await updateProfile({ fcmToken: token, notificationsEnabled: true });
                             toast({ title: "Notifications activées !" });
