@@ -27,22 +27,34 @@ const getPublicIdFromUrl = (url: string) => {
 
 export async function POST(request: Request) {
   try {
-    const { photoUrls } = await request.json();
+    const { resources } = await request.json(); // Array of { url: string, type: 'image' | 'video' }
 
-    if (!Array.isArray(photoUrls) || photoUrls.length === 0) {
-      return NextResponse.json({ error: "No photo URLs provided." }, { status: 400 });
+    if (!Array.isArray(resources) || resources.length === 0) {
+      return NextResponse.json({ error: "No resources provided." }, { status: 400 });
     }
 
-    const publicIds = photoUrls.map(getPublicIdFromUrl).filter(Boolean);
+    const results = [];
+    
+    // Group public IDs by resource type
+    const resourcesByType = resources.reduce((acc, res) => {
+      const publicId = getPublicIdFromUrl(res.url);
+      if (publicId) {
+        const type = res.type || 'image';
+        if (!acc[type]) acc[type] = [];
+        acc[type].push(publicId);
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
 
-    if (publicIds.length === 0) {
-      return NextResponse.json({ message: 'No valid public IDs found to delete.' }, { status: 200 });
+    // Perform deletions for each group
+    for (const [type, publicIds] of Object.entries(resourcesByType)) {
+      if ((publicIds as string[]).length > 0) {
+        const result = await cloudinary.api.delete_resources(publicIds as string[], { resource_type: type as any });
+        results.push({ type, result });
+      }
     }
 
-    // Use destroy for deleting resources
-    const result = await cloudinary.api.delete_resources(publicIds as string[], { resource_type: 'image' });
-
-    return NextResponse.json({ message: 'Deletion successful', result });
+    return NextResponse.json({ message: 'Deletion completed', results });
 
   } catch (error) {
     console.error('Deletion Error:', error);

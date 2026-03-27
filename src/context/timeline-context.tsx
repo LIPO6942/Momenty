@@ -355,16 +355,16 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         ));
     }
 
-    const deleteCloudinaryPhotos = async (photoUrls: string[] | null | undefined) => {
-        if (!photoUrls || photoUrls.length === 0) return;
+    const deleteCloudinaryResources = async (resources: { url: string; type: 'image' | 'video' }[]) => {
+        if (!resources || resources.length === 0) return;
         try {
             await fetch('/api/delete-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photoUrls }),
+                body: JSON.stringify({ resources }),
             });
         } catch (error) {
-            console.error("Failed to trigger photo deletion:", error);
+            console.error("Failed to trigger resource deletion:", error);
         }
     }
 
@@ -374,9 +374,16 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         const instantToDelete = instants.find(i => i.id === id);
         if (!instantToDelete) return;
 
-        // Delete photos from Cloudinary first
+        // Delete media from Cloudinary first
+        const resourcesToDelete: { url: string; type: 'image' | 'video' }[] = [];
         if (instantToDelete.photos && instantToDelete.photos.length > 0) {
-            await deleteCloudinaryPhotos(instantToDelete.photos);
+            instantToDelete.photos.forEach(url => resourcesToDelete.push({ url, type: 'image' }));
+        }
+        if (instantToDelete.audio) {
+            resourcesToDelete.push({ url: instantToDelete.audio, type: 'video' });
+        }
+        if (resourcesToDelete.length > 0) {
+            await deleteCloudinaryResources(resourcesToDelete);
         }
 
         await deleteInstantFromDB(user.uid, id);
@@ -403,7 +410,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!user) return;
         const itemToDelete = encounters.find(i => i.id === id);
         if (!itemToDelete) return;
-        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        const resourcesToDelete: { url: string; type: 'image' | 'video' }[] = [];
+        if (itemToDelete.photo) resourcesToDelete.push({ url: itemToDelete.photo, type: 'image' });
+        if (itemToDelete.audio) resourcesToDelete.push({ url: itemToDelete.audio, type: 'video' });
+        if (resourcesToDelete.length > 0) await deleteCloudinaryResources(resourcesToDelete);
 
         await deleteEncounterFromDB(user.uid, id);
         setEncounters(prev => prev.filter(encounter => encounter.id !== id));
@@ -413,7 +423,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!user) return;
         const itemToDelete = dishes.find(i => i.id === id);
         if (!itemToDelete) return;
-        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        const resourcesToDelete: { url: string; type: 'image' | 'video' }[] = [];
+        if (itemToDelete.photo) resourcesToDelete.push({ url: itemToDelete.photo, type: 'image' });
+        if (itemToDelete.audio) resourcesToDelete.push({ url: itemToDelete.audio, type: 'video' });
+        if (resourcesToDelete.length > 0) await deleteCloudinaryResources(resourcesToDelete);
 
         await deleteDishFromDB(user.uid, id);
         setDishes(prev => prev.filter(dish => dish.id !== id));
@@ -423,7 +436,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!user) return;
         const itemToDelete = accommodations.find(i => i.id === id);
         if (!itemToDelete) return;
-        if (itemToDelete.photo) await deleteCloudinaryPhotos([itemToDelete.photo]);
+        const resourcesToDelete: { url: string; type: 'image' | 'video' }[] = [];
+        if (itemToDelete.photo) resourcesToDelete.push({ url: itemToDelete.photo, type: 'image' });
+        if (itemToDelete.audio) resourcesToDelete.push({ url: itemToDelete.audio, type: 'video' });
+        if (resourcesToDelete.length > 0) await deleteCloudinaryResources(resourcesToDelete);
 
         await deleteAccommodationFromDB(user.uid, id);
         setAccommodations(prev => prev.filter(accommodation => accommodation.id !== id));
