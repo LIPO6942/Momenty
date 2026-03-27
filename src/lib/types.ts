@@ -142,6 +142,18 @@ export interface GeneratedStory {
     instants: Omit<Instant, 'icon' | 'color'>[]; // The instants used to generate the story
 }
 
+export interface AppNotification {
+    id: string;
+    type: 'itinerary_share';
+    senderId: string;
+    senderName: string;
+    itineraryId: string;
+    itineraryTitle: string;
+    shareToken: string;
+    createdAt: string;
+    read: boolean;
+}
+
 export interface LocationWithCoords extends ManualLocation {
     name: string;
     count: number;
@@ -154,6 +166,7 @@ export interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, pass: string) => Promise<void>;
-    signup: (email: string, pass: string) => Promise<void>;
+    signup: (email: string, pass: string, displayName?: string) => Promise<void>;
     logout: () => Promise<void>;
+    updateProfile: (data: { displayName?: string, fcmToken?: string, notificationsEnabled?: boolean }) => Promise<void>;
 }

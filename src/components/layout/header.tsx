@@ -15,6 +15,7 @@ import {
 import { TripDialog } from "../timeline/trip-dialog";
 import { StayDialog } from "../timeline/stay-dialog";
 import { useAuth } from "@/context/auth-context";
+import { NotificationBell } from "./notification-bell";
 
 
 export default function Header() {
@@ -54,11 +55,13 @@ export default function Header() {
               </Button>
             </StayDialog>
 
-            <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild>
+            <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" asChild title="Mes itinéraires">
                 <Link href="/itineraires">
                     <Bookmark className="h-6 w-6" />
                 </Link>
             </Button>
+
+            <NotificationBell />
 
             {user ? (
                <DropdownMenu>
@@ -68,12 +71,18 @@ export default function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                       <Link href="/profile">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>Profil</span>
-                       </Link>
-                    </DropdownMenuItem>
+                     <DropdownMenuItem asChild>
+                        <Link href="/profile">
+                           <User className="mr-2 h-4 w-4" />
+                           <span>Profil</span>
+                        </Link>
+                     </DropdownMenuItem>
+                     <DropdownMenuItem asChild>
+                        <Link href="/settings">
+                           <Settings className="mr-2 h-4 w-4" />
+                           <span>Paramètres</span>
+                        </Link>
+                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={logout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Déconnexion</span>

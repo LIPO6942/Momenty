@@ -17,13 +17,20 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Users can only read and write their own data, including all subcollections.
+    // Notifications: owner can read/write, others can create (to send a notif)
+    match /users/{userId}/notifications/{notifId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Anyone can send a notification
+    }
+
+    // Users: public profile read, owner write
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true; // Public profiles for search
+      allow write: if request.auth != null && request.auth.uid == userId;
       
-      // Explicitly allow all subcollections for the user
+      // Subcollections are still protected mostly by the specific rules above or by owner-only defaults
       match /{allSubcollections=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 

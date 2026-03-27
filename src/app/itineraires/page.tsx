@@ -1,13 +1,14 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary } from "@/lib/firestore";
 import type { Itinerary, DayPlan, Activity } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship, Send, Search } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -54,7 +55,7 @@ import dynamic from "next/dynamic";
 import type { LocationWithCoords } from "@/lib/types";
 import { TravelInfo } from "@/lib/types";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection } from "firebase/firestore";
 
 
 const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'), {
@@ -168,6 +169,137 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
                             travelSegments={travelSegments}
                         />
                     )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const SendToUserDialog = ({ itinerary, onSent }: { itinerary: Itinerary; onSent: () => void }) => {
+    const [queryStr, setQueryStr] = useState('');
+    const [results, setResults] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [sending, setSending] = useState<string | null>(null);
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    const handleSearch = async (val: string) => {
+        setQueryStr(val);
+        if (val.length < 2) {
+            setResults([]);
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/users/search?q=${encodeURIComponent(val)}`);
+            const data = await res.json();
+            setResults((data.users || []).filter((u: any) => u.uid !== user?.uid));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSendForReal = async (recipient: any) => {
+        if (!user || !itinerary.id) return;
+        setSending(recipient.uid);
+        try {
+            // 1. Create share token if not exists
+            let itToken = itinerary.shareToken;
+            if (!itToken) {
+                itToken = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+                    ? (crypto as any).randomUUID()
+                    : Math.random().toString(36).slice(2);
+                await setDoc(doc(db, 'shared_itineraries', itToken), {
+                    userId: user.uid,
+                    itineraryId: itinerary.id,
+                    sharedAt: new Date().toISOString(),
+                });
+                await setDoc(doc(db, 'users', user.uid, 'itineraries', itinerary.id), {
+                    shareEnabled: true,
+                    shareToken: itToken,
+                    sharedAt: new Date().toISOString()
+                }, { merge: true });
+            }
+
+            // 2. Create internal notification
+            const notifRefTarget = doc(collection(db, 'users', recipient.uid, 'notifications'));
+            const notifData = {
+                id: notifRefTarget.id,
+                type: 'itinerary_share',
+                senderId: user.uid,
+                senderName: user.displayName || 'Un ami',
+                itineraryId: itinerary.id,
+                itineraryTitle: itinerary.title,
+                shareToken: itToken,
+                createdAt: new Date().toISOString(),
+                read: false
+            };
+            await setDoc(notifRefTarget, notifData);
+
+            // 3. Trigger Push via Webhook API
+            if (recipient.fcmToken) {
+                await fetch('/api/notifications/push', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        fcmToken: recipient.fcmToken,
+                        title: 'Nouvel itinéraire partagé !',
+                        body: `${user.displayName || 'Un ami'} vous a envoyé l'itinéraire "${itinerary.title}".`,
+                        data: { url: `/share/itinerary/${itToken}` }
+                    })
+                });
+            }
+
+            toast({ title: `Itinéraire envoyé à ${recipient.displayName}` });
+            onSent();
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Échec de l\'envoi' });
+        } finally {
+            setSending(null);
+        }
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <div className="flex w-full cursor-pointer items-center px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
+                    <Send className="mr-2 h-4 w-4" />
+                    Envoyer à un utilisateur
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Envoyer à un utilisateur</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Rechercher par nom..."
+                            className="pl-9"
+                            value={queryStr}
+                            onChange={(e) => handleSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto space-y-2">
+                        {loading && <div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>}
+                        {!loading && results.map(u => (
+                            <div key={u.uid} className="flex items-center justify-between p-2 rounded-md border bg-card">
+                                <span>{u.displayName}</span>
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => handleSendForReal(u)}
+                                    disabled={sending === u.uid}
+                                >
+                                    {sending === u.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer"}
+                                </Button>
+                            </div>
+                        ))}
+                        {!loading && queryStr.length >= 2 && results.length === 0 && (
+                            <div className="text-center text-muted-foreground py-4">Aucun utilisateur trouvé.</div>
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
@@ -356,6 +488,24 @@ export default function SavedItinerariesPage() {
           loadItineraries();
         }
     }, [user]);
+
+    const sp = useSearchParams();
+    const importToken = sp.get('import');
+
+    useEffect(() => {
+        if (importToken && user && !isLoading && !importLoading) {
+            setImportInput(importToken);
+            // Small delay to ensure state is set before calling import
+            const timer = setTimeout(() => {
+                handleImportByLink();
+                // Clean up URL without refreshing
+                const url = new URL(window.location.href);
+                url.searchParams.delete('import');
+                window.history.replaceState({}, '', url.toString());
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [importToken, user, isLoading]);
 
     const handleUpdateItinerary = async (updatedItinerary: Itinerary) => {
         if (!user || !updatedItinerary.id) return;

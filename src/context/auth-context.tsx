@@ -3,10 +3,13 @@
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, type User, updateProfile as updateAuthProfile } from 'firebase/auth';
 import type { AuthContextType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { db, messaging } from '@/lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { getToken, onMessage } from 'firebase/messaging';
 
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,12 +22,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
+            if (user) {
+                // Sync user to Firestore
+                const userRef = doc(db, 'users', user.uid);
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName || user.email?.split('@')[0] || 'Voyageur',
+                    lastLogin: new Date().toISOString()
+                }, { merge: true });
+                
+                // Initialize messaging if supported
+                setupMessaging(user.uid);
+            }
             setLoading(false);
         });
         return () => unsubscribe();
     }, []);
+
+    const setupMessaging = async (userId: string) => {
+        const msg = messaging();
+        if (!msg) return;
+
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(msg, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY });
+                if (token) {
+                    await setDoc(doc(db, 'users', userId), { fcmToken: token, notificationsEnabled: true }, { merge: true });
+                }
+            }
+        } catch (e) {
+            console.error("FCM setup failed", e);
+        }
+    };
 
     const login = async (email: string, pass: string) => {
         setLoading(true);
@@ -38,10 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const signup = async (email: string, pass: string) => {
+    const signup = async (email: string, pass: string, displayName?: string) => {
         setLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, email, pass);
+            const res = await createUserWithEmailAndPassword(auth, email, pass);
+            if (displayName) {
+                await updateAuthProfile(res.user, { displayName });
+                await setDoc(doc(db, 'users', res.user.uid), { displayName, email, uid: res.user.uid }, { merge: true });
+            }
             router.push('/');
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Erreur d'inscription", description: error.message });
@@ -55,8 +92,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push('/login');
     };
 
+    const updateProfile = async (data: { displayName?: string, fcmToken?: string, notificationsEnabled?: boolean }) => {
+        if (!user) return;
+        try {
+            if (data.displayName) {
+                await updateAuthProfile(user, { displayName: data.displayName });
+            }
+            await setDoc(doc(db, 'users', user.uid), data, { merge: true });
+            toast({ title: "Profil mis à jour" });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Erreur", description: e.message });
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );
