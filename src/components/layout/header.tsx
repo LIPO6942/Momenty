@@ -15,7 +15,7 @@ import {
 import { TripDialog } from "../timeline/trip-dialog";
 import { StayDialog } from "../timeline/stay-dialog";
 import { useAuth } from "@/context/auth-context";
-import { NotificationBell } from "./notification-bell";
+// Removed NotificationBell as per user request to move it to settings
 
 
 export default function Header() {
@@ -61,7 +61,7 @@ export default function Header() {
                 </Link>
             </Button>
 
-            <NotificationBell />
+
 
             {user ? (
                <DropdownMenu>

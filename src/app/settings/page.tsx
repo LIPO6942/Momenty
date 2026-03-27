@@ -9,16 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Bell, User, Save, Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, where } from "firebase/firestore";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
+import { Trash2, ExternalLink, Download } from "lucide-react";
 
 export default function SettingsPage() {
     const { user, updateProfile } = useAuth();
     const router = useRouter();
     const [displayName, setDisplayName] = useState("");
-    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!user) {
@@ -43,6 +47,38 @@ export default function SettingsPage() {
 
         fetchSettings();
     }, [user, router]);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(
+            collection(db, "users", user.uid, "notifications"),
+            orderBy("createdAt", "desc")
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setNotifications(notifs);
+        });
+        return () => unsubscribe();
+    }, [user]);
+
+    const markAsRead = async (notifId: string) => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, "users", user.uid, "notifications", notifId), { read: true });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const deleteNotification = async (notifId: string) => {
+        if (!user) return;
+        try {
+            await deleteDoc(doc(db, "users", user.uid, "notifications", notifId));
+            toast({ title: "Notification supprimée" });
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -105,25 +141,75 @@ export default function SettingsPage() {
                         <Bell className="h-5 w-5 text-primary" />
                         <CardTitle>Notifications</CardTitle>
                     </div>
-                    <CardDescription>Gérez la façon dont vous recevez les alertes.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <Label>Notifications Push</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Recevoir des alertes lorsqu'un itinéraire vous est partagé.
-                            </p>
+                            <p className="text-sm text-muted-foreground text-xs">Alerte en temps réel</p>
                         </div>
                         <Switch 
                             checked={notificationsEnabled} 
                             onCheckedChange={setNotificationsEnabled} 
                         />
                     </div>
-                    
-                    {!notificationsEnabled && (
-                        <div className="p-3 rounded-md bg-orange-50 border border-orange-100 text-orange-800 text-sm">
-                            <p>Note : Si vous désactivez les notifications, vous ne serez pas averti en temps réel des partages de vos amis.</p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Save className="h-5 w-5 text-primary" />
+                        <CardTitle>Partages Reçus</CardTitle>
+                    </div>
+                    <CardDescription>Itinéraires que vos amis vous ont envoyés.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {notifications.length === 0 ? (
+                        <div className="py-8 text-center text-muted-foreground">
+                            Aucun itinéraire reçu pour le moment.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {notifications.map((n) => (
+                                <div 
+                                    key={n.id} 
+                                    className={`p-4 rounded-lg border transition-colors ${n.read ? 'bg-background' : 'bg-primary/5 border-primary/20'}`}
+                                    onClick={() => !n.read && markAsRead(n.id)}
+                                >
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="space-y-1 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                {!n.read && <div className="h-2 w-2 rounded-full bg-primary" />}
+                                                <p className="font-semibold">{n.itineraryTitle}</p>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                Envoyé par <span className="text-foreground font-medium">{n.senderName}</span>
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {format(parseISO(n.createdAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex gap-2">
+                                        <Button variant="outline" size="sm" asChild className="flex-1">
+                                            <Link href={`/share/itinerary/${n.shareToken}`}>
+                                                <ExternalLink className="mr-2 h-3 w-3" /> Voir
+                                            </Link>
+                                        </Button>
+                                        <Button variant="secondary" size="sm" asChild className="flex-1">
+                                            <Link href={`/itineraires?import=${n.shareToken}`}>
+                                                <Download className="mr-2 h-3 w-3" /> Importer
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </CardContent>

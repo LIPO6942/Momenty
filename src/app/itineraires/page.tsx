@@ -759,6 +759,8 @@ function SavedItinerariesContent() {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuSeparator />
+                                        <SendToUserDialog itinerary={itinerary} onSent={() => {}} />
+                                        <DropdownMenuSeparator />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
