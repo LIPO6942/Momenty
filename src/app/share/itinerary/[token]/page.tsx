@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Itinerary } from "@/lib/types";
 import { saveItinerary } from "@/lib/firestore";
 import { useAuth } from "@/context/auth-context";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function SharedItineraryPage() {
   const params = useParams<{ token: string }>();
@@ -20,12 +22,36 @@ export default function SharedItineraryPage() {
 
   useEffect(() => {
     const run = async () => {
+      if (!token) return;
       try {
-        const res = await fetch(`/api/itineraries/resolve?token=${encodeURIComponent(token)}`);
-        if (!res.ok) throw new Error("Not found");
-        const data = await res.json();
-        setItinerary(data.itinerary);
+        setLoading(true);
+        // Step 1: Resolve token to mapping
+        const mapRef = doc(db, 'shared_itineraries', token);
+        const mapSnap = await getDoc(mapRef);
+        
+        if (!mapSnap.exists()) {
+          // Fallback to API if mapping doesn't exist (maybe legacy or index-based)
+          const res = await fetch(`/api/itineraries/resolve?token=${encodeURIComponent(token)}`);
+          if (!res.ok) throw new Error("Not found");
+          const data = await res.json();
+          setItinerary(data.itinerary);
+          return;
+        }
+
+        const { userId: ownerId, itineraryId } = mapSnap.data() as { userId: string; itineraryId: string };
+        
+        // Step 2: Fetch itinerary from owner's subcollection
+        const srcRef = doc(db, 'users', ownerId, 'itineraries', itineraryId);
+        const srcSnap = await getDoc(srcRef);
+        
+        if (!srcSnap.exists()) throw new Error("Source not found");
+        
+        const data = srcSnap.data() as Itinerary;
+        if (!data.shareEnabled) throw new Error("Sharing disabled");
+        
+        setItinerary({ ...data, id: srcSnap.id });
       } catch (e) {
+        console.error("Resolve error:", e);
         setItinerary(null);
       } finally {
         setLoading(false);

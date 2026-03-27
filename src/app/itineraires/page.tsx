@@ -359,7 +359,7 @@ export default function SavedItinerariesPage() {
 
     const handleUpdateItinerary = async (updatedItinerary: Itinerary) => {
         if (!user || !updatedItinerary.id) return;
-        setIsUpdating(prev => ({...prev, [updatedItinerary.id!]: true}));
+        setIsUpdating(prev => ({...prev, [updatedItinerary.id as string]: true}));
         try {
             await saveItinerary(user.uid, updatedItinerary, updatedItinerary.id);
             setItineraries(prev => prev.map(it => it.id === updatedItinerary.id ? updatedItinerary : it));
@@ -376,7 +376,7 @@ export default function SavedItinerariesPage() {
         if (!user) return;
         try {
             await deleteItinerary(user.uid, id);
-            setItineraries(prev => prev.filter(it => it.id !== id));
+            setItineraries(prev => prev.filter((it: Itinerary) => it.id !== id));
             toast({ title: "Itinéraire supprimé." });
         } catch (error) {
             console.error("Failed to delete itinerary:", error);
@@ -402,33 +402,52 @@ export default function SavedItinerariesPage() {
         setImportLoading(true);
         try {
             let token = raw;
-            try {
-                const u = new URL(raw);
-                const parts = u.pathname.split('/').filter(Boolean);
-                const tokenIdx = parts.findIndex(p => p === 'itinerary');
-                if (tokenIdx !== -1 && parts[tokenIdx + 1]) {
-                    token = parts[tokenIdx + 1];
-                } else {
-                    // fallback: last non-empty segment
-                    token = parts[parts.length - 1] || token;
+            // Handle full URLs
+            if (raw.includes('://') || raw.includes('/share/')) {
+                try {
+                    const u = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+                    const parts = u.pathname.split('/').filter(Boolean);
+                    // Expected format: .../share/itinerary/[token]
+                    const tokenIdx = parts.findIndex(p => p === 'itinerary');
+                    if (tokenIdx !== -1 && parts[tokenIdx + 1]) {
+                        token = parts[tokenIdx + 1];
+                    } else {
+                        token = parts[parts.length - 1];
+                    }
+                    const spToken = u.searchParams.get('token');
+                    if (spToken) token = spToken;
+                } catch (urlErr) {
+                    console.error("URL parsing error:", urlErr);
                 }
-                const spToken = u.searchParams.get('token');
-                if (spToken) token = spToken;
-            } catch {}
+            }
+
+            console.log("Resolving itinerary token:", token);
 
             // Resolve token via mapping document: /shared_itineraries/{token}
             const mapRef = doc(db, 'shared_itineraries', token);
             const mapSnap = await getDoc(mapRef);
+            
             if (!mapSnap.exists()) {
-                throw new Error('Lien invalide ou révoqué.');
+                throw new Error('Lien de partage invalide, expiré ou révoqué.');
             }
+
             const { userId: ownerId, itineraryId } = mapSnap.data() as { userId: string; itineraryId: string };
+            
+            // Fetch the source itinerary
             const srcRef = doc(db, 'users', ownerId, 'itineraries', itineraryId);
             const srcSnap = await getDoc(srcRef);
+            
             if (!srcSnap.exists()) {
-                throw new Error("Itinéraire source introuvable.");
+                throw new Error("L'itinéraire source n'existe plus ou n'est plus partagé.");
             }
+
             const itinerary = srcSnap.data() as Itinerary;
+            
+            // Check if still enabled at source
+            if (itinerary.shareEnabled === false) {
+                 throw new Error("Le partage de cet itinéraire a été désactivé par son propriétaire.");
+            }
+
             const copy: Itinerary = {
                 ...itinerary,
                 id: undefined,
@@ -438,12 +457,18 @@ export default function SavedItinerariesPage() {
                 shareToken: undefined,
                 sharedAt: undefined,
             } as any;
+
             await saveItinerary(user.uid, copy);
-            toast({ title: 'Itinéraire importé dans votre compte.' });
+            toast({ title: 'Succès !', description: 'Itinéraire importé dans votre compte.' });
             setImportInput("");
             await loadItineraries();
         } catch (e: any) {
-            toast({ variant: 'destructive', title: "Échec de l'import depuis le lien.", description: e?.message?.slice(0, 140) });
+            console.error("Import error:", e);
+            toast({ 
+                variant: 'destructive', 
+                title: "Échec de l'import", 
+                description: e?.message || "Une erreur est survenue lors de la récupération de l'itinéraire." 
+            });
         } finally {
             setImportLoading(false);
         }
@@ -451,48 +476,50 @@ export default function SavedItinerariesPage() {
 
     const handleShare = async (itinerary: Itinerary) => {
         if (!user || !itinerary.id) return;
-        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        const itId = itinerary.id;
+        setShareLoading(prev => ({...prev, [itId]: true}));
         try {
             const token = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
                 ? (crypto as any).randomUUID()
                 : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
             const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
-            await saveItinerary(user.uid, updated, itinerary.id);
+            await saveItinerary(user.uid, updated, itId);
             // Write mapping for public resolution
             await setDoc(doc(db, 'shared_itineraries', token), {
                 userId: user.uid,
-                itineraryId: itinerary.id,
+                itineraryId: itId,
                 sharedAt: new Date().toISOString(),
             });
-            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            setItineraries(prev => prev.map((it: Itinerary) => it.id === itId ? updated : it));
             const link = `${window.location.origin}/share/itinerary/${token}`;
             await navigator.clipboard.writeText(link).catch(() => {});
             toast({ title: 'Lien de partage généré', description: 'Le lien a été copié dans le presse-papiers.' });
         } catch (e) {
             toast({ variant: 'destructive', title: 'Échec du partage' });
         } finally {
-            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+            setShareLoading(prev => ({...prev, [itId]: false}));
         }
     };
 
     const handleUnshare = async (itinerary: Itinerary) => {
         if (!user || !itinerary.id) return;
-        setShareLoading(prev => ({...prev, [itinerary.id!]: true}));
+        const itId = itinerary.id;
+        setShareLoading(prev => ({...prev, [itId]: true}));
         try {
             const token = itinerary.shareToken;
             const updated = { ...itinerary, shareEnabled: false } as Itinerary;
             delete (updated as any).shareToken;
             delete (updated as any).sharedAt;
-            await saveItinerary(user.uid, updated, itinerary.id);
+            await saveItinerary(user.uid, updated, itId);
             if (token) {
                 await deleteDoc(doc(db, 'shared_itineraries', token));
             }
-            setItineraries(prev => prev.map(it => it.id === itinerary.id ? updated : it));
+            setItineraries(prev => prev.map((it: Itinerary) => it.id === itId ? updated : it));
             toast({ title: 'Partage révoqué' });
         } catch (e) {
             toast({ variant: 'destructive', title: 'Échec de la révocation' });
         } finally {
-            setShareLoading(prev => ({...prev, [itinerary.id!]: false}));
+            setShareLoading(prev => ({...prev, [itId]: false}));
         }
     };
 
