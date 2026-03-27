@@ -27,10 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (user) {
                 // Sync user to Firestore
                 const userRef = doc(db, 'users', user.uid);
+                const resolvedName = user.displayName || user.email?.split('@')[0] || 'Voyageur';
                 await setDoc(userRef, {
                     uid: user.uid,
                     email: user.email,
-                    displayName: user.displayName || user.email?.split('@')[0] || 'Voyageur',
+                    displayName: resolvedName,
+                    displayNameLower: resolvedName.toLowerCase(),
                     lastLogin: new Date().toISOString()
                 }, { merge: true });
                 
@@ -77,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const res = await createUserWithEmailAndPassword(auth, email, pass);
             if (displayName) {
                 await updateAuthProfile(res.user, { displayName });
-                await setDoc(doc(db, 'users', res.user.uid), { displayName, email, uid: res.user.uid }, { merge: true });
+                await setDoc(doc(db, 'users', res.user.uid), { displayName, displayNameLower: displayName.toLowerCase(), email, uid: res.user.uid }, { merge: true });
             }
             router.push('/');
         } catch (error: any) {
@@ -95,10 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateProfile = async (data: { displayName?: string, fcmToken?: string, notificationsEnabled?: boolean }) => {
         if (!user) return;
         try {
+            const updateData: Record<string, any> = { ...data };
             if (data.displayName) {
                 await updateAuthProfile(user, { displayName: data.displayName });
+                updateData.displayNameLower = data.displayName.toLowerCase();
             }
-            await setDoc(doc(db, 'users', user.uid), data, { merge: true });
+            await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
             toast({ title: "Profil mis à jour" });
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Erreur", description: e.message });

@@ -273,7 +273,7 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Rechercher par nom..."
+                            placeholder="Rechercher par nom ou email..."
                             className="pl-9"
                             value={queryStr}
                             onChange={(e) => handleSearch(e.target.value)}
