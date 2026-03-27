@@ -183,6 +183,13 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
     const { user } = useAuth();
     const { toast } = useToast();
 
+    useEffect(() => {
+        // Cleanup function to ensure body is never locked if dialog unmounts unexpectedly
+        return () => {
+            document.body.style.pointerEvents = 'auto';
+        };
+    }, []);
+
     const handleSearch = async (val: string) => {
         setQueryStr(val);
         if (val.length < 2) {
@@ -281,7 +288,6 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
                             className="pl-9"
                             value={queryStr}
                             onChange={(e) => handleSearch(e.target.value)}
-                            autoFocus
                         />
                     </div>
                     <div className="max-h-[300px] overflow-y-auto space-y-2">
@@ -730,7 +736,7 @@ function SavedItinerariesContent() {
                                         <MapPin className="h-6 w-6" />
                                     </Button>
                                  </ItineraryMapDialog>
-                                 <DropdownMenu>
+                                 <DropdownMenu modal={false}>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-10 w-10 ml-2">
                                             <MoreVertical className="h-5 w-5" />
@@ -738,7 +744,7 @@ function SavedItinerariesContent() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <DropdownMenuItem>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 <span>Renommer</span>
                                             </DropdownMenuItem>
@@ -762,10 +768,9 @@ function SavedItinerariesContent() {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={(e) => { 
-                                            e.preventDefault(); 
+                                        <DropdownMenuItem onSelect={() => { 
                                             // Delay dialog rendering to let Radix Dropdown clean up its body lock first
-                                            setTimeout(() => setItineraryToSend(itinerary), 10); 
+                                            setTimeout(() => setItineraryToSend(itinerary), 150); 
                                         }}>
                                             <Send className="mr-2 h-4 w-4" />
                                             <span>Envoyer à un utilisateur</span>
