@@ -175,7 +175,7 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
     );
 };
 
-const SendToUserDialog = ({ itinerary, onSent }: { itinerary: Itinerary; onSent: () => void }) => {
+const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary: Itinerary; onSent: () => void; open: boolean; onOpenChange: (open: boolean) => void }) => {
     const [queryStr, setQueryStr] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -261,16 +261,13 @@ const SendToUserDialog = ({ itinerary, onSent }: { itinerary: Itinerary; onSent:
     };
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <div className="flex w-full cursor-pointer items-center px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                    <Send className="mr-2 h-4 w-4" />
-                    Envoyer à un utilisateur
-                </div>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Envoyer à un utilisateur</DialogTitle>
+                    <div className="text-sm text-muted-foreground italic">
+                        Itinéraire : {itinerary.title}
+                    </div>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                     <div className="relative">
@@ -474,6 +471,7 @@ function SavedItinerariesContent() {
     const [shareLoading, setShareLoading] = useState<{[key: string]: boolean}>({});
     const [importInput, setImportInput] = useState("");
     const [importLoading, setImportLoading] = useState(false);
+    const [itineraryToSend, setItineraryToSend] = useState<Itinerary | null>(null);
 
     const loadItineraries = async () => {
         if (user) {
@@ -760,8 +758,9 @@ function SavedItinerariesContent() {
                                             </DropdownMenuItem>
                                         )}
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0">
-                                            <SendToUserDialog itinerary={itinerary} onSent={() => {}} />
+                                        <DropdownMenuItem onSelect={() => setItineraryToSend(itinerary)}>
+                                            <Send className="mr-2 h-4 w-4" />
+                                            <span>Envoyer à un utilisateur</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <AlertDialog>
@@ -801,6 +800,15 @@ function SavedItinerariesContent() {
                         </AccordionItem>
                     ))}
                 </Accordion>
+            )}
+
+            {itineraryToSend && (
+                <SendToUserDialog
+                    itinerary={itineraryToSend}
+                    open={!!itineraryToSend}
+                    onOpenChange={(open) => !open && setItineraryToSend(null)}
+                    onSent={() => setItineraryToSend(null)}
+                />
             )}
         </div>
     );
