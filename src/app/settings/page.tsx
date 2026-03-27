@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Bell, User, Save, Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, where } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -20,6 +21,8 @@ export default function SettingsPage() {
     const { user, updateProfile } = useAuth();
     const router = useRouter();
     const [displayName, setDisplayName] = useState("");
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const { toast } = useToast();
