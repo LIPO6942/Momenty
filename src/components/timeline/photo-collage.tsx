@@ -31,7 +31,7 @@ export const PhotoCollage = ({
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
-        if (interactive || !onPositionChange || index !== 0) return;
+        if (interactive || !onPositionChange) return;
         setIsDragging(true);
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -74,7 +74,7 @@ export const PhotoCollage = ({
         const objectClass = t.c === 'fit' ? "object-contain" : "object-cover";
         
         // Manual position logic
-        const objectPosition = (index === 0 && displayTransform?.gravity === 'custom') 
+        const objectPosition = (displayTransform?.gravity === 'custom') 
             ? `${displayTransform.positionX ?? 50}% ${displayTransform.positionY ?? 50}%` 
             : undefined;
 
@@ -89,7 +89,7 @@ export const PhotoCollage = ({
                         "w-full h-full transition-none", 
                         objectClass, 
                         className,
-                        !interactive && index === 0 && "cursor-move touch-none"
+                        !interactive && "cursor-move touch-none"
                     )}
                     style={{ objectPosition }}
                     onMouseDown={(e) => handleMouseDown(e, index)}

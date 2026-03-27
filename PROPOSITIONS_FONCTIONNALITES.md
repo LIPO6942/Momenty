@@ -325,21 +325,40 @@ Impact : ⚡️⚡️⚡️⚡️ | Difficulté : 🔧🔧
 Impact : ⚡️⚡️⚡️⚡️⚡️ | Difficulté : 🔧🔧🔧
 **Grande valeur ajoutée, permet de "sortir" ses souvenirs**
 
+
 ---
 
-## 💡 Quelle fonctionnalité vous intéresse le plus ?
+## 🌟 NOUVELLES PROPOSITIONS PREMIUM (Top 5 - Mars 2026)
 
-**Dites-moi laquelle vous voulez que je commence à implémenter !** 
+Voici 5 propositions innovantes pour faire passer Momenty au niveau supérieur :
 
-Je peux :
-- Créer une démo fonctionnelle
-- Générer le code complet
-- Vous guider pas à pas
+### 1. 🎬 **Momenty Reels (Vidéo Souvenir)**
+**Concept** : Générer automatiquement une mini-vidéo (format Vertical/Reels) d'une journée ou d'un voyage.
+- **Fonctionnement** : L'app compile les meilleures photos et vidéos d'une période donnée.
+- **Bonus** : Utilise automatiquement la **Mémoire Sonore** (audio) capturée comme bande-son du Reel.
+- **Effet WOW** : Un bouton "Générer mon film" qui crée un souvenir prêt à partager en 1 clic.
 
-**Questions pour affiner** :
-1. Utilisez-vous Momenty seul ou en voyage de groupe ?
-2. Combien de souvenirs avez-vous déjà enregistrés ?
-3. Quelle est votre frustration #1 actuelle avec l'app ?
-4. Smartphone principal iOS ou Android ?
+### 2. 🤖 **L'Oracle du Voyage (Assistant Mémoire IA)**
+**Concept** : Un chat intelligent qui connaît tous vos souvenirs.
+- **Exemples** : "Où est-ce qu'on a vu ce coucher de soleil magnifique ?", "Donne-moi le nom du petit café à Lisbonne où il y avait du jazz."
+- **Fonctionnement** : L'IA parcourt vos descriptions, lieux et même les photos (via vision) pour vous répondre instantanément.
 
-À vous de jouer ! 🎯
+### 3. ✨ **Mode "Cinéma Immersif"**
+**Concept** : Une vue plein écran optimisée pour revivre ses souvenirs sur PC ou Tablette.
+- **Fonctionnement** : Les instants défilent avec des transitions douces (Ken Burns effect sur les photos).
+- **Immersion** : Les sons d'ambiance s'activent et s'estompent (cross-fade) progressivement au fil du défilement.
+
+### 4. 👫 **Journaux Partagés (Collaboration)**
+**Concept** : Créer un journal à plusieurs (couple, amis, famille).
+- **Fonctionnement** : Tout le monde peut ajouter ses "instants" au même voyage.
+- **Bénéfice** : Une timeline unique et complète avec les perspectives de chaque voyageur.
+
+### 5. 🌍 **Capsule Temporelle Interactive**
+**Concept** : Verrouiller un voyage ou une période et ne pouvoir le "réouvrir" que dans 1 an ou 5 ans.
+- **Fonctionnement** : L'utilisateur reçoit une notification surprise le jour de l'ouverture.
+- **Effet Émotionnel** : Redécouvrir des moments oubliés avec un regard neuf, créant un rendez-vous nostalgique régulier.
+
+---
+
+## 💡 Prêt à passer à l'action ?
+Dites-moi laquelle de ces idées vous séduit le plus et je peux commencer à l'implémenter dès maintenant !
