@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary } from "@/lib/firestore";
@@ -464,7 +464,7 @@ const EditTitleDialog = ({ itinerary, onUpdateItinerary, children }: { itinerary
 }
 
 
-export default function SavedItinerariesPage() {
+function SavedItinerariesContent() {
     const { user } = useAuth();
     const [itineraries, setItineraries] = useState<Itinerary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -798,5 +798,17 @@ export default function SavedItinerariesPage() {
                 </Accordion>
             )}
         </div>
+    );
+}
+
+export default function SavedItinerariesPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto px-4 py-32 flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <SavedItinerariesContent />
+        </Suspense>
     );
 }
