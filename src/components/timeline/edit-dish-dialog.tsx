@@ -192,6 +192,30 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
       });
 
+      // --- Sync with Kol Youm if it's a dish and we have a location/city ---
+      const isOnline = typeof window !== 'undefined' ? navigator.onLine : true;
+      if (isOnline && name && location && city) {
+        try {
+          const syncResponse = await fetch('/api/sync-kol-youm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: user?.email,
+              placeName: location,
+              cityName: city,
+              category: selectedCategory || 'restaurants',
+              dishName: name,
+              date: dateToSave.getTime(),
+              postUrl: `https://momenty.vercel.app/timeline?id=${dishToEdit.id}`
+            })
+          });
+          const syncResult = await syncResponse.json();
+          console.log('[Kol Youm Sync Update]', syncResult);
+        } catch (e) {
+          console.error('[Kol Youm Sync Error Update]', e);
+        }
+      }
+
       setOpen(false);
       toast({ title: "Plat mis à jour !" });
 

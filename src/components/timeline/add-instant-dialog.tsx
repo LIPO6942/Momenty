@@ -563,8 +563,28 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         });
                     }
                 }
-// ... [rest of Kol Youm sync code]
-                toast({ title: "Nouveau plat ajouté !" });
+                    if (isOnline && dishName && location && city) {
+                        try {
+                            const syncResponse = await fetch('/api/sync-kol-youm', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userEmail: user?.email,
+                                    placeName: location,
+                                    cityName: city,
+                                    category: selectedCategory || 'restaurants',
+                                    dishName: dishName,
+                                    date: new Date().getTime(),
+                                    postUrl: `https://momenty.vercel.app/timeline?id=${newId}`
+                                })
+                            });
+                            const syncResult = await syncResponse.json();
+                            console.log('[Kol Youm Sync]', syncResult);
+                        } catch (e) {
+                            console.error('[Kol Youm Sync Error]', e);
+                        }
+                    }
+                    toast({ title: "Nouveau plat ajouté !" });
             } else if (isAccommodation) {
                 if (!accommodationName) {
                     toast({ variant: "destructive", title: "Veuillez nommer le logement." });
