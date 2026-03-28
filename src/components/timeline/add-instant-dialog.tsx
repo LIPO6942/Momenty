@@ -60,6 +60,12 @@ const moods = [
     { name: "Nostalgique", icon: "😢" },
 ];
 
+const foodMoods = [
+    { name: "Gourmand", icon: "😋" },
+    { name: "Régalé", icon: "🍛" },
+    { name: "Savoureux", icon: "🤤" },
+];
+
 const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_WIDTH = 1920; // Max width for compression
 
@@ -1081,7 +1087,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     <div className="space-y-2">
                                         <Label>Quelle était votre humeur ?</Label>
                                         <div className="flex flex-wrap gap-2 pt-2">
-                                            {moods.map(mood => (
+                                            {[...moods, ...(isDish ? foodMoods : [])].map(mood => (
                                                 <Button
                                                     key={mood.name}
                                                     type="button"

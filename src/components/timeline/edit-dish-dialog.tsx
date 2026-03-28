@@ -63,6 +63,9 @@ const moods = [
   { name: "Détendu", icon: "😌" },
   { name: "Curieux", icon: "🤔" },
   { name: "Nostalgique", icon: "😢" },
+  { name: "Gourmand", icon: "😋" },
+  { name: "Régalé", icon: "🍛" },
+  { name: "Savoureux", icon: "🤤" },
 ];
 
 interface EditDishDialogProps {
