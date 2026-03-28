@@ -581,7 +581,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     category: selectedCategory || 'restaurants',
                                     dishName: dishName,
                                     date: new Date().getTime(),
-                                    postUrl: `https://momenty.vercel.app/timeline?id=${newId}`
+                                    postUrl: `https://momenty.vercel.app/plats?id=${newId}`
                                 })
                             });
                             const syncResult = await syncResponse.json();

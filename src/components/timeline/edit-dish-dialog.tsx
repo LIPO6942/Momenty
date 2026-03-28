@@ -209,7 +209,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
               category: selectedCategory || 'restaurants',
               dishName: name,
               date: dateToSave.getTime(),
-              postUrl: `https://momenty.vercel.app/timeline?id=${dishToEdit.id}`
+              postUrl: `https://momenty.vercel.app/plats?id=${dishToEdit.id}`
             })
           });
           const syncResult = await syncResponse.json();
