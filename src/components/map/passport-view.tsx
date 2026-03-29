@@ -50,18 +50,26 @@ interface VisaData {
   name: string;
   firstVisit: string;
   type: 'country' | 'city';
+  continent?: string;
 }
 
-const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color: 'emerald' | 'blue' | 'amber' }) => {
+const VisaCard = ({ visa, index }: { visa: VisaData, index: number }) => {
   const rotation = (index % 2 === 0 ? -2 : 2) + (index % 3);
+  const shapeIdx = index % 3;
   
-  const colorClasses = {
-    emerald: "text-emerald-700/60 border-emerald-700/60 bg-emerald-50 text-emerald-900 border-emerald-200",
-    blue: "text-blue-700/60 border-blue-700/60 bg-blue-50 text-blue-900 border-blue-200",
-    amber: "text-amber-700/60 border-amber-700/60 bg-amber-50 text-amber-900 border-amber-200",
+  const getContinentColor = (continent?: string) => {
+    switch (continent?.toLowerCase()) {
+      case 'europe': return { card: "border-blue-100 hover:border-blue-300 bg-white/60", badge: "bg-blue-100 text-blue-700 border-blue-200", stamp: "text-blue-800/60" };
+      case 'asia': return { card: "border-red-100 hover:border-red-300 bg-white/60", badge: "bg-red-100 text-red-700 border-red-200", stamp: "text-red-800/60" };
+      case 'africa': return { card: "border-amber-100 hover:border-amber-300 bg-white/60", badge: "bg-amber-100 text-amber-700 border-amber-200", stamp: "text-amber-800/60" };
+      case 'namerica': return { card: "border-emerald-100 hover:border-emerald-300 bg-white/60", badge: "bg-emerald-100 text-emerald-700 border-emerald-200", stamp: "text-emerald-800/60" };
+      case 'samerica': return { card: "border-green-100 hover:border-green-300 bg-white/60", badge: "bg-green-100 text-green-700 border-green-200", stamp: "text-green-800/60" };
+      case 'oceania': return { card: "border-cyan-100 hover:border-cyan-300 bg-white/60", badge: "bg-cyan-100 text-cyan-700 border-cyan-200", stamp: "text-cyan-800/60" };
+      default: return { card: "border-slate-100 hover:border-slate-300 bg-white/60", badge: "bg-slate-100 text-slate-700 border-slate-200", stamp: "text-slate-800/50" };
+    }
   };
 
-  const stampColor = color === 'emerald' ? "text-emerald-800/70" : "text-blue-800/70";
+  const theme = getContinentColor(visa.continent);
 
   let formattedDateShort = "??.??.??";
   let formattedDateLong = "Date inconnue";
@@ -79,18 +87,21 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
   return (
     <div 
       className={cn(
-        "relative p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md group overflow-hidden bg-white/60",
-        color === 'emerald' ? "border-emerald-100 hover:border-emerald-300" : "border-blue-100 hover:border-blue-300"
+        "relative p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md group overflow-hidden",
+        theme.card
       )}
     >
       {/* The Stamp Background */}
       <div className={cn(
-        "absolute -top-2 -right-2 pointer-events-none opacity-40 transform-gpu group-hover:scale-110 transition-transform duration-500",
-        stampColor
+        "absolute -top-3 -right-3 pointer-events-none opacity-40 transform-gpu group-hover:scale-110 transition-transform duration-500",
+        theme.stamp
       )} style={{ transform: `rotate(${rotation}deg)` }}>
-          <div className="border-4 border-current rounded-full p-2 flex flex-col items-center justify-center w-28 h-28 transform rotate-12">
-              <span className="text-[8px] font-bold uppercase tracking-widest">ADMIS</span>
-              <span className="text-[10px] font-black my-0.5">{formattedDateShort}</span>
+          <div className={cn(
+            "border-[3px] border-current p-2 flex flex-col items-center justify-center transform rotate-12",
+            shapeIdx === 0 ? "rounded-full w-28 h-28" : shapeIdx === 1 ? "rounded-[50%] w-32 h-20" : "rounded-lg w-28 h-24"
+          )}>
+              <span className="text-[8px] font-bold uppercase tracking-widest leading-none">ADMIS</span>
+              <span className="text-[10px] font-black my-0.5 leading-none">{formattedDateShort}</span>
               <div className="h-[1px] w-full bg-current mb-0.5" />
               <span className="text-[10px] font-serif font-black uppercase text-center leading-tight truncate px-1 max-w-full">{visa.name}</span>
           </div>
@@ -110,7 +121,7 @@ const VisaCard = ({ visa, index, color }: { visa: VisaData, index: number, color
         <div className="mt-2 flex justify-end">
             <span className={cn(
               "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter border",
-              color === 'emerald' ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-blue-100 text-blue-700 border-blue-200"
+              theme.badge
             )}>
               VISA Momenty #{(index + 400).toString(16).toUpperCase()}
             </span>
@@ -159,22 +170,27 @@ export const PassportView = ({
       const mDates = manualLocations.filter(m => getCountry(m.name) === name).map(m => m.startDate);
       const allDates = [...iDates, ...mDates].filter(Boolean).sort() as string[];
       if (allDates.length > 0) firstVisit = allDates[0];
-      return { name, firstVisit, type: 'country' } as VisaData;
+      const normalizedName = name.trim();
+      const continent = countryToContinent[normalizedName] || countryToContinent[normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase()] || 'other';
+      return { name, firstVisit, type: 'country', continent } as VisaData;
     });
   }, [instants, manualLocations]);
 
   const cityVisas = useMemo(() => {
-    const locationsMap = new Map<string, { firstVisit: string; name: string }>();
+    const locationsMap = new Map<string, { firstVisit: string; name: string; continent: string }>();
     
     instants.forEach(i => {
       const cityName = getCity(i.location);
       const countryName = getCountry(i.location);
       if (!cityName) return;
       const key = `${cityName}, ${countryName}`.toLowerCase();
+      const normalizedC = countryName.trim();
+      const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
       if (!locationsMap.has(key) || i.date < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: i.date, 
-          name: cityName
+          name: cityName,
+          continent
         });
       }
     });
@@ -185,10 +201,13 @@ export const PassportView = ({
       if (!cityName) return;
       const key = `${cityName}, ${countryName}`.toLowerCase();
       const mDate = m.startDate || new Date().toISOString();
+      const normalizedC = countryName.trim();
+      const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
       if (!locationsMap.has(key) || mDate < locationsMap.get(key)!.firstVisit) {
         locationsMap.set(key, { 
           firstVisit: mDate, 
-          name: cityName
+          name: cityName,
+          continent
         });
       }
     });
@@ -198,7 +217,8 @@ export const PassportView = ({
       .map(entry => ({
         name: entry.name,
         firstVisit: entry.firstVisit,
-        type: 'city'
+        type: 'city',
+        continent: entry.continent
       } as VisaData));
   }, [instants, manualLocations]);
 
@@ -228,7 +248,6 @@ export const PassportView = ({
     });
 
     // Activity Badges
-    if (dishes.length >= 10) badges.push({ title: "Grand Gourmand", icon: "🍱", color: "text-orange-500", description: "Plus de 10 plats dégustés" });
     if (encounters.length >= 10) badges.push({ title: "L'Ami du Monde", icon: "🤝", color: "text-blue-500", description: "Plus de 10 rencontres" });
     if (instants.filter(i => i.photos && i.photos.length > 0).length >= 50) badges.push({ title: "Grand Reporteur", icon: "📸", color: "text-slate-600", description: "Plus de 50 photos capturées" });
     if (Object.keys(continentStats).filter(id => continentStats[id].visited > 0).length >= 5) badges.push({ title: "Intercontinental", icon: "✈️", color: "text-cyan-600", description: "5 continents visités" });
@@ -308,17 +327,19 @@ export const PassportView = ({
               </Card>
 
               {/* World Coverage Card */}
-              <Card className="bg-[#5C3A21] text-[#FDF5E6] border-none shadow-xl p-4 sm:p-6 flex flex-col justify-center items-center text-center space-y-4 rounded-2xl">
-                <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center">
-                    <Target className="h-6 w-6 text-amber-200" />
+              <Card className="bg-[#5C3A21] text-[#FDF5E6] border-none shadow-xl p-3 sm:p-4 flex flex-col justify-center items-center text-center space-y-2 rounded-2xl h-full">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
+                      <Target className="h-4 w-4 text-amber-200" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-2xl font-black tracking-tighter leading-none">{Math.round((countryVisas.length / 195) * 100)}%</h4>
+                    <p className="text-[8px] uppercase font-black tracking-[0.2em] opacity-40">Couverture Mondiale</p>
+                  </div>
                 </div>
-                <div>
-                   <p className="text-[10px] uppercase font-black tracking-[0.2em] opacity-40">Couverture Mondiale</p>
-                   <h4 className="text-3xl sm:text-4xl font-black tracking-tighter">{Math.round((countryVisas.length / 195) * 100)}%</h4>
-                </div>
-                <div className="w-full space-y-2">
-                    <Progress value={(countryVisas.length / 195) * 100} className="h-2 bg-white/10" />
-                    <p className="text-[10px] font-bold italic opacity-40 text-right">Plus que {195 - countryVisas.length} pays !</p>
+                <div className="w-full space-y-1">
+                    <Progress value={(countryVisas.length / 195) * 100} className="h-1.5 bg-white/10" />
+                    <p className="text-[8px] font-bold italic opacity-40 text-center">Encore {195 - countryVisas.length} pays !</p>
                 </div>
               </Card>
             </div>
@@ -355,13 +376,13 @@ export const PassportView = ({
               </div>
               <div className="flex flex-wrap gap-4">
                 {earnedBadges.map((badge, i) => (
-                  <div key={i} className="bg-white/60 p-4 rounded-2xl border border-amber-200/50 shadow-sm flex items-center gap-4 hover:scale-105 transition-transform cursor-default group max-w-xs">
-                    <div className="h-12 w-12 rounded-full bg-white shadow-inner flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">
+                  <div key={i} className="bg-white/60 p-3 rounded-xl border border-amber-200/50 shadow-sm flex items-center gap-3 hover:scale-105 transition-transform cursor-default group max-w-[200px] sm:max-w-[240px]">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-white shadow-inner flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
                       {badge.icon}
                     </div>
                     <div>
-                      <h4 className={cn("font-bold text-sm leading-tight", badge.color)}>{badge.title}</h4>
-                      <p className="text-[10px] text-slate-500 font-medium italic mt-0.5">{badge.description}</p>
+                      <h4 className={cn("font-bold text-xs leading-tight", badge.color)}>{badge.title}</h4>
+                      <p className="text-[9px] text-slate-500 font-medium italic mt-0.5">{badge.description}</p>
                     </div>
                   </div>
                 ))}
@@ -390,7 +411,7 @@ export const PassportView = ({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {countryVisas.map((visa, idx) => (
-                      <VisaCard key={visa.name} visa={visa} index={idx} color="emerald" />
+                      <VisaCard key={visa.name} visa={visa} index={idx} />
                     ))}
                   </div>
                 </div>
@@ -407,7 +428,7 @@ export const PassportView = ({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {cityVisas.map((visa, idx) => (
-                      <VisaCard key={visa.name} visa={visa} index={idx} color="blue" />
+                      <VisaCard key={visa.name} visa={visa} index={idx} />
                     ))}
                   </div>
                 </div>
