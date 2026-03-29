@@ -27,6 +27,7 @@ import {
   getContinentBadges,
   ContinentBadge
 } from "@/lib/continents";
+import { capitals } from "@/lib/capitals";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -201,6 +202,11 @@ export const PassportView = ({
       } as VisaData));
   }, [instants, manualLocations]);
 
+  const totalCapitalsCount = useMemo(() => {
+    const lowerCapitals = new Set(capitals.map(c => c.toLowerCase()));
+    return cityVisas.filter(visa => lowerCapitals.has(visa.name.toLowerCase())).length;
+  }, [cityVisas]);
+
   const explorerGrade = useMemo(() => {
     return getExplorerGrade(countryVisas.length, cityVisas.length);
   }, [countryVisas, cityVisas]);
@@ -227,8 +233,16 @@ export const PassportView = ({
     if (instants.filter(i => i.photos && i.photos.length > 0).length >= 50) badges.push({ title: "Grand Reporteur", icon: "📸", color: "text-slate-600", description: "Plus de 50 photos capturées" });
     if (Object.keys(continentStats).filter(id => continentStats[id].visited > 0).length >= 5) badges.push({ title: "Intercontinental", icon: "✈️", color: "text-cyan-600", description: "5 continents visités" });
 
+    // Capitals Badges
+    const count = totalCapitalsCount;
+    if (count >= 50) badges.push({ title: "Souverain du Monde", icon: "👑", color: "text-amber-500", description: `Domination de ${count} capitales mondiales` });
+    else if (count >= 20) badges.push({ title: "Légende Métropolitaine", icon: "🏛️", color: "text-purple-600", description: `${count} capitales explorées` });
+    else if (count >= 10) badges.push({ title: "Collectionneur de Capitales", icon: "🏙️", color: "text-indigo-600", description: `${count} centres névralgiques visités` });
+    else if (count >= 5) badges.push({ title: "Éclaireur Urbain", icon: "🎒", color: "text-emerald-600", description: `${count} capitales foulées` });
+    else if (count >= 1) badges.push({ title: "Pèlerin des Cités", icon: "🗺️", color: "text-orange-600", description: `La première des ${count} capitale(s)` });
+
     return badges;
-  }, [continentStats, dishes, encounters, instants]);
+  }, [continentStats, dishes, encounters, instants, totalCapitalsCount]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl flex items-center justify-center p-2 sm:p-6">
@@ -279,6 +293,12 @@ export const PassportView = ({
                       <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Villes</span>
                       <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{cityVisas.length}</span>
                     </div>
+                    {totalCapitalsCount > 0 && (
+                      <div className="bg-amber-100/50 px-3 sm:px-4 py-2 rounded-xl border border-amber-200/50 flex flex-col relative overflow-hidden group">
+                        <span className="text-xs font-black text-amber-700/60 uppercase leading-none mb-1 text-[8px] sm:text-[10px] relative z-10 flex items-center gap-1"><Award className="h-3 w-3"/> Capitales</span>
+                        <span className="text-xl sm:text-2xl font-black text-amber-900 relative z-10">{totalCapitalsCount}</span>
+                      </div>
+                    )}
                     <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
                       <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Moments</span>
                       <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{instants.length}</span>

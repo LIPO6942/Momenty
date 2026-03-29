@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon, Book as PassportIcon, Compass, Globe, Target, Map as MapIcon, Award } from "lucide-react";
+import { MapPin, PlusCircle, Trash2, Loader2, Edit, MinusCircle, ChevronsUpDown, Check, Image as ImageIcon, Book as PassportIcon, Compass, Globe, Target, Map as MapIcon } from "lucide-react";
 import { useContext, useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TimelineContext } from "@/context/timeline-context";
@@ -39,7 +39,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { countries } from "@/lib/countries";
-import { capitals } from "@/lib/capitals";
 import { cn, getCountry, getCity } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -377,27 +376,7 @@ export default function MapPage() {
         return citySet.size;
     }, [allLocations]);
 
-    const totalCapitalsCount = useMemo(() => {
-        const lowerCapitals = new Set(capitals.map((c: string) => c.toLowerCase()));
-        const capitalsSet = new Set<string>();
-        allLocations.forEach((location: any) => {
-            const city = getCity(location.name);
-            if (city && lowerCapitals.has(city.toLowerCase())) {
-                capitalsSet.add(city.toLowerCase());
-            }
-        });
-        return capitalsSet.size;
-    }, [allLocations]);
 
-    const badgeInfo = useMemo(() => {
-        const count = totalCapitalsCount;
-        if (count >= 50) return { name: "Maître du Monde", color: "text-amber-600", bg: "bg-amber-100" };
-        if (count >= 20) return { name: "Globe-Trotteur", color: "text-purple-600", bg: "bg-purple-100" };
-        if (count >= 10) return { name: "Grand Voyageur", color: "text-indigo-600", bg: "bg-indigo-100" };
-        if (count >= 5) return { name: "Aventurier", color: "text-emerald-600", bg: "bg-emerald-100" };
-        if (count >= 1) return { name: "Explorateur", color: "text-orange-600", bg: "bg-orange-100" };
-        return { name: "Novice", color: "text-slate-500", bg: "bg-slate-100" };
-    }, [totalCapitalsCount]);
 
     const defaultAccordionValues = useMemo(() => Object.keys(locationsByCountry), [locationsByCountry]);
 
@@ -639,19 +618,6 @@ export default function MapPage() {
                         <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-blue-600" />
                             <span className="text-xl font-black text-slate-800">{totalCitiesCount}</span>
-                        </div>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Capitales</span>
-                        <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
-                            <Award className={`h-4 w-4 ${badgeInfo.color}`} />
-                            <span className="text-xl font-black text-slate-800">{totalCapitalsCount}</span>
-                        </div>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1 text-right">Badge</span>
-                        <div className={`px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2 border border-slate-100 ${badgeInfo.bg}`}>
-                            <span className={`text-sm font-bold ${badgeInfo.color}`}>{badgeInfo.name}</span>
                         </div>
                     </div>
                     <div className="flex flex-col">
