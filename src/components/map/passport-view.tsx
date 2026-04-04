@@ -51,6 +51,7 @@ interface VisaData {
   firstVisit: string;
   type: 'country' | 'city';
   continent?: string;
+  visitsCount?: number;
 }
 
 const VisaCard = ({ visa, index }: { visa: VisaData, index: number }) => {
@@ -113,9 +114,16 @@ const VisaCard = ({ visa, index }: { visa: VisaData, index: number }) => {
           <h4 className="font-serif font-black text-lg text-slate-800 leading-tight truncate">{visa.name}</h4>
         </div>
         
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-          <Calendar className="h-3 w-3" />
-          <span>Visé le {formattedDateLong}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            <Calendar className="h-3 w-3" />
+            <span>Visé le {formattedDateLong}</span>
+          </div>
+          {visa.visitsCount && visa.visitsCount > 1 && (
+            <Badge variant="outline" className={cn("text-[9px] font-black uppercase", theme.badge)}>
+              Visité {visa.visitsCount} fois
+            </Badge>
+          )}
         </div>
 
         <div className="mt-2 flex justify-end">
@@ -169,15 +177,29 @@ export const PassportView = ({
       const iDates = instants.filter(i => getCountry(i.location) === name).map(i => i.date);
       const mDates = manualLocations.filter(m => getCountry(m.name) === name).map(m => m.startDate);
       const allDates = [...iDates, ...mDates].filter(Boolean).sort() as string[];
-      if (allDates.length > 0) firstVisit = allDates[0];
+      
+      let visitsCount = 1;
+      if (allDates.length > 0) {
+        firstVisit = allDates[0];
+        let lastVisitDate = new Date(allDates[0]);
+        for (let i = 1; i < allDates.length; i++) {
+          const currentDate = new Date(allDates[i]);
+          const diffYears = Math.abs(currentDate.getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+          if (diffYears > 1) {
+            visitsCount++;
+            lastVisitDate = currentDate;
+          }
+        }
+      }
+      
       const normalizedName = name.trim();
       const continent = countryToContinent[normalizedName] || countryToContinent[normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase()] || 'other';
-      return { name, firstVisit, type: 'country', continent } as VisaData;
+      return { name, firstVisit, type: 'country', continent, visitsCount } as VisaData;
     });
   }, [instants, manualLocations]);
 
   const cityVisas = useMemo(() => {
-    const locationsMap = new Map<string, { firstVisit: string; name: string; continent: string }>();
+    const locationsMap = new Map<string, { name: string; continent: string, dates: string[] }>();
     
     instants.forEach(i => {
       const cityName = getCity(i.location);
@@ -186,12 +208,11 @@ export const PassportView = ({
       const key = `${cityName}, ${countryName}`.toLowerCase();
       const normalizedC = countryName.trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
-      if (!locationsMap.has(key) || i.date < locationsMap.get(key)!.firstVisit) {
-        locationsMap.set(key, { 
-          firstVisit: i.date, 
-          name: cityName,
-          continent
-        });
+      if (!locationsMap.has(key)) {
+        locationsMap.set(key, { name: cityName, continent, dates: [i.date] });
+      } else {
+        const item = locationsMap.get(key)!;
+        if (i.date) item.dates.push(i.date);
       }
     });
     
@@ -203,23 +224,40 @@ export const PassportView = ({
       const mDate = m.startDate || new Date().toISOString();
       const normalizedC = countryName.trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
-      if (!locationsMap.has(key) || mDate < locationsMap.get(key)!.firstVisit) {
-        locationsMap.set(key, { 
-          firstVisit: mDate, 
-          name: cityName,
-          continent
-        });
+      if (!locationsMap.has(key)) {
+        locationsMap.set(key, { name: cityName, continent, dates: [mDate] });
+      } else {
+        locationsMap.get(key)!.dates.push(mDate);
       }
     });
     
     return Array.from(locationsMap.values())
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map(entry => ({
-        name: entry.name,
-        firstVisit: entry.firstVisit,
-        type: 'city',
-        continent: entry.continent
-      } as VisaData));
+      .map(entry => {
+        const sortedDates = entry.dates.filter(Boolean).sort();
+        let visitsCount = 1;
+        let firstVisit = new Date().toISOString();
+        if (sortedDates.length > 0) {
+            firstVisit = sortedDates[0];
+            let lastVisitDate = new Date(sortedDates[0]);
+            for (let i = 1; i < sortedDates.length; i++) {
+              const currentDate = new Date(sortedDates[i]);
+              const diffYears = Math.abs(currentDate.getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+              if (diffYears > 1) {
+                visitsCount++;
+                lastVisitDate = currentDate;
+              }
+            }
+        }
+
+        return {
+          name: entry.name,
+          firstVisit,
+          type: 'city',
+          continent: entry.continent,
+          visitsCount
+        } as VisaData;
+      });
   }, [instants, manualLocations]);
 
   const totalCapitalsCount = useMemo(() => {
