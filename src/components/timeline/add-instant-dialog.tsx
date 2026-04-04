@@ -834,10 +834,12 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Mémoire Sonore</Label>
-                                        <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
-                                    </div>
+                                    {!(isEncounter || isDish || isAccommodation) && (
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Mémoire Sonore</Label>
+                                            <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
+                                        </div>
+                                    )}
 
                                     <div>
                                         <Label className="text-muted-foreground flex items-center gap-2">Affichage (persistant)</Label>

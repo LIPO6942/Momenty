@@ -743,7 +743,7 @@ export default function MapPage() {
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                         <Command>
                                             <CommandInput placeholder="Rechercher un pays..." />
-                                            <CommandList>
+                                            <CommandList className="max-h-[200px] overflow-y-auto">
                                                 <CommandGroup>
                                                     {countries.map((country) => (
                                                         <CommandItem

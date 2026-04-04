@@ -28,6 +28,7 @@ export const getCountry = (loc: string) => {
     "indonésie": "Indonésie",
     "thailand": "Thaïlande",
     "thaïlande": "Thaïlande",
+    "thailande": "Thaïlande",
     "philippines": "Philippines",
     "singapore": "Singapour",
     "singapour": "Singapour",
@@ -75,6 +76,15 @@ export const getCountry = (loc: string) => {
 export const getCity = (loc: string) => {
   if (!loc) return "";
   const parts = loc.split(",");
-  const city = parts[0].trim();
-  return city.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  const rawCity = parts[0].trim();
+  const lower = rawCity.toLowerCase();
+  
+  const aliases: Record<string, string> = {
+    "kuala lampur": "Kuala Lumpur",
+    "kuala lumpur": "Kuala Lumpur",
+  };
+  
+  if (aliases[lower]) return aliases[lower];
+
+  return rawCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
