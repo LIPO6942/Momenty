@@ -726,7 +726,7 @@ export default function MapPage() {
                         <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
                             <div className="space-y-2">
                                 <Label className="text-xs font-black uppercase tracking-widest opacity-50">Pays de destination</Label>
-                                <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen}>
+                                <Popover open={isCountryPopoverOpen} onOpenChange={setIsCountryPopoverOpen} modal={true}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
@@ -740,17 +740,25 @@ export default function MapPage() {
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                        <Command>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[110]" align="start">
+                                        <Command filter={(value, search) => {
+                                            const nv = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                                            const ns = search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                                            return nv.includes(ns) ? 1 : 0;
+                                        }}>
                                             <CommandInput placeholder="Rechercher un pays..." />
                                             <CommandList className="max-h-[200px] overflow-y-auto">
+                                                <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
                                                 <CommandGroup>
                                                     {countries.map((country) => (
                                                         <CommandItem
                                                             key={country.value}
                                                             value={country.label}
                                                             onSelect={(currentValue) => {
-                                                                setNewCountry(currentValue === newCountry ? "" : currentValue);
+                                                                const matchedCountry = countries.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
+                                                                if (matchedCountry) {
+                                                                    setNewCountry(matchedCountry.label === newCountry ? "" : matchedCountry.label);
+                                                                }
                                                                 setIsCountryPopoverOpen(false);
                                                             }}
                                                         >
