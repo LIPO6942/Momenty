@@ -935,6 +935,13 @@ export default function MapPage() {
                                                             {location.isManual && location.startDate && (
                                                                 <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
                                                             )}
+                                                            {/* Indicator for locations without coordinates */}
+                                                            {location.isManual && !location.coords && (
+                                                                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                                                    <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                                                                    Non localisé sur la carte
+                                                                </p>
+                                                            )}
                                                             {/* Photo Gallery Restoration */}
                                                             {(() => {
                                                                 const allPhotos = [
@@ -974,9 +981,9 @@ export default function MapPage() {
                                                             })()}
                                                         </div>
                                                         <div className="flex items-center gap-2 flex-shrink-0 w-full justify-end sm:w-auto">
-                                                            <Button variant="outline" size="sm" onClick={() => setFocusedLocation(location.coords)} className="flex-grow sm:flex-grow-0">
+                                                            <Button variant="outline" size="sm" onClick={() => location.coords && setFocusedLocation(location.coords)} disabled={!location.coords} className="flex-grow sm:flex-grow-0">
                                                                 <MapPin className="mr-2 h-4 w-4" />
-                                                                Voir
+                                                                {location.coords ? 'Voir' : 'Non localisé'}
                                                             </Button>
                                                             {location.isManual && (
                                                                 <Dialog onOpenChange={(open) => !open && setEditingLocation(null)}>
