@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/select";
 import { PassportView } from "@/components/map/passport-view";
 import { InstantSidebar } from "@/components/timeline/instant-sidebar";
+import { countryToContinent } from "@/lib/continents";
 
 
 
@@ -348,6 +349,15 @@ export default function MapPage() {
             grouped[country].push(location);
         });
 
+        // Sort locations within each country by date (oldest last)
+        Object.keys(grouped).forEach(country => {
+            grouped[country].sort((a, b) => {
+                const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                return dateB - dateA; // Most recent first, oldest last
+            });
+        });
+
         const orderedGrouped: { [country: string]: (LocationWithCoords | { name: string; count: number; isManual: boolean; startDate?: string; endDate?: string; photos?: string[]; souvenir?: string; instants: any[]; coords?: [number, number] })[] } = {};
         Object.keys(grouped).sort((a, b) => {
             if (a === 'Lieux non classes') return 1;
@@ -487,8 +497,9 @@ export default function MapPage() {
                     name: finalName,
                     photos: editedPhotos,
                 };
-                if (editedStartDate) updatedLoc.startDate = editedStartDate;
-                if (editedEndDate) updatedLoc.endDate = editedEndDate;
+                // Always update dates (even if empty string to clear them)
+                updatedLoc.startDate = editedStartDate || undefined;
+                updatedLoc.endDate = editedEndDate || undefined;
                 if (editedSouvenir) updatedLoc.souvenir = editedSouvenir;
                 return updatedLoc;
             }
@@ -588,6 +599,25 @@ export default function MapPage() {
 
         router.push(`/?locationSearch=${encodeURIComponent(searchName)}&isManual=${isManual}&souvenir=${souvenir}`);
         setLocationToRedirect(null);
+    };
+
+    // Helper function to get continent color for country accordion
+    const getContinentColor = (countryName: string): string => {
+        const normalizedCountry = countryName.trim();
+        const continent = countryToContinent[normalizedCountry] || 
+                          countryToContinent[normalizedCountry.charAt(0).toUpperCase() + normalizedCountry.slice(1).toLowerCase()] ||
+                          'other';
+        
+        switch (continent) {
+            case 'Europe': return 'bg-blue-50 border-blue-200 text-blue-900';
+            case 'Asie': return 'bg-red-50 border-red-200 text-red-900';
+            case 'Afrique': return 'bg-amber-50 border-amber-200 text-amber-900';
+            case 'Amérique du Nord': return 'bg-emerald-50 border-emerald-200 text-emerald-900';
+            case 'Amérique du Sud': return 'bg-green-50 border-green-200 text-green-900';
+            case 'Océanie': return 'bg-cyan-50 border-cyan-200 text-cyan-900';
+            case 'Antarctique': return 'bg-slate-50 border-slate-200 text-slate-900';
+            default: return 'bg-card border-slate-200 text-foreground';
+        }
     };
 
     const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
@@ -914,7 +944,7 @@ export default function MapPage() {
                 ) : (
                     <Accordion type="multiple" className="w-full space-y-4">
                         {Object.entries(locationsByCountry).map(([country, locations]) => (
-                            <AccordionItem key={country} value={country} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
+                            <AccordionItem key={country} value={country} className={cn("border-none rounded-xl shadow-md shadow-slate-200/80", getContinentColor(country))}>
                                 <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
                                     {country}
                                 </AccordionTrigger>
