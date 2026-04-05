@@ -350,10 +350,40 @@ export default function MapPage() {
         });
 
         // Sort locations within each country by date (oldest last)
+        // For manual locations: use startDate
+        // For timeline locations: use the earliest instant date
         Object.keys(grouped).forEach(country => {
             grouped[country].sort((a, b) => {
-                const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-                const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                // Get date for location A
+                let dateA: number;
+                if (a.startDate) {
+                    dateA = new Date(a.startDate).getTime();
+                } else if (a.instants && a.instants.length > 0) {
+                    // Get earliest instant date
+                    const earliestInstant = a.instants.reduce((earliest: any, instant: any) => {
+                        const instantDate = new Date(instant.date).getTime();
+                        return instantDate < earliest ? instantDate : earliest;
+                    }, new Date(a.instants[0].date).getTime());
+                    dateA = earliestInstant;
+                } else {
+                    dateA = 0;
+                }
+
+                // Get date for location B
+                let dateB: number;
+                if (b.startDate) {
+                    dateB = new Date(b.startDate).getTime();
+                } else if (b.instants && b.instants.length > 0) {
+                    // Get earliest instant date
+                    const earliestInstant = b.instants.reduce((earliest: any, instant: any) => {
+                        const instantDate = new Date(instant.date).getTime();
+                        return instantDate < earliest ? instantDate : earliest;
+                    }, new Date(b.instants[0].date).getTime());
+                    dateB = earliestInstant;
+                } else {
+                    dateB = 0;
+                }
+
                 return dateB - dateA; // Most recent first, oldest last
             });
         });
@@ -497,9 +527,14 @@ export default function MapPage() {
                     name: finalName,
                     photos: editedPhotos,
                 };
-                // Always update dates (even if empty string to clear them)
-                updatedLoc.startDate = editedStartDate || undefined;
-                updatedLoc.endDate = editedEndDate || undefined;
+                // Handle dates: if empty string, don't include the property (remove it)
+                // Otherwise, keep the date string
+                if (editedStartDate && editedStartDate.trim() !== '') {
+                    updatedLoc.startDate = editedStartDate;
+                }
+                if (editedEndDate && editedEndDate.trim() !== '') {
+                    updatedLoc.endDate = editedEndDate;
+                }
                 if (editedSouvenir) updatedLoc.souvenir = editedSouvenir;
                 return updatedLoc;
             }
