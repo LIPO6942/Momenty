@@ -198,13 +198,20 @@ export default function MapPage() {
             instants: typeof instants
         }>();
 
+        console.log('DEBUG: manualLocations from state:', manualLocations);
+
         // Add manual locations
         manualLocations.forEach(l => {
             const cityName = getCity(l.name);
             const countryName = getCountry(l.name);
-            if (!cityName || !countryName) return;
+            if (!cityName || !countryName) {
+                console.log('DEBUG: Skipping manual location (no city/country):', l);
+                return;
+            }
             const standardLocation = `${cityName}, ${countryName}`;
             const key = standardLocation.toLowerCase();
+            
+            console.log('DEBUG: Adding manual location to allLocations:', l.name, 'with startDate:', l.startDate);
             
             combined.set(key, {
                 ...l,
@@ -521,13 +528,19 @@ export default function MapPage() {
         }
 
         const currentLocations = await getManualLocations(user.uid);
+        console.log('DEBUG: currentLocations from Firestore:', currentLocations);
+        console.log('DEBUG: editingLocation:', editingLocation);
+        console.log('DEBUG: editedStartDate:', editedStartDate, 'editedEndDate:', editedEndDate);
 
         const updatedLocations = currentLocations.map(loc => {
             // Compare names case-insensitively and normalize both
             const locKey = loc.name.toLowerCase().replace(/\s+/g, ' ').trim();
             const editingKey = editingLocation.name.toLowerCase().replace(/\s+/g, ' ').trim();
             
+            console.log(`DEBUG: Comparing "${locKey}" with "${editingKey}"`);
+            
             if (locKey === editingKey) {
+                console.log('DEBUG: Match found! Updating location');
                 const updatedLoc: ManualLocation = {
                     name: finalName,
                     photos: editedPhotos,
@@ -536,16 +549,24 @@ export default function MapPage() {
                 // Otherwise, keep the date string
                 if (editedStartDate && editedStartDate.trim() !== '') {
                     updatedLoc.startDate = editedStartDate;
+                    console.log('DEBUG: Setting startDate to', editedStartDate);
+                } else {
+                    console.log('DEBUG: Not setting startDate (empty)');
                 }
                 if (editedEndDate && editedEndDate.trim() !== '') {
                     updatedLoc.endDate = editedEndDate;
+                    console.log('DEBUG: Setting endDate to', editedEndDate);
+                } else {
+                    console.log('DEBUG: Not setting endDate (empty)');
                 }
                 if (editedSouvenir) updatedLoc.souvenir = editedSouvenir;
+                console.log('DEBUG: updatedLoc:', updatedLoc);
                 return updatedLoc;
             }
             return loc;
         });
 
+        console.log('DEBUG: updatedLocations to save:', updatedLocations);
 
         await saveManualLocations(user.uid, updatedLocations);
         await reloadManualLocations();
