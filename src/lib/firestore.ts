@@ -128,9 +128,15 @@ export const deleteItinerary = (userId: string, id: string) => deleteDataFromSub
 
 export const saveManualLocations = async (userId: string, locations: ManualLocation[]): Promise<void> => {
     const docRef = doc(db, 'users', userId);
-    // Use updateDoc to completely replace the manualLocations array
-    // This ensures deleted properties are actually removed
-    await updateDoc(docRef, { manualLocations: locations });
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+        // Document exists, use updateDoc to replace manualLocations
+        await updateDoc(docRef, { manualLocations: locations });
+    } else {
+        // Document doesn't exist, use setDoc to create it
+        await setDoc(docRef, { manualLocations: locations });
+    }
 };
 
 export const getManualLocations = async (userId: string): Promise<ManualLocation[]> => {
