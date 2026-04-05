@@ -337,26 +337,28 @@ export default function MapPage() {
     }, [allLocations]);
 
     const locationsByCountry = useMemo(() => {
-        const grouped: { [country: string]: LocationWithCoords[] } = {};
-        locationsWithCoords.forEach(location => {
-            const country = getCountry(location.name) || 'Lieux non classés';
+        const grouped: { [country: string]: (LocationWithCoords | { name: string; count: number; isManual: boolean; startDate?: string; endDate?: string; photos?: string[]; souvenir?: string; instants: any[]; coords?: [number, number] })[] } = {};
+        
+        // Utiliser allLocations pour inclure tous les lieux, meme sans coordonnees
+        allLocations.forEach(location => {
+            const country = getCountry(location.name) || 'Lieux non classes';
             if (!grouped[country]) {
                 grouped[country] = [];
             }
             grouped[country].push(location);
         });
 
-        const orderedGrouped: { [country: string]: LocationWithCoords[] } = {};
+        const orderedGrouped: { [country: string]: (LocationWithCoords | { name: string; count: number; isManual: boolean; startDate?: string; endDate?: string; photos?: string[]; souvenir?: string; instants: any[]; coords?: [number, number] })[] } = {};
         Object.keys(grouped).sort((a, b) => {
-            if (a === 'Lieux non classés') return 1;
-            if (b === 'Lieux non classés') return -1;
+            if (a === 'Lieux non classes') return 1;
+            if (b === 'Lieux non classes') return -1;
             return a.localeCompare(b);
         }).forEach(country => {
             orderedGrouped[country] = grouped[country];
         });
 
         return orderedGrouped;
-    }, [locationsWithCoords]);
+    }, [allLocations]);
     
     const totalCountriesCount = useMemo(() => {
         const countriesSet = new Set<string>();
@@ -910,7 +912,7 @@ export default function MapPage() {
                         <p className="text-muted-foreground">Aucun lieu trouvé. Commencez par ajouter un instant ou un lieu manuellement.</p>
                     </div>
                 ) : (
-                    <Accordion type="multiple" defaultValue={defaultAccordionValues} className="w-full space-y-4">
+                    <Accordion type="multiple" className="w-full space-y-4">
                         {Object.entries(locationsByCountry).map(([country, locations]) => (
                             <AccordionItem key={country} value={country} className="border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
                                 <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
@@ -926,6 +928,9 @@ export default function MapPage() {
                                                             <CardTitle className="text-lg font-semibold">{location.name}</CardTitle>
                                                             {location.count > 0 && (
                                                                 <p className="text-sm text-muted-foreground">{location.count} instant(s) capturé(s)</p>
+                                                            )}
+                                                            {location.isManual && location.souvenir && (
+                                                                <p className="text-xs text-slate-600 italic mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">{location.souvenir}</p>
                                                             )}
                                                             {location.isManual && location.startDate && (
                                                                 <p className="text-xs text-primary pt-1">{formatDateRange(location.startDate, location.endDate)}</p>
