@@ -358,42 +358,57 @@ export default function MapPage() {
 
         // Sort locations within each country by date (oldest last)
         // For manual locations: use startDate
-        // For timeline locations: use the earliest instant date
+        // For timeline locations: use the LATEST instant date (most recent visit)
         Object.keys(grouped).forEach(country => {
+            // Log pour déboguer
+            console.log(`Sorting country: ${country} with ${grouped[country].length} locations`);
+            
             grouped[country].sort((a, b) => {
                 // Get date for location A
                 let dateA: number;
+                let dateASource: string;
                 if (a.startDate) {
                     dateA = new Date(a.startDate).getTime();
+                    dateASource = 'startDate';
                 } else if (a.instants && a.instants.length > 0) {
-                    // Get earliest instant date
-                    const earliestInstant = a.instants.reduce((earliest: any, instant: any) => {
+                    // Get LATEST instant date (not earliest) - when was the last visit?
+                    const latestInstant = a.instants.reduce((latest: number, instant: any) => {
                         const instantDate = new Date(instant.date).getTime();
-                        return instantDate < earliest ? instantDate : earliest;
+                        return instantDate > latest ? instantDate : latest;
                     }, new Date(a.instants[0].date).getTime());
-                    dateA = earliestInstant;
+                    dateA = latestInstant;
+                    dateASource = 'latestInstant';
                 } else {
                     dateA = 0;
+                    dateASource = 'none';
                 }
 
                 // Get date for location B
                 let dateB: number;
+                let dateBSource: string;
                 if (b.startDate) {
                     dateB = new Date(b.startDate).getTime();
+                    dateBSource = 'startDate';
                 } else if (b.instants && b.instants.length > 0) {
-                    // Get earliest instant date
-                    const earliestInstant = b.instants.reduce((earliest: any, instant: any) => {
+                    // Get LATEST instant date
+                    const latestInstant = b.instants.reduce((latest: number, instant: any) => {
                         const instantDate = new Date(instant.date).getTime();
-                        return instantDate < earliest ? instantDate : earliest;
+                        return instantDate > latest ? instantDate : latest;
                     }, new Date(b.instants[0].date).getTime());
-                    dateB = earliestInstant;
+                    dateB = latestInstant;
+                    dateBSource = 'latestInstant';
                 } else {
                     dateB = 0;
+                    dateBSource = 'none';
                 }
 
-                console.log(`Sorting ${a.name} (date: ${dateA}) vs ${b.name} (date: ${dateB})`);
-                return dateB - dateA; // Most recent first, oldest last
+                const result = dateB - dateA; // Most recent first, oldest last
+                console.log(`Sorting ${a.name} (date: ${dateA}, source: ${dateASource}) vs ${b.name} (date: ${dateB}, source: ${dateBSource}) = ${result}`);
+                return result;
             });
+            
+            // Log final order
+            console.log(`Final order for ${country}:`, grouped[country].map(l => l.name));
         });
 
         const orderedGrouped: { [country: string]: (LocationWithCoords | { name: string; count: number; isManual: boolean; startDate?: string; endDate?: string; photos?: string[]; souvenir?: string; instants: any[]; coords?: [number, number] })[] } = {};
