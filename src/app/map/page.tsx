@@ -534,12 +534,13 @@ export default function MapPage() {
 
         const updatedLocations = currentLocations.map(loc => {
             // Compare names case-insensitively and normalize both
-            const locKey = loc.name.toLowerCase().replace(/\s+/g, ' ').trim();
-            const editingKey = editingLocation.name.toLowerCase().replace(/\s+/g, ' ').trim();
+            // Extract just the city part (before comma) for comparison
+            const locCity = loc.name.split(',')[0].toLowerCase().replace(/\s+/g, ' ').trim();
+            const editingCity = editingLocation.name.split(',')[0].toLowerCase().replace(/\s+/g, ' ').trim();
             
-            console.log(`DEBUG: Comparing "${locKey}" with "${editingKey}"`);
+            console.log(`DEBUG: Comparing city "${locCity}" with "${editingCity}"`);
             
-            if (locKey === editingKey) {
+            if (locCity === editingCity) {
                 console.log('DEBUG: Match found! Updating location');
                 const updatedLoc: ManualLocation = {
                     name: finalName,
