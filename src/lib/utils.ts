@@ -65,7 +65,12 @@ export const getCountry = (loc: string) => {
     "brésil": "Brésil",
     "mexico": "Mexique",
     "mexique": "Mexique",
-    "canada": "Canada"
+    "canada": "Canada",
+    "netherlands": "Pays-Bas",
+    "pays-bas": "Pays-Bas",
+    "nederland": "Pays-Bas",
+    "holland": "Pays-Bas",
+    "hollande": "Pays-Bas"
   };
 
   if (aliases[lower]) return aliases[lower];
