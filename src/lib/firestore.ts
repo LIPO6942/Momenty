@@ -15,7 +15,8 @@ import {
     getDoc,
     orderBy,
     collectionGroup,
-    where
+    where,
+    updateDoc
 } from "firebase/firestore";
 import type { GeneratedStory, Instant, Encounter, Dish, Accommodation, Itinerary } from './types';
 
@@ -127,7 +128,9 @@ export const deleteItinerary = (userId: string, id: string) => deleteDataFromSub
 
 export const saveManualLocations = async (userId: string, locations: ManualLocation[]): Promise<void> => {
     const docRef = doc(db, 'users', userId);
-    await setDoc(docRef, { manualLocations: locations }, { merge: true });
+    // Use updateDoc to completely replace the manualLocations array
+    // This ensures deleted properties are actually removed
+    await updateDoc(docRef, { manualLocations: locations });
 };
 
 export const getManualLocations = async (userId: string): Promise<ManualLocation[]> => {

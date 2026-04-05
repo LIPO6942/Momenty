@@ -384,6 +384,7 @@ export default function MapPage() {
                     dateB = 0;
                 }
 
+                console.log(`Sorting ${a.name} (date: ${dateA}) vs ${b.name} (date: ${dateB})`);
                 return dateB - dateA; // Most recent first, oldest last
             });
         });
@@ -522,7 +523,11 @@ export default function MapPage() {
         const currentLocations = await getManualLocations(user.uid);
 
         const updatedLocations = currentLocations.map(loc => {
-            if (loc.name === editingLocation.name) {
+            // Compare names case-insensitively and normalize both
+            const locKey = loc.name.toLowerCase().replace(/\s+/g, ' ').trim();
+            const editingKey = editingLocation.name.toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (locKey === editingKey) {
                 const updatedLoc: ManualLocation = {
                     name: finalName,
                     photos: editedPhotos,
