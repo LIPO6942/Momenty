@@ -259,9 +259,9 @@ export default function MapPage() {
             const newCoords: LocationWithCoords[] = [];
 
             // Helper for geocoding with multiple attempts and country validation
-            const geocode = async (query: string, expectedCountry?: string): Promise<[number, number] | null> => {
+                    const geocode = async (query: string, expectedCountry?: string): Promise<[number, number] | null> => {
                 try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=fr,en`);
                     const data = await response.json();
                     if (data && data.length > 0) {
                         // Country Guard: Verify match location is in the expected country
@@ -270,9 +270,13 @@ export default function MapPage() {
                             // display_name usually contains the full address including country
                             const displayName = (result.display_name || "").toLowerCase();
                             const countryCheck = expectedCountry.toLowerCase();
+                            
+                            // Get English label in case nominatim returns international variation
+                            const enLabelMatch = countries.find(c => c.label.toLowerCase() === countryCheck);
+                            const enLabel = enLabelMatch ? (enLabelMatch as any).enLabel?.toLowerCase() : undefined;
 
-                            // Basic check: Result must contain the country name
-                            if (!displayName.includes(countryCheck)) {
+                            // Basic check: Result must contain the country name (French or English variant)
+                            if (!displayName.includes(countryCheck) && (!enLabel || !displayName.includes(enLabel))) {
                                 console.warn(`Geocoding rejected: "${displayName}" does not match country "${expectedCountry}"`);
                                 return null;
                             }
@@ -862,12 +866,9 @@ export default function MapPage() {
                                                     {countries.map((country) => (
                                                         <CommandItem
                                                             key={country.value}
-                                                            value={country.label}
-                                                            onSelect={(currentValue) => {
-                                                                const matchedCountry = countries.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
-                                                                if (matchedCountry) {
-                                                                    setNewCountry(matchedCountry.label === newCountry ? "" : matchedCountry.label);
-                                                                }
+                                                            value={`${country.label} ${(country as any).enLabel || ''}`}
+                                                            onSelect={() => {
+                                                                setNewCountry(country.label === newCountry ? "" : country.label);
                                                                 setIsCountryPopoverOpen(false);
                                                             }}
                                                         >
