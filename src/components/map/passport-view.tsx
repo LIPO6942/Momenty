@@ -356,10 +356,6 @@ export const PassportView = ({
                         <span className="text-xl sm:text-2xl font-black text-amber-900 relative z-10">{totalCapitalsCount}</span>
                       </div>
                     )}
-                    <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
-                      <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Moments</span>
-                      <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{instants.length}</span>
-                    </div>
                   </div>
                 </div>
               </Card>

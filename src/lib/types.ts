@@ -40,6 +40,20 @@ export interface ItineraryOutput {
 
 // --- Main App Types ---
 
+export interface CollageSlot {
+    slotIndex: number;
+    photoUrl: string; // Cloudinary URL after upload
+}
+
+export interface CollageTemplate {
+    templateId: string; // e.g. 'side-by-side', 'large-left-2', etc.
+    ratio: '1:1' | '4:5' | '16:9';
+    gap: number;          // 0–12px
+    borderRadius: number; // 0–20px
+    bgColor: string;      // '#000000' by default
+    slots: CollageSlot[];
+}
+
 export interface Instant {
     id: string;
     type: 'note' | 'photo' | 'video' | 'audio' | 'mood';
@@ -54,6 +68,7 @@ export interface Instant {
     audio?: string | null; // Cloudinary URL for audio memory
     category?: string[]; // AI-generated category, now an array
     displayTransform?: DisplayTransform; // Optional persisted display settings
+    collageTemplate?: CollageTemplate; // Optional collage template settings
 }
 
 export interface Encounter {

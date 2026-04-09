@@ -18,7 +18,13 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight } from "lucide-react";
+import { CollageTemplatePicker } from "@/components/timeline/collage-template-picker";
+import { CollageCanvas } from "@/components/timeline/collage-canvas";
+import { CollageCustomizer } from "@/components/timeline/collage-customizer";
+import type { CollageTemplate } from "@/lib/types";
+import type { CollageTemplateDef } from "@/lib/collage-templates";
+import { getCompatibleTemplates } from "@/lib/collage-templates";
 import {
     Command,
     CommandEmpty,
@@ -96,6 +102,18 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
+
+    // ── Collage state ──────────────────────────────────────────────────────────
+    const [isCollageMode, setIsCollageMode] = useState(false);
+    const [collageStep, setCollageStep] = useState<0 | 1 | 2>(0); // 0=picker 1=canvas 2=customizer
+    const [selectedTemplateDef, setSelectedTemplateDef] = useState<CollageTemplateDef | null>(null);
+    const [slotAssignment, setSlotAssignment] = useState<(string | null)[]>([]);
+    const [collageSettings, setCollageSettings] = useState<Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio'>>({
+        gap: 2,
+        borderRadius: 0,
+        bgColor: '#000000',
+        ratio: '1:1',
+    });
 
     // Kol Youm API State
     const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
@@ -379,6 +397,12 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
         setDisplayGravity("auto");
+        // Collage cleanup
+        setIsCollageMode(false);
+        setCollageStep(0);
+        setSelectedTemplateDef(null);
+        setSlotAssignment([]);
+        setCollageSettings({ gap: 2, borderRadius: 0, bgColor: '#000000', ratio: '1:1' });
     }
 
     const handleGetLocation = () => {
@@ -633,6 +657,27 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 toast({ title: "Nouveau logement ajouté !" });
             } else {
                 const finalDescription = description || (photos.length > 0 ? "Collage photo" : "Note");
+
+                // Build collageTemplate JSON if user made a collage
+                let builtCollageTemplate: CollageTemplate | undefined = undefined;
+                if (isCollageMode && selectedTemplateDef && slotAssignment.some(Boolean)) {
+                    const slots = slotAssignment
+                        .map((photoDataUrl, slotIndex) => {
+                            if (!photoDataUrl) return null;
+                            // Map data URL to uploaded Cloudinary URL
+                            const originalIndex = photos.indexOf(photoDataUrl);
+                            const uploadedUrl = originalIndex >= 0 ? uploadedPhotoUrls[originalIndex] : photoDataUrl;
+                            return { slotIndex, photoUrl: uploadedUrl };
+                        })
+                        .filter((s): s is { slotIndex: number; photoUrl: string } => s !== null && !!s.photoUrl);
+
+                    builtCollageTemplate = {
+                        templateId: selectedTemplateDef.id,
+                        ...collageSettings,
+                        slots,
+                    };
+                }
+
                 const newInstant = {
                     type: photos.length > 0 ? "photo" as const : "note" as const,
                     title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
@@ -641,9 +686,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location: location || "Lieu inconnu",
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photos: uploadedPhotoUrls,
-                    category: ['Note'], // Default category, will be updated by context
+                    category: ['Note'],
                     audio: audioUrl,
-                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity }
+                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
                 };
                 const newId = await addInstant(newInstant);
                 
@@ -761,7 +807,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} multiple />
                                     </div>
 
-                                    {photos.length > 0 && (
+                                    {photos.length > 0 && !isCollageMode && (
                                         <div className="space-y-2">
                                             <div className="relative group">
                                                 <Image src={photos[0]} alt="Aperçu principal" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
@@ -784,6 +830,115 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                             </Button>
                                                         </div>
                                                     ))}
+                                                </div>
+                                            )}
+                                            {photos.length >= 2 && getCompatibleTemplates(photos.length).length > 0 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full border-dashed border-primary/50 text-primary hover:bg-primary/5 gap-2"
+                                                    onClick={() => {
+                                                        setIsCollageMode(true);
+                                                        setCollageStep(0);
+                                                        setSlotAssignment(new Array(photos.length).fill(null));
+                                                    }}
+                                                >
+                                                    <LayoutGrid className="h-4 w-4" />
+                                                    Créer un collage
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {isCollageMode && (
+                                        <div className="space-y-4 border border-primary/20 rounded-xl p-3 bg-primary/5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <LayoutGrid className="h-4 w-4 text-primary" />
+                                                    <span className="text-sm font-semibold text-primary">
+                                                        {collageStep === 0 && 'Étape 1 — Modèle'}
+                                                        {collageStep === 1 && 'Étape 2 — Placement'}
+                                                        {collageStep === 2 && 'Étape 3 — Style'}
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-xs text-muted-foreground h-7"
+                                                    onClick={() => {
+                                                        setIsCollageMode(false);
+                                                        setCollageStep(0);
+                                                        setSelectedTemplateDef(null);
+                                                        setSlotAssignment([]);
+                                                    }}
+                                                >
+                                                    Annuler
+                                                </Button>
+                                            </div>
+
+                                            {collageStep === 0 && (
+                                                <div className="space-y-3">
+                                                    <CollageTemplatePicker
+                                                        photoCount={photos.length}
+                                                        selectedTemplateId={selectedTemplateDef?.id ?? null}
+                                                        onSelect={(tpl) => {
+                                                            setSelectedTemplateDef(tpl);
+                                                            const assignment = tpl.slots.map((_, i) => photos[i] ?? null);
+                                                            setSlotAssignment(assignment);
+                                                        }}
+                                                    />
+                                                    {selectedTemplateDef && (
+                                                        <Button type="button" size="sm" className="w-full gap-2" onClick={() => setCollageStep(1)}>
+                                                            Suivant <ArrowRight className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {collageStep === 1 && selectedTemplateDef && (
+                                                <div className="space-y-3">
+                                                    <CollageCanvas
+                                                        template={selectedTemplateDef}
+                                                        photoUrls={photos}
+                                                        slotAssignment={slotAssignment}
+                                                        onSlotAssignmentChange={setSlotAssignment}
+                                                        gap={collageSettings.gap}
+                                                        borderRadius={collageSettings.borderRadius}
+                                                        bgColor={collageSettings.bgColor}
+                                                        ratio={collageSettings.ratio}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setCollageStep(0)}>
+                                                            <ArrowLeft className="h-4 w-4" /> Retour
+                                                        </Button>
+                                                        <Button type="button" size="sm" className="flex-1 gap-2" onClick={() => setCollageStep(2)}>
+                                                            Personnaliser <ArrowRight className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {collageStep === 2 && selectedTemplateDef && (
+                                                <div className="space-y-3">
+                                                    <CollageCanvas
+                                                        template={selectedTemplateDef}
+                                                        photoUrls={photos}
+                                                        slotAssignment={slotAssignment}
+                                                        onSlotAssignmentChange={setSlotAssignment}
+                                                        gap={collageSettings.gap}
+                                                        borderRadius={collageSettings.borderRadius}
+                                                        bgColor={collageSettings.bgColor}
+                                                        ratio={collageSettings.ratio}
+                                                    />
+                                                    <CollageCustomizer
+                                                        settings={collageSettings}
+                                                        onChange={setCollageSettings}
+                                                    />
+                                                    <Button type="button" variant="outline" size="sm" className="gap-1 w-full" onClick={() => setCollageStep(1)}>
+                                                        <ArrowLeft className="h-4 w-4" /> Retour au placement
+                                                    </Button>
                                                 </div>
                                             )}
                                         </div>
