@@ -279,10 +279,10 @@ export function CollageCanvas({
                                             src={photo}
                                             alt={`Slot ${slot.slotIndex + 1}`}
                                             fill
-                                            className="object-contain"
+                                            className="object-cover"
                                             sizes="(max-width: 640px) 50vw, 300px"
                                             // Don't apply bgColor here if we have a frame, else it breaks the frame. Or rather, object-contain already handles it.
-                                            // But wait, if object-contain is used, there might be empty space.
+                                            // But wait, if object-cover is used, there might be no empty space anyway.
                                         />
                                         {/* Remove button */}
                                         <button

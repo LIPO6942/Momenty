@@ -107,7 +107,7 @@ export const CollageRenderer = ({
                                         src={photoUrl}
                                         alt={`${title} ${slotDef.slotIndex + 1}`}
                                         fill
-                                        className="object-contain w-full h-full"
+                                        className="object-cover w-full h-full"
                                         sizes="(max-width: 640px) 50vw, 400px"
                                     />
                                 </ImageLightbox>
@@ -116,7 +116,7 @@ export const CollageRenderer = ({
                                     src={photoUrl}
                                     alt={`${title} ${slotDef.slotIndex + 1}`}
                                     fill
-                                    className="object-contain w-full h-full"
+                                    className="object-cover w-full h-full"
                                     sizes="(max-width: 640px) 50vw, 400px"
                                 />
                             )}
