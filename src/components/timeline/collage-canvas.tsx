@@ -18,6 +18,7 @@ interface CollageCanvasProps {
     bgPattern?: string;
     photoFrame?: 'none' | 'polaroid' | 'classic';
     photoTilt?: boolean;
+    onNewPhotoDropped?: (newPhoto: string, slotIndex: number) => void;
 }
 
 const RATIO_PADDING: Record<string, string> = {
@@ -66,6 +67,7 @@ export function CollageCanvas({
     bgPattern,
     photoFrame,
     photoTilt,
+    onNewPhotoDropped,
 }: CollageCanvasProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [targetSlot, setTargetSlot] = useState<number | null>(null);
@@ -88,6 +90,9 @@ export function CollageCanvas({
             const next = [...slotAssignment];
             next[targetSlot] = dataUrl;
             onSlotAssignmentChange(next);
+            if (onNewPhotoDropped && !photoUrls.includes(dataUrl)) {
+                onNewPhotoDropped(dataUrl, targetSlot);
+            }
         };
         reader.readAsDataURL(file);
 
@@ -172,6 +177,28 @@ export function CollageCanvas({
         setDraggingFromSlot(null);
     };
 
+    const handleOSFileDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        setDragOverSlot(null);
+        
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataUrl = event.target?.result as string;
+                    const next = [...slotAssignment];
+                    next[targetIndex] = dataUrl;
+                    onSlotAssignmentChange(next);
+                    if (onNewPhotoDropped && !photoUrls.includes(dataUrl)) {
+                        onNewPhotoDropped(dataUrl, targetIndex);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    };
+
     // ── Compute grid style ───────────────────────────────────────────────────
     const gridStyle: React.CSSProperties = {
         display: 'grid',
@@ -233,9 +260,17 @@ export function CollageCanvas({
                                 onDragOver={(e) => handleDragOver(e, slot.slotIndex)}
                                 onDragLeave={handleDragLeave}
                                 onDrop={(e) => {
+                                    e.preventDefault();
                                     const src = e.dataTransfer.getData('slotIndex');
-                                    if (src !== '') handleDrop(e, slot.slotIndex);
-                                    else handleDropFromStrip(e, slot.slotIndex);
+                                    const photoUrl = e.dataTransfer.getData('photoUrl');
+                                    
+                                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                        handleOSFileDrop(e, slot.slotIndex);
+                                    } else if (src !== '') {
+                                        handleDrop(e, slot.slotIndex);
+                                    } else if (photoUrl) {
+                                        handleDropFromStrip(e, slot.slotIndex);
+                                    }
                                 }}
                             >
                                 {photo ? (

@@ -62,33 +62,47 @@ export function CollageCustomizer({ settings, onChange }: CollageCustomizerProps
             {/* Gap */}
             <div className="space-y-2">
                 <Label className="text-xs font-black uppercase tracking-widest opacity-50 flex justify-between">
-                    <span>Espacement entre photos</span>
-                    <span className="text-primary font-bold">{settings.gap}px</span>
+                    <span>Espacement : {settings.gap}px</span>
                 </Label>
-                <Slider
-                    min={0}
-                    max={12}
-                    step={1}
-                    value={[settings.gap]}
-                    onValueChange={([v]) => update('gap', v)}
-                    className="w-full"
-                />
+                <div className="flex gap-2">
+                    {[0, 2, 4, 8, 12].map(g => (
+                        <button
+                            key={g}
+                            type="button"
+                            onClick={() => update('gap', g)}
+                            className={`flex-1 py-1 px-2 text-xs font-semibold rounded-md border transition-all ${
+                                settings.gap === g
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-slate-200 text-muted-foreground hover:border-slate-400'
+                            }`}
+                        >
+                            {g === 0 ? 'Sans' : g}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Border Radius */}
             <div className="space-y-2">
                 <Label className="text-xs font-black uppercase tracking-widest opacity-50 flex justify-between">
-                    <span>Coins arrondis</span>
-                    <span className="text-primary font-bold">{settings.borderRadius}px</span>
+                    <span>Coins arrondis : {settings.borderRadius}px</span>
                 </Label>
-                <Slider
-                    min={0}
-                    max={20}
-                    step={1}
-                    value={[settings.borderRadius]}
-                    onValueChange={([v]) => update('borderRadius', v)}
-                    className="w-full"
-                />
+                <div className="flex gap-2">
+                    {[0, 4, 8, 16, 24].map(r => (
+                        <button
+                            key={r}
+                            type="button"
+                            onClick={() => update('borderRadius', r)}
+                            className={`flex-1 py-1 px-2 text-xs font-semibold rounded-md border transition-all ${
+                                settings.borderRadius === r
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-slate-200 text-muted-foreground hover:border-slate-400'
+                            }`}
+                        >
+                            {r === 0 ? 'Carré' : r}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Background Color */}

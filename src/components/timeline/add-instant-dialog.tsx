@@ -918,6 +918,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         bgPattern={collageSettings.bgPattern}
                                                         photoFrame={collageSettings.photoFrame}
                                                         photoTilt={collageSettings.photoTilt}
+                                                        onNewPhotoDropped={(newPhoto) => {
+                                                            setPhotos(prev => prev.includes(newPhoto) ? prev : [...prev, newPhoto]);
+                                                        }}
                                                     />
                                                     <div className="flex gap-2">
                                                         <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setCollageStep(0)}>
@@ -944,6 +947,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         bgPattern={collageSettings.bgPattern}
                                                         photoFrame={collageSettings.photoFrame}
                                                         photoTilt={collageSettings.photoTilt}
+                                                        onNewPhotoDropped={(newPhoto) => {
+                                                            setPhotos(prev => prev.includes(newPhoto) ? prev : [...prev, newPhoto]);
+                                                        }}
                                                     />
                                                     <CollageCustomizer
                                                         settings={collageSettings}

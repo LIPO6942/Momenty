@@ -17,9 +17,8 @@ export interface CollageTemplateDef {
     aspectRatio?: string; // Preview aspect ratio e.g. "2/1"
 }
 
-export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
     // ──────────────────────────────────────
-    // Modèle 1 — "Côte à côte" (2 photos)
+    // 2 PHOTOS
     // ──────────────────────────────────────
     {
         id: 'side-by-side',
@@ -32,14 +31,35 @@ export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
             { slotIndex: 1, gridColumn: '2', gridRow: '1' },
         ],
     },
+    {
+        id: 'top-and-bottom',
+        name: 'Superposé',
+        photoCount: 2,
+        gridTemplateColumns: '1fr',
+        gridTemplateRows: '1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '1', gridRow: '2' },
+        ],
+    },
+    {
+        id: 'diagonal-split-2',
+        name: 'Split 1/3 - 2/3',
+        photoCount: 2,
+        gridTemplateColumns: '1fr 2fr',
+        gridTemplateRows: '1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+        ],
+    },
 
     // ──────────────────────────────────────
-    // Modèle 2 — "1 grande + 2" (3 photos)
-    // Slot A : col 1, row span 2 (grande photo gauche)
+    // 3 PHOTOS
     // ──────────────────────────────────────
     {
         id: 'large-left-2',
-        name: '1 grande + 2',
+        name: '1 grande + 2 à droite',
         photoCount: 3,
         gridTemplateColumns: '1fr 1fr',
         gridTemplateRows: '1fr 1fr',
@@ -49,14 +69,21 @@ export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
             { slotIndex: 2, gridColumn: '2', gridRow: '2' },
         ],
     },
-
-    // ──────────────────────────────────────
-    // Modèle 3 — "Banner + 2" (3 photos)
-    // Slot A : col span 2, row 1 (bannière pleine largeur)
-    // ──────────────────────────────────────
+    {
+        id: 'large-right-2',
+        name: '2 à gauche + 1 grande',
+        photoCount: 3,
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '1', gridRow: '2' },
+            { slotIndex: 2, gridColumn: '2', gridRow: '1 / span 2' },
+        ],
+    },
     {
         id: 'banner-top-2',
-        name: 'Banner + 2',
+        name: 'Bannière haut',
         photoCount: 3,
         gridTemplateColumns: '1fr 1fr',
         gridTemplateRows: '1fr 1fr',
@@ -66,9 +93,45 @@ export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
             { slotIndex: 2, gridColumn: '2', gridRow: '2' },
         ],
     },
+    {
+        id: 'banner-bottom-2',
+        name: 'Bannière bas',
+        photoCount: 3,
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 2, gridColumn: '1 / span 2', gridRow: '2' },
+        ],
+    },
+    {
+        id: 'trio-horizontal',
+        name: 'Trio horizontal',
+        photoCount: 3,
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateRows: '1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 2, gridColumn: '3', gridRow: '1' },
+        ],
+    },
+    {
+        id: 'trio-vertical',
+        name: 'Trio vertical',
+        photoCount: 3,
+        gridTemplateColumns: '1fr',
+        gridTemplateRows: '1fr 1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '1', gridRow: '2' },
+            { slotIndex: 2, gridColumn: '1', gridRow: '3' },
+        ],
+    },
 
     // ──────────────────────────────────────
-    // Modèle 4 — "Grille 2×2" (4 photos)
+    // 4 PHOTOS
     // ──────────────────────────────────────
     {
         id: 'grid-2x2',
@@ -83,49 +146,52 @@ export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
             { slotIndex: 3, gridColumn: '2', gridRow: '2' },
         ],
     },
-
-    // ──────────────────────────────────────
-    // Modèle 5 — "Grande gauche 2/3" (3 photos)
-    // Slot A : col 1, row span 2 (2/3 largeur)
-    // ──────────────────────────────────────
     {
-        id: 'large-left-wide',
-        name: 'Grande 2/3',
-        photoCount: 3,
-        gridTemplateColumns: '2fr 1fr',
-        gridTemplateRows: '1fr 1fr',
+        id: 'large-top-3',
+        name: '1 grande + 3 petites',
+        photoCount: 4,
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateRows: '2fr 1fr',
         slots: [
-            { slotIndex: 0, gridColumn: '1', gridRow: '1 / span 2' },
-            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 0, gridColumn: '1 / span 3', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '1', gridRow: '2' },
             { slotIndex: 2, gridColumn: '2', gridRow: '2' },
+            { slotIndex: 3, gridColumn: '3', gridRow: '2' },
         ],
     },
-
-    // ──────────────────────────────────────
-    // Modèle 6 — "Trio horizontal" (3 photos)
-    // 3 slots égaux en ligne
-    // ──────────────────────────────────────
     {
-        id: 'trio-horizontal',
-        name: 'Trio horizontal',
-        photoCount: 3,
-        gridTemplateColumns: '1fr 1fr 1fr',
+        id: 'large-left-3',
+        name: '1 grande gauche + 3',
+        photoCount: 4,
+        gridTemplateColumns: '2fr 1fr',
+        gridTemplateRows: '1fr 1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1 / span 3' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 2, gridColumn: '2', gridRow: '2' },
+            { slotIndex: 3, gridColumn: '2', gridRow: '3' },
+        ],
+    },
+    {
+        id: 'row-4',
+        name: 'Bandeau de 4',
+        photoCount: 4,
+        gridTemplateColumns: '1fr 1fr 1fr 1fr',
         gridTemplateRows: '1fr',
         slots: [
             { slotIndex: 0, gridColumn: '1', gridRow: '1' },
             { slotIndex: 1, gridColumn: '2', gridRow: '1' },
             { slotIndex: 2, gridColumn: '3', gridRow: '1' },
+            { slotIndex: 3, gridColumn: '4', gridRow: '1' },
         ],
     },
 
     // ──────────────────────────────────────
-    // Modèle 7 — "Banner + 4" (5 photos)
-    // Slot A : col span 2, row 1 (bannière)
-    // Slots B/C/D/E : grille 2×2 en rows 2 et 3
+    // 5 PHOTOS
     // ──────────────────────────────────────
     {
         id: 'banner-4',
-        name: 'Banner + 4',
+        name: '1 Bannière + 4 Grille',
         photoCount: 5,
         gridTemplateColumns: '1fr 1fr',
         gridTemplateRows: '1fr 1fr 1fr',
@@ -135,6 +201,54 @@ export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
             { slotIndex: 2, gridColumn: '2', gridRow: '2' },
             { slotIndex: 3, gridColumn: '1', gridRow: '3' },
             { slotIndex: 4, gridColumn: '2', gridRow: '3' },
+        ],
+    },
+    {
+        id: 'large-center-4',
+        name: 'Centre + 4 coins',
+        photoCount: 5,
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1 / span 2' },
+            { slotIndex: 2, gridColumn: '3', gridRow: '1' },
+            { slotIndex: 3, gridColumn: '1', gridRow: '2' },
+            { slotIndex: 4, gridColumn: '3', gridRow: '2' },
+        ],
+    },
+
+    // ──────────────────────────────────────
+    // 6 PHOTOS
+    // ──────────────────────────────────────
+    {
+        id: 'grid-3x2',
+        name: 'Grille 3×2',
+        photoCount: 6,
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 2, gridColumn: '3', gridRow: '1' },
+            { slotIndex: 3, gridColumn: '1', gridRow: '2' },
+            { slotIndex: 4, gridColumn: '2', gridRow: '2' },
+            { slotIndex: 5, gridColumn: '3', gridRow: '2' },
+        ],
+    },
+    {
+        id: 'large-left-5',
+        name: '1 grande + 5 petites',
+        photoCount: 6,
+        gridTemplateColumns: '2fr 1fr 1fr',
+        gridTemplateRows: '1fr 1fr 1fr',
+        slots: [
+            { slotIndex: 0, gridColumn: '1', gridRow: '1 / span 3' },
+            { slotIndex: 1, gridColumn: '2', gridRow: '1' },
+            { slotIndex: 2, gridColumn: '3', gridRow: '1' },
+            { slotIndex: 3, gridColumn: '2', gridRow: '2' },
+            { slotIndex: 4, gridColumn: '3', gridRow: '2' },
+            { slotIndex: 5, gridColumn: '2 / span 2', gridRow: '3' },
         ],
     },
 ];
