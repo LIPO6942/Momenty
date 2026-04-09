@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { AudioPicker } from "../ui/audio-picker";
 import type { DisplayTransform } from "@/lib/types";
+import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 
 
 interface EditNoteDialogProps {
@@ -97,6 +98,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
   const [displayPositionX, setDisplayPositionX] = useState<number>(50);
   const [displayPositionY, setDisplayPositionY] = useState<number>(50);
+  const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>(instantToEdit.descriptionStyle || "chat");
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
   useEffect(() => {
@@ -112,6 +114,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
       setDisplayPositionX(instantToEdit.displayTransform?.positionX ?? 50);
       setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
+      setDescriptionStyle(instantToEdit.descriptionStyle || "chat");
       setAudioUrl(instantToEdit.audio || null);
     }
   }, [open, instantToEdit]);
@@ -218,6 +221,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
           positionX: displayPositionX,
           positionY: displayPositionY
         },
+        descriptionStyle: finalPhotoUrls.length > 0 ? descriptionStyle : undefined,
         audio: audioUrl,
       });
 
@@ -276,6 +280,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
     setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
     setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
+    setDescriptionStyle(instantToEdit.descriptionStyle || 'chat');
     setAudioUrl(instantToEdit.audio || null);
     setIsAnalyzing(false);
     setIsImprovingText(false);
@@ -406,6 +411,13 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                        <span className="text-[10px] font-mono text-slate-400">{Math.round(displayPositionX)}% , {Math.round(displayPositionY)}%</span>
                     </div>
                     <p className="text-[10px] text-slate-400 italic mb-0">Faîtes glisser la photo ci-dessus avec votre doigt pour l'ajuster.</p>
+                  </div>
+                )}
+
+                {photos.length > 0 && (
+                  <div className="mt-4">
+                    <Separator className="mb-4" />
+                    <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
                   </div>
                 )}
               </div>

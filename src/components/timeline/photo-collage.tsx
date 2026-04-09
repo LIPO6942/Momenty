@@ -9,6 +9,7 @@ import { ParallaxContainer } from "@/components/ui/parallax-container";
 import type { DisplayTransform, CollageTemplate } from "@/lib/types";
 import { getTemplateById } from "@/lib/collage-templates";
 import { LayoutGrid } from "lucide-react";
+import { getPatternStyle } from "./collage-canvas";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COLLAGE RENDERER — reconstructs from CollageTemplate JSON
@@ -36,7 +37,7 @@ export const CollageRenderer = ({
     const def = getTemplateById(collageTemplate.templateId);
     if (!def) return null;
 
-    const { gap, borderRadius, bgColor, slots, ratio = '1:1' } = collageTemplate;
+    const { gap, borderRadius, bgColor, slots, ratio = '1:1', bgPattern, photoFrame, photoTilt } = collageTemplate;
 
     const allPhotos = slots
         .sort((a, b) => a.slotIndex - b.slotIndex)
@@ -48,7 +49,7 @@ export const CollageRenderer = ({
         gridTemplateColumns: def.gridTemplateColumns,
         gridTemplateRows: def.gridTemplateRows,
         gap: `${gap}px`,
-        backgroundColor: bgColor,
+        ...getPatternStyle(bgPattern, bgColor),
         overflow: 'hidden',
         width: '100%',
         height: '100%',
@@ -70,6 +71,14 @@ export const CollageRenderer = ({
 
                     if (!photoUrl) return null;
 
+                    const tilt = photoTilt && photoUrl ? (slotDef.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
+                    let frameStyle: React.CSSProperties = {};
+                    if (photoFrame === 'polaroid' && photoUrl) {
+                        frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' };
+                    } else if (photoFrame === 'classic' && photoUrl) {
+                        frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0' };
+                    }
+
                     const photo = (
                         <div
                             key={slotDef.slotIndex}
@@ -79,7 +88,8 @@ export const CollageRenderer = ({
                                 borderRadius: `${borderRadius}px`,
                                 overflow: 'hidden',
                                 position: 'relative',
-                                backgroundColor: bgColor,
+                                transform: `rotate(${tilt})`,
+                                ...frameStyle
                             }}
                         >
                             {interactive ? (
@@ -99,7 +109,6 @@ export const CollageRenderer = ({
                                         fill
                                         className="object-contain w-full h-full"
                                         sizes="(max-width: 640px) 50vw, 400px"
-                                        style={{ backgroundColor: bgColor }}
                                     />
                                 </ImageLightbox>
                             ) : (
@@ -109,7 +118,6 @@ export const CollageRenderer = ({
                                     fill
                                     className="object-contain w-full h-full"
                                     sizes="(max-width: 640px) 50vw, 400px"
-                                    style={{ backgroundColor: bgColor }}
                                 />
                             )}
                         </div>

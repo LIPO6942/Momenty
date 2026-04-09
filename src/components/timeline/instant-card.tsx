@@ -23,6 +23,7 @@ import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
 import { cn, getCity, getCountry } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import type { DescriptionStyle } from "@/components/timeline/description-style-picker";
 
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -33,6 +34,28 @@ import { ParallaxContainer } from "@/components/ui/parallax-container";
 
 
 
+
+const getDescriptionContainerClass = (style?: DescriptionStyle) => {
+    switch (style) {
+        case 'magazine': return "bg-black/40 backdrop-blur-sm border-l-4 border-indigo-400 p-3 rounded-r-xl mt-2";
+        case 'vibrant': return "bg-gradient-to-br from-pink-500/40 to-indigo-500/40 backdrop-blur-md border border-white/40 rounded-xl p-3 shadow-lg mt-2";
+        case 'cinematic': return "bg-transparent p-2 flex justify-center mt-2";
+        case 'polaroid': return "bg-black/60 shadow-xl border border-white/20 p-3 mt-2 inline-block";
+        case 'chat': return "bg-white/20 backdrop-blur-md rounded-2xl rounded-bl-sm p-3 border border-white/20 shadow-lg mt-2 inline-block";
+        default: return "mt-2"; // fallback
+    }
+}
+
+const getDescriptionTextClass = (style?: DescriptionStyle) => {
+    switch (style) {
+        case 'magazine': return "first-letter:text-4xl first-letter:font-bold first-letter:text-indigo-400 first-letter:float-left first-letter:mr-2 text-white/95 leading-relaxed font-serif";
+        case 'vibrant': return "text-white font-medium leading-relaxed drop-shadow-sm";
+        case 'cinematic': return "text-white text-center tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] italic text-lg";
+        case 'polaroid': return "font-mono text-[11px] uppercase tracking-widest text-white/90 leading-relaxed";
+        case 'chat': return "text-white/95 leading-relaxed text-sm";
+        default: return "text-sm text-white/80"; // fallback
+    }
+}
 
 export const InstantCard = ({ instant }: { instant: Instant }) => {
     const { deleteInstant } = useContext(TimelineContext);
@@ -90,7 +113,9 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     )}>
                         <h3 className="font-bold text-lg text-gradient-blue">{instant.title}</h3>
                         {instant.description && (
-                            <p className="text-sm text-white/80">{instant.description}</p>
+                            <div className={getDescriptionContainerClass(instant.descriptionStyle)}>
+                                <p className={getDescriptionTextClass(instant.descriptionStyle)}>{instant.description}</p>
+                            </div>
                         )}
 
                         <div className="flex gap-2 flex-wrap">

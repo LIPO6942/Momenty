@@ -15,6 +15,9 @@ interface CollageCanvasProps {
     borderRadius: number;
     bgColor: string;
     ratio: '1:1' | '4:5' | '16:9';
+    bgPattern?: string;
+    photoFrame?: 'none' | 'polaroid' | 'classic';
+    photoTilt?: boolean;
 }
 
 const RATIO_PADDING: Record<string, string> = {
@@ -22,6 +25,34 @@ const RATIO_PADDING: Record<string, string> = {
     '4:5':  'pb-[125%]',
     '16:9': 'pb-[56.25%]',
 };
+
+// Helper for patterns
+export function getPatternStyle(pattern?: string, color: string = '#000000'): React.CSSProperties {
+    if (!pattern || pattern === 'none') return { backgroundColor: color };
+    
+    // For patterns, it's often nicer to overlay on top of the bgColor, but we can do simple backgrounds:
+    switch (pattern) {
+        case 'dots':
+            return {
+                backgroundColor: color,
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.2) 2px, transparent 2px)',
+                backgroundSize: '20px 20px'
+            };
+        case 'grid':
+            return {
+                backgroundColor: color,
+                backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                backgroundSize: '20px 20px'
+            };
+        case 'diagonal':
+            return {
+                backgroundColor: color,
+                backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 2px, transparent 2px, transparent 8px)'
+            };
+        default:
+            return { backgroundColor: color };
+    }
+}
 
 export function CollageCanvas({
     template,
@@ -32,6 +63,9 @@ export function CollageCanvas({
     borderRadius,
     bgColor,
     ratio,
+    bgPattern,
+    photoFrame,
+    photoTilt,
 }: CollageCanvasProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [targetSlot, setTargetSlot] = useState<number | null>(null);
@@ -144,7 +178,7 @@ export function CollageCanvas({
         gridTemplateColumns: template.gridTemplateColumns,
         gridTemplateRows: template.gridTemplateRows,
         gap: `${gap}px`,
-        backgroundColor: bgColor,
+        ...getPatternStyle(bgPattern, bgColor),
         borderRadius: `${borderRadius}px`,
         overflow: 'hidden',
         width: '100%',
@@ -162,6 +196,17 @@ export function CollageCanvas({
                         const photo = slotAssignment[slot.slotIndex] ?? null;
                         const isDragOver = dragOverSlot === slot.slotIndex;
                         const isDraggingThis = draggingFromSlot === slot.slotIndex;
+                        
+                        // Fake random tilt based on slot index to be deterministic
+                        const tilt = photoTilt && photo ? (slot.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
+                        
+                        // Frames
+                        let frameStyle: React.CSSProperties = {};
+                        if (photoFrame === 'polaroid' && photo) {
+                            frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' };
+                        } else if (photoFrame === 'classic' && photo) {
+                            frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0' };
+                        }
 
                         return (
                             <div
@@ -173,8 +218,10 @@ export function CollageCanvas({
                                     overflow: 'hidden',
                                     position: 'relative',
                                     cursor: photo ? 'grab' : 'pointer',
-                                    transition: 'opacity 0.15s',
+                                    transition: 'opacity 0.15s, transform 0.2s',
                                     opacity: isDraggingThis ? 0.5 : 1,
+                                    transform: `rotate(${tilt}) scale(${isDragOver ? 1.05 : 1})`,
+                                    ...frameStyle
                                 }}
                                 className={cn(
                                     "group",
@@ -199,7 +246,8 @@ export function CollageCanvas({
                                             fill
                                             className="object-contain"
                                             sizes="(max-width: 640px) 50vw, 300px"
-                                            style={{ backgroundColor: bgColor }}
+                                            // Don't apply bgColor here if we have a frame, else it breaks the frame. Or rather, object-contain already handles it.
+                                            // But wait, if object-contain is used, there might be empty space.
                                         />
                                         {/* Remove button */}
                                         <button

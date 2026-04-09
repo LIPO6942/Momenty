@@ -51,6 +51,9 @@ export interface CollageTemplate {
     gap: number;          // 0–12px
     borderRadius: number; // 0–20px
     bgColor: string;      // '#000000' by default
+    bgPattern?: string;   // 'none', 'dots', 'grid', 'paper', etc.
+    photoFrame?: 'none' | 'polaroid' | 'classic';
+    photoTilt?: boolean;
     slots: CollageSlot[];
 }
 
@@ -69,6 +72,7 @@ export interface Instant {
     category?: string[]; // AI-generated category, now an array
     displayTransform?: DisplayTransform; // Optional persisted display settings
     collageTemplate?: CollageTemplate; // Optional collage template settings
+    descriptionStyle?: 'chat' | 'magazine' | 'vibrant' | 'cinematic' | 'polaroid'; // Optional style for description overlay
 }
 
 export interface Encounter {

@@ -6,11 +6,22 @@ import { Slider } from "@/components/ui/slider";
 import type { CollageTemplate } from "@/lib/types";
 
 interface CollageCustomizerProps {
-    settings: Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio'>;
-    onChange: (updated: Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio'>) => void;
+    settings: Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio' | 'bgPattern' | 'photoFrame' | 'photoTilt'>;
+    onChange: (updated: Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio' | 'bgPattern' | 'photoFrame' | 'photoTilt'>) => void;
 }
 
 const RATIOS: CollageTemplate['ratio'][] = ['1:1', '4:5', '16:9'];
+const PATTERNS = [
+    { id: 'none', label: 'Aucun' },
+    { id: 'dots', label: 'Pois' },
+    { id: 'grid', label: 'Grille' },
+    { id: 'diagonal', label: 'Lignes' },
+];
+const FRAMES = [
+    { id: 'none', label: 'Normal' },
+    { id: 'polaroid', label: 'Polaroid' },
+    { id: 'classic', label: 'Cadre' },
+];
 
 const PRESET_COLORS = [
     '#000000', '#ffffff', '#1e293b', '#334155',
@@ -111,6 +122,65 @@ export function CollageCustomizer({ settings, onChange }: CollageCustomizerProps
                         />
                     </label>
                 </div>
+            </div>
+
+            {/* Background Pattern */}
+            <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest opacity-50">
+                    Motif de fond
+                </Label>
+                <div className="flex gap-2 flex-wrap">
+                    {PATTERNS.map(pattern => (
+                        <button
+                            key={pattern.id}
+                            type="button"
+                            onClick={() => update('bgPattern', pattern.id as any)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all ${
+                                (settings.bgPattern || 'none') === pattern.id
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-slate-200 text-muted-foreground hover:border-slate-400'
+                            }`}
+                        >
+                            {pattern.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Photo Frame */}
+            <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest opacity-50">
+                    Style des cadres
+                </Label>
+                <div className="flex gap-2 flex-wrap">
+                    {FRAMES.map(frame => (
+                        <button
+                            key={frame.id}
+                            type="button"
+                            onClick={() => update('photoFrame', frame.id as any)}
+                            className={`flex-1 py-2 text-xs font-semibold rounded-lg border-2 transition-all ${
+                                (settings.photoFrame || 'none') === frame.id
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-slate-200 text-muted-foreground hover:border-slate-400'
+                            }`}
+                        >
+                            {frame.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Photo Tilt */}
+            <div className="space-y-2">
+                <Label className="flex items-center justify-between cursor-pointer border p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <span className="text-sm font-semibold">Incliner les photos</span>
+                    <input
+                        type="checkbox"
+                        checked={!!settings.photoTilt}
+                        onChange={(e) => update('photoTilt', e.target.checked)}
+                        className="rounded border-slate-300 text-primary focus:ring-primary w-5 h-5 accent-primary"
+                    />
+                </Label>
             </div>
         </div>
     );

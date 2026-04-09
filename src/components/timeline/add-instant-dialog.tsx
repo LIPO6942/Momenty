@@ -25,6 +25,7 @@ import { CollageCustomizer } from "@/components/timeline/collage-customizer";
 import type { CollageTemplate } from "@/lib/types";
 import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
+import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import {
     Command,
     CommandEmpty,
@@ -102,17 +103,21 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
+    const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("chat");
 
     // ── Collage state ──────────────────────────────────────────────────────────
     const [isCollageMode, setIsCollageMode] = useState(false);
     const [collageStep, setCollageStep] = useState<0 | 1 | 2>(0); // 0=picker 1=canvas 2=customizer
     const [selectedTemplateDef, setSelectedTemplateDef] = useState<CollageTemplateDef | null>(null);
     const [slotAssignment, setSlotAssignment] = useState<(string | null)[]>([]);
-    const [collageSettings, setCollageSettings] = useState<Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio'>>({
+    const [collageSettings, setCollageSettings] = useState<Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio' | 'bgPattern' | 'photoFrame' | 'photoTilt'>>({
         gap: 2,
         borderRadius: 0,
         bgColor: '#000000',
         ratio: '1:1',
+        bgPattern: 'none',
+        photoFrame: 'none',
+        photoTilt: false,
     });
 
     // Kol Youm API State
@@ -397,12 +402,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
         setDisplayGravity("auto");
+        setDescriptionStyle("chat");
         // Collage cleanup
         setIsCollageMode(false);
         setCollageStep(0);
         setSelectedTemplateDef(null);
         setSlotAssignment([]);
-        setCollageSettings({ gap: 2, borderRadius: 0, bgColor: '#000000', ratio: '1:1' });
+        setCollageSettings({ gap: 2, borderRadius: 0, bgColor: '#000000', ratio: '1:1', bgPattern: 'none', photoFrame: 'none', photoTilt: false });
     }
 
     const handleGetLocation = () => {
@@ -689,6 +695,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     category: ['Note'],
                     audio: audioUrl,
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
                     ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
                 };
                 const newId = await addInstant(newInstant);
@@ -908,6 +915,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         borderRadius={collageSettings.borderRadius}
                                                         bgColor={collageSettings.bgColor}
                                                         ratio={collageSettings.ratio}
+                                                        bgPattern={collageSettings.bgPattern}
+                                                        photoFrame={collageSettings.photoFrame}
+                                                        photoTilt={collageSettings.photoTilt}
                                                     />
                                                     <div className="flex gap-2">
                                                         <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setCollageStep(0)}>
@@ -931,6 +941,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         borderRadius={collageSettings.borderRadius}
                                                         bgColor={collageSettings.bgColor}
                                                         ratio={collageSettings.ratio}
+                                                        bgPattern={collageSettings.bgPattern}
+                                                        photoFrame={collageSettings.photoFrame}
+                                                        photoTilt={collageSettings.photoTilt}
                                                     />
                                                     <CollageCustomizer
                                                         settings={collageSettings}
@@ -1242,6 +1255,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                             </div>
                                         </div>
                                     )}
+
+                                    {photos.length > 0 && (
+                                        <>
+                                            <Separator />
+                                            <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
+                                        </>
+                                    )}
+
                                     <div className="space-y-2">
                                         <Label>Quelle était votre humeur ?</Label>
                                         <div className="flex flex-wrap gap-2 pt-2">
