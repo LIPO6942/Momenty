@@ -17,6 +17,7 @@ export interface CollageTemplateDef {
     aspectRatio?: string; // Preview aspect ratio e.g. "2/1"
 }
 
+export const COLLAGE_TEMPLATES: CollageTemplateDef[] = [
     // ──────────────────────────────────────
     // 2 PHOTOS
     // ──────────────────────────────────────
