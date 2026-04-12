@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
-import type { DisplayTransform, CollageTemplate } from "@/lib/types";
+import type { DisplayTransform, CollageTemplate, ArtisticStyle } from "@/lib/types";
 import { getTemplateById } from "@/lib/collage-templates";
 import { LayoutGrid } from "lucide-react";
 import { getPatternStyle } from "./collage-canvas";
@@ -159,6 +159,7 @@ export const PhotoCollage = ({
     interactive = true,
     onPositionChange,
     collageTemplate,
+    artisticStyle,
 }: {
     photos: string[],
     title: string,
@@ -167,6 +168,7 @@ export const PhotoCollage = ({
     interactive?: boolean,
     onPositionChange?: (index: number, x: number, y: number) => void,
     collageTemplate?: CollageTemplate,
+    artisticStyle?: ArtisticStyle,
 }) => {
     // ── If a collage template is present, use the new renderer ───────────────
     if (collageTemplate && collageTemplate.slots.length > 0) {
@@ -269,6 +271,7 @@ export const PhotoCollage = ({
                 alt={`${title} ${index + 1}`}
                 width={width}
                 height={height}
+                artisticUrl={index === 0 && artisticStyle ? artisticStyle.artisticUrl : undefined}
             >
                 {content}
             </ImageLightbox>

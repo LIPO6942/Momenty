@@ -58,6 +58,13 @@ export interface CollageTemplate {
     slots: CollageSlot[];
 }
 
+export type ArtisticStyleType = 'manga' | 'vangogh' | 'monet' | 'picasso' | 'abstract' | 'athena' | 'audrey' | 'fes' | 'incognito' | 'quartz' | 'red_rock';
+
+export interface ArtisticStyle {
+    style: ArtisticStyleType;
+    artisticUrl: string; // URL Cloudinary avec effet artistique appliqué
+}
+
 export interface Instant {
     id: string;
     type: 'note' | 'photo' | 'video' | 'audio' | 'mood';
@@ -74,6 +81,7 @@ export interface Instant {
     displayTransform?: DisplayTransform; // Optional persisted display settings
     collageTemplate?: CollageTemplate; // Optional collage template settings
     descriptionStyle?: 'ombre-subtile' | 'contour-leger' | 'gradient-bas' | 'minimal-haut'; // Optional style for description overlay
+    artisticStyle?: ArtisticStyle; // Optional artistic transformation for the main photo
 }
 
 export interface Encounter {

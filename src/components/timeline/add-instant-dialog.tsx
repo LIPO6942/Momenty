@@ -26,6 +26,8 @@ import type { CollageTemplate } from "@/lib/types";
 import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
+import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
+import type { ArtisticStyle, ArtisticStyleType } from "@/lib/types";
 import {
     Command,
     CommandEmpty,
@@ -104,6 +106,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
     const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("ombre-subtile");
+
+    // ── Artistic style state ─────────────────────────────────────────────────
+    const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(null);
+    const [artisticUrl, setArtisticUrl] = useState<string | null>(null);
 
     // ── Collage state ──────────────────────────────────────────────────────────
     const [isCollageMode, setIsCollageMode] = useState(false);
@@ -403,6 +409,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayCrop("fit");
         setDisplayGravity("auto");
         setDescriptionStyle("ombre-subtile");
+        // Artistic style cleanup
+        setSelectedArtisticStyle(null);
+        setArtisticUrl(null);
         // Collage cleanup
         setIsCollageMode(false);
         setCollageStep(0);
@@ -697,6 +706,12 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                     descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
                     ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
+                    ...(selectedArtisticStyle && artisticUrl ? {
+                        artisticStyle: {
+                            style: selectedArtisticStyle,
+                            artisticUrl: artisticUrl
+                        }
+                    } : {}),
                 };
                 const newId = await addInstant(newInstant);
                 
@@ -1266,6 +1281,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         <>
                                             <Separator />
                                             <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
+                                            {/* Artistic style picker - only for single photos */}
+                                            {photos.length === 1 && (
+                                                <ArtisticStylePicker
+                                                    photoUrl={photos[0]}
+                                                    selectedStyle={selectedArtisticStyle}
+                                                    onStyleSelect={setSelectedArtisticStyle}
+                                                    onArtisticUrlGenerated={setArtisticUrl}
+                                                />
+                                            )}
                                         </>
                                     )}
 

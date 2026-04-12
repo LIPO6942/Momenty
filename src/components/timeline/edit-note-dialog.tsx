@@ -33,6 +33,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { AudioPicker } from "../ui/audio-picker";
 import type { DisplayTransform } from "@/lib/types";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
+import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
+import type { ArtisticStyle, ArtisticStyleType } from "@/lib/types";
 
 
 interface EditNoteDialogProps {
@@ -101,6 +103,10 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>(instantToEdit.descriptionStyle || "chat");
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
+  // ── Artistic style state ─────────────────────────────────────────────────
+  const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(instantToEdit.artisticStyle?.style || null);
+  const [artisticUrl, setArtisticUrl] = useState<string | null>(instantToEdit.artisticStyle?.artisticUrl || null);
+
   useEffect(() => {
     if (open && instantToEdit) {
       setDescription(instantToEdit.description);
@@ -116,6 +122,9 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
       setDescriptionStyle(instantToEdit.descriptionStyle || "chat");
       setAudioUrl(instantToEdit.audio || null);
+      // Initialize artistic style state
+      setSelectedArtisticStyle(instantToEdit.artisticStyle?.style || null);
+      setArtisticUrl(instantToEdit.artisticStyle?.artisticUrl || null);
     }
   }, [open, instantToEdit]);
 
@@ -223,6 +232,10 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         },
         descriptionStyle: finalPhotoUrls.length > 0 ? descriptionStyle : undefined,
         audio: audioUrl,
+        artisticStyle: selectedArtisticStyle && artisticUrl ? {
+          style: selectedArtisticStyle,
+          artisticUrl: artisticUrl
+        } : undefined,
       });
 
       toast({ title: "Instant mis à jour !" });
@@ -415,9 +428,18 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                 )}
 
                 {photos.length > 0 && (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-4">
                     <Separator className="mb-4" />
                     <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
+                    {/* Artistic style picker - only for single photos */}
+                    {photos.length === 1 && (
+                      <ArtisticStylePicker
+                        photoUrl={photos[0].startsWith('data:') ? photos[0] : photos[0]}
+                        selectedStyle={selectedArtisticStyle}
+                        onStyleSelect={setSelectedArtisticStyle}
+                        onArtisticUrlGenerated={setArtisticUrl}
+                      />
+                    )}
                   </div>
                 )}
               </div>

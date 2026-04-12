@@ -22,6 +22,7 @@ interface ImageLightboxProps {
   className?: string;
   children?: React.ReactNode;
   showAudioIcon?: boolean;
+  artisticUrl?: string | null; // URL de la version artistique pour animation morph
 }
 
 export function ImageLightbox({
@@ -34,15 +35,45 @@ export function ImageLightbox({
   height,
   className,
   children,
-  showAudioIcon = true
+  showAudioIcon = true,
+  artisticUrl
 }: ImageLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
+  // Morph animation state for artistic image reveal
+  const [showArtistic, setShowArtistic] = useState(false);
+  const [isMorphing, setIsMorphing] = useState(false);
+  
   // Create an array of photos from either the photos array or the single src
   const lightboxPhotos = photos.length > 0 ? photos : (src ? [src] : []);
+
+  // Auto-trigger morph animation when lightbox opens with artistic image
+  useEffect(() => {
+    if (isOpen && artisticUrl && lightboxPhotos.length === 1) {
+      // Reset state
+      setShowArtistic(false);
+      setIsMorphing(false);
+      
+      // Démarrer l'animation après un court délai (500ms)
+      const startTimer = setTimeout(() => {
+        setIsMorphing(true);
+        // La transition dure 2 secondes pour un effet "ralenti" dramatique
+        const revealTimer = setTimeout(() => {
+          setShowArtistic(true);
+        }, 2000);
+        return () => clearTimeout(revealTimer);
+      }, 500);
+      
+      return () => clearTimeout(startTimer);
+    } else {
+      // Reset when closing or no artistic image
+      setShowArtistic(false);
+      setIsMorphing(false);
+    }
+  }, [isOpen, artisticUrl, lightboxPhotos.length]);
   
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     startIndex: initialIndex,
@@ -259,14 +290,46 @@ export function ImageLightbox({
                   </>
                 ) : (
                   <div className="relative w-full h-full flex items-center justify-center p-4">
+                    {/* Image originale */}
                     <Image
                       src={lightboxPhotos[0]}
                       alt={alt}
                       fill
-                      className="object-contain"
+                      className={cn(
+                        "object-contain transition-all duration-[2000ms] ease-in-out",
+                        isMorphing && !showArtistic && "scale-105"
+                      )}
                       quality={100}
                       priority
                     />
+                    
+                    {/* Image artistique avec animation morph */}
+                    {artisticUrl && (
+                      <div
+                        className={cn(
+                          "absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-[2000ms] ease-in-out",
+                          showArtistic ? "opacity-100" : "opacity-0"
+                        )}
+                      >
+                        <Image
+                          src={artisticUrl}
+                          alt={`${alt} - Version artistique`}
+                          fill
+                          className={cn(
+                            "object-contain transition-all duration-[2000ms] ease-in-out",
+                            showArtistic ? "scale-100" : "scale-110"
+                          )}
+                          quality={100}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Indicateur de style artistique */}
+                    {artisticUrl && (
+                      <div className="absolute top-20 left-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20">
+                        <span className="text-xs font-medium text-white">Version Artistique</span>
+                      </div>
+                    )}
                   </div>
                 )}
             </div>
