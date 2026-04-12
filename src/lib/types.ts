@@ -58,11 +58,11 @@ export interface CollageTemplate {
     slots: CollageSlot[];
 }
 
-export type ArtisticStyleType = 'manga' | 'vangogh' | 'monet' | 'picasso' | 'abstract' | 'athena' | 'audrey' | 'fes' | 'incognito' | 'quartz' | 'red_rock';
+export type ArtisticStyleType = 'monet' | 'vangogh' | 'abstract' | 'cubist' | 'oil' | 'watercolor' | 'line art' | 'comic' | 'cyberpunk' | 'fantasy' | 'renaissance' | 'ukiyoe';
 
 export interface ArtisticStyle {
     style: ArtisticStyleType;
-    artisticUrl: string; // URL Cloudinary avec effet artistique appliqué
+    artisticUrl: string; // URL de l'image générée par DeepAI
 }
 
 export interface Instant {

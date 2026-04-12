@@ -35,54 +35,6 @@ export function clTransform(
   }
 }
 
-// Artistic style transformations using Cloudinary effects
-export type ArtisticStyleKey = 'manga' | 'vangogh' | 'monet' | 'picasso' | 'abstract' | 'athena' | 'audrey' | 'fes' | 'incognito' | 'quartz' | 'red_rock';
-
-const artisticEffectMap: Record<ArtisticStyleKey, string> = {
-  manga: 'art:manga',
-  vangogh: 'art:quartz', // Quartz gives Van Gogh-like swirling effect
-  monet: 'art:al_dente', // Soft painterly effect
-  picasso: 'art:hairspray', // Cubist/cartoon-like transformation
-  abstract: 'art:incognito', // Abstract/distorted effect
-  athena: 'art:athena', // Classical painting style
-  audrey: 'art:audrey', // Vintage/high contrast style
-  fes: 'art:fes', // Oriental/ornate style
-  quartz: 'art:quartz', // Alternative Van Gogh
-  red_rock: 'art:red_rock', // Oil painting texture
-};
-
-export function buildArtisticTransform(
-  url: string,
-  style: ArtisticStyleKey,
-  opts: { w?: number; h?: number; c?: 'fill' | 'fit' | string } = {}
-): string {
-  const effect = artisticEffectMap[style];
-  if (!effect) return url;
-
-  return clTransform(url, {
-    w: opts.w ?? 1200,
-    h: opts.h ?? 900,
-    c: opts.c ?? 'fill',
-    g: 'auto',
-    e: effect,
-  });
-}
-
-// Helper to get all available artistic styles with labels
-export const artisticStyles: { key: ArtisticStyleKey; label: string; emoji: string }[] = [
-  { key: 'manga', label: 'Manga', emoji: '🎌' },
-  { key: 'vangogh', label: 'Van Gogh', emoji: '🌻' },
-  { key: 'monet', label: 'Monet', emoji: '🌸' },
-  { key: 'picasso', label: 'Picasso', emoji: '🎭' },
-  { key: 'abstract', label: 'Abstrait', emoji: '🎨' },
-  { key: 'athena', label: 'Classique', emoji: '🏛️' },
-  { key: 'audrey', label: 'Vintage', emoji: '🎬' },
-  { key: 'fes', label: 'Oriental', emoji: '🕌' },
-  { key: 'red_rock', label: 'Huile', emoji: '🖼️' },
-  { key: 'quartz', label: 'Tourbillon', emoji: '💫' },
-  { key: 'incognito', label: 'Mystère', emoji: '🎭' },
-];
-
 // Helpers to map persisted display preferences to Cloudinary transforms
 export type DisplayTransform = {
   preset?: 'landscape' | 'portrait' | 'square';

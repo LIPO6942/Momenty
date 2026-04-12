@@ -3,16 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { artisticStyles, buildArtisticTransform, type ArtisticStyleKey } from "@/lib/cloudinary";
-import { Palette, X, Sparkles, Loader2, Upload } from "lucide-react";
+import { deepAIStyles, generateArtisticImage, type DeepAIStyleKey } from "@/lib/deepai";
+import { Palette, X, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "@/hooks/use-toast";
 
 interface ArtisticStylePickerProps {
   photoUrl: string | null;
-  selectedStyle: ArtisticStyleKey | null;
-  onStyleSelect: (style: ArtisticStyleKey | null) => void;
+  selectedStyle: DeepAIStyleKey | null;
+  onStyleSelect: (style: DeepAIStyleKey | null) => void;
   onArtisticUrlGenerated?: (artisticUrl: string) => void;
 }
 
@@ -47,10 +47,20 @@ export function ArtisticStylePicker({
   onArtisticUrlGenerated,
 }: ArtisticStylePickerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<Record<ArtisticStyleKey, string>>({} as Record<ArtisticStyleKey, string>);
+  const [generatedArtisticUrl, setGeneratedArtisticUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+
+  // Get DeepAI API key from environment
+  const getDeepAIKey = () => {
+    // In production, this should be set in your environment variables
+    // For now, we'll check if a key is available in localStorage (for demo purposes)
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('DEEPAI_API_KEY') || process.env.NEXT_PUBLIC_DEEPAI_API_KEY || '';
+    }
+    return '';
+  };
 
   // Check if photoUrl is a Cloudinary URL
   const isCloudinaryUrl = useCallback((url: string): boolean => {
@@ -80,7 +90,7 @@ export function ArtisticStylePicker({
         toast({
           variant: "destructive",
           title: "Échec de l'upload",
-          description: "Impossible d'uploader la photo pour la prévisualisation artistique."
+          description: "Impossible d'uploader la photo pour la génération artistique."
         });
       }
       setIsUploading(false);
@@ -89,32 +99,55 @@ export function ArtisticStylePicker({
     uploadPhoto();
   }, [photoUrl, isCloudinaryUrl]);
 
-  // Generate preview URLs when uploadedPhotoUrl changes
-  useEffect(() => {
-    if (!uploadedPhotoUrl) {
-      setPreviewUrls({} as Record<ArtisticStyleKey, string>);
+  // Generate artistic image when style is selected
+  const handleStyleSelect = async (style: DeepAIStyleKey | null) => {
+    onStyleSelect(style);
+    
+    if (!style || !uploadedPhotoUrl) {
+      setGeneratedArtisticUrl(null);
       return;
     }
 
-    const urls: Record<ArtisticStyleKey, string> = {} as Record<ArtisticStyleKey, string>;
-    artisticStyles.forEach(({ key }) => {
-      urls[key] = buildArtisticTransform(uploadedPhotoUrl, key, { w: 150, h: 150, c: 'fill' });
-    });
-    setPreviewUrls(urls);
-  }, [uploadedPhotoUrl]);
-
-  // Generate full artistic URL when style is selected
-  useEffect(() => {
-    if (selectedStyle && uploadedPhotoUrl && onArtisticUrlGenerated) {
-      setIsGenerating(true);
-      const artisticUrl = buildArtisticTransform(uploadedPhotoUrl, selectedStyle, { w: 1200, h: 900, c: 'fill' });
-      // Simulate slight delay for better UX
-      setTimeout(() => {
-        onArtisticUrlGenerated(artisticUrl);
-        setIsGenerating(false);
-      }, 300);
+    const apiKey = getDeepAIKey();
+    if (!apiKey) {
+      toast({
+        variant: "destructive",
+        title: "Clé API manquante",
+        description: "Veuillez configurer votre clé API DeepAI dans les paramètres."
+      });
+      return;
     }
-  }, [selectedStyle, uploadedPhotoUrl, onArtisticUrlGenerated]);
+
+    setIsGenerating(true);
+    setIsExpanded(false);
+    
+    try {
+      const artisticUrl = await generateArtisticImage(uploadedPhotoUrl, style, apiKey);
+      if (artisticUrl) {
+        setGeneratedArtisticUrl(artisticUrl);
+        onArtisticUrlGenerated?.(artisticUrl);
+        toast({
+          title: "Style artistique généré !",
+          description: "Votre photo a été transformée avec succès."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Échec de la génération",
+          description: "Impossible de générer le style artistique. Veuillez réessayer."
+        });
+      }
+    } catch (error) {
+      console.error('Error generating artistic style:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la génération."
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!photoUrl) {
     return null;
@@ -140,23 +173,21 @@ export function ArtisticStylePicker({
         )}
       </div>
 
-      {/* Aperçu du style sélectionné */}
-      {selectedStyle && photoUrl && (
+      {/* Aperçu du style généré */}
+      {selectedStyle && generatedArtisticUrl && (
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-muted border-2 border-primary/30">
           <Image
-            src={previewUrls[selectedStyle] || photoUrl}
-            alt="Aperçu du style artistique"
+            src={generatedArtisticUrl}
+            alt="Version artistique générée"
             fill
             className="object-cover transition-opacity duration-500"
             sizes="(max-width: 768px) 100vw, 400px"
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">
-                {artisticStyles.find(s => s.key === selectedStyle)?.emoji}
-              </span>
+              <Wand2 className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium text-white">
-                Aperçu: {artisticStyles.find(s => s.key === selectedStyle)?.label}
+                {deepAIStyles.find(s => s.key === selectedStyle)?.emoji} {deepAIStyles.find(s => s.key === selectedStyle)?.label} - Généré par IA
               </span>
             </div>
           </div>
@@ -191,8 +222,8 @@ export function ArtisticStylePicker({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm">
-                {artisticStyles.find(s => s.key === selectedStyle)?.emoji} {' '}
-                {artisticStyles.find(s => s.key === selectedStyle)?.label}
+                {deepAIStyles.find(s => s.key === selectedStyle)?.emoji} {' '}
+                {deepAIStyles.find(s => s.key === selectedStyle)?.label}
               </span>
             </div>
           ) : (
@@ -219,57 +250,42 @@ export function ArtisticStylePicker({
           {isGenerating && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Génération de la version artistique...
+              Génération IA en cours... (2-5 secondes)
             </div>
           )}
 
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {artisticStyles.map(({ key, label, emoji }) => (
+            {deepAIStyles.map(({ key, label, emoji }) => (
               <button
                 key={key}
                 type="button"
-                onClick={() => {
-                  onStyleSelect(selectedStyle === key ? null : key);
-                  if (selectedStyle !== key) {
-                    setTimeout(() => setIsExpanded(false), 400);
-                  }
-                }}
+                onClick={() => handleStyleSelect(selectedStyle === key ? null : key)}
+                disabled={isGenerating}
                 className={cn(
                   "relative flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
                   selectedStyle === key
                     ? "border-primary bg-primary/10"
-                    : "border-transparent hover:border-muted bg-background hover:bg-muted"
+                    : "border-transparent hover:border-muted bg-background hover:bg-muted",
+                  isGenerating && "opacity-50 cursor-not-allowed"
                 )}
               >
-                <div className="relative w-full aspect-square rounded-md overflow-hidden bg-muted">
-                  {previewUrls[key] ? (
-                    <Image
-                      src={previewUrls[key]}
-                      alt={label}
-                      fill
-                      className="object-cover"
-                      sizes="100px"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                      {emoji}
-                    </div>
-                  )}
-                  {selectedStyle === key && (
+                <div className="relative w-full aspect-square rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                  <span className="text-3xl">{emoji}</span>
+                  {selectedStyle === key && !isGenerating && (
                     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-primary" />
+                      <Wand2 className="h-5 w-5 text-primary" />
                     </div>
                   )}
                 </div>
                 <span className="text-xs font-medium truncate w-full text-center">
-                  {emoji} {label}
+                  {label}
                 </span>
               </button>
             ))}
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            La version artistique sera accessible via un appui long sur la photo
+            Les styles sont générés par IA (DeepAI) - 10 000 crédits gratuits/mois
           </p>
         </div>
       )}
