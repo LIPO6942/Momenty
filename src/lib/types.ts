@@ -47,13 +47,14 @@ export interface CollageSlot {
 
 export interface CollageTemplate {
     templateId: string; // e.g. 'side-by-side', 'large-left-2', etc.
-    ratio: '1:1' | '4:5' | '16:9';
+    ratio: '1:1' | '4:5' | '16:9' | '9:16' | '2:3' | '3:2' | '3:4' | '21:9' | '1:1.414';
     gap: number;          // 0–12px
     borderRadius: number; // 0–20px
     bgColor: string;      // '#000000' by default
     bgPattern?: string;   // 'none', 'dots', 'grid', 'paper', etc.
-    photoFrame?: 'none' | 'polaroid' | 'classic';
+    photoFrame?: 'none' | 'polaroid' | 'classic' | 'clean' | 'mosaic' | 'minimal';
     photoTilt?: boolean;
+    layoutStyle?: 'smart' | 'classic' | 'masonry';
     slots: CollageSlot[];
 }
 
@@ -72,7 +73,7 @@ export interface Instant {
     category?: string[]; // AI-generated category, now an array
     displayTransform?: DisplayTransform; // Optional persisted display settings
     collageTemplate?: CollageTemplate; // Optional collage template settings
-    descriptionStyle?: 'chat' | 'magazine' | 'vibrant' | 'cinematic' | 'polaroid'; // Optional style for description overlay
+    descriptionStyle?: 'ombre-subtile' | 'contour-leger' | 'gradient-bas' | 'minimal-haut'; // Optional style for description overlay
 }
 
 export interface Encounter {

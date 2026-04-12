@@ -103,17 +103,17 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
-    const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("chat");
+    const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("ombre-subtile");
 
     // ── Collage state ──────────────────────────────────────────────────────────
     const [isCollageMode, setIsCollageMode] = useState(false);
     const [collageStep, setCollageStep] = useState<0 | 1 | 2>(0); // 0=picker 1=canvas 2=customizer
     const [selectedTemplateDef, setSelectedTemplateDef] = useState<CollageTemplateDef | null>(null);
     const [slotAssignment, setSlotAssignment] = useState<(string | null)[]>([]);
-    const [collageSettings, setCollageSettings] = useState<Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio' | 'bgPattern' | 'photoFrame' | 'photoTilt'>>({
-        gap: 2,
+    const [collageSettings, setCollageSettings] = useState<Pick<CollageTemplate, 'gap' | 'borderRadius' | 'bgColor' | 'ratio' | 'bgPattern' | 'photoFrame' | 'photoTilt' | 'layoutStyle'>>({
+        gap: 0,
         borderRadius: 0,
-        bgColor: '#000000',
+        bgColor: '#ffffff',
         ratio: '1:1',
         bgPattern: 'none',
         photoFrame: 'none',
@@ -402,13 +402,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
         setDisplayGravity("auto");
-        setDescriptionStyle("chat");
+        setDescriptionStyle("ombre-subtile");
         // Collage cleanup
         setIsCollageMode(false);
         setCollageStep(0);
         setSelectedTemplateDef(null);
         setSlotAssignment([]);
-        setCollageSettings({ gap: 2, borderRadius: 0, bgColor: '#000000', ratio: '1:1', bgPattern: 'none', photoFrame: 'none', photoTilt: false });
+        setCollageSettings({ gap: 0, borderRadius: 0, bgColor: '#ffffff', ratio: '1:1', bgPattern: 'none', photoFrame: 'clean', photoTilt: false, layoutStyle: 'smart' });
     }
 
     const handleGetLocation = () => {

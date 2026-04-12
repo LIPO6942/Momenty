@@ -23,9 +23,15 @@ interface CollageRendererProps {
 }
 
 const RATIO_PADDING: Record<string, string> = {
-    '1:1':  'pb-[100%]',
-    '4:5':  'pb-[125%]',
-    '16:9': 'pb-[56.25%]',
+    '1:1':     'pb-[100%]',      // Carré
+    '4:5':     'pb-[125%]',      // Instagram portrait
+    '16:9':    'pb-[56.25%]',    // Paysage HD
+    '9:16':    'pb-[177.78%]',   // Stories
+    '2:3':     'pb-[150%]',      // Portrait
+    '3:2':     'pb-[66.67%]',    // Paysage photo
+    '3:4':     'pb-[133.33%]',   // Portrait classique
+    '21:9':    'pb-[42.86%]',    // Cinéma
+    '1:1.414': 'pb-[141.4%]',    // A4
 };
 
 export const CollageRenderer = ({
@@ -74,9 +80,20 @@ export const CollageRenderer = ({
                     const tilt = photoTilt && photoUrl ? (slotDef.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
                     let frameStyle: React.CSSProperties = {};
                     if (photoFrame === 'polaroid' && photoUrl) {
-                        frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' };
+                        // Style Polaroid : marges blanches, ombre portée
+                        frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 15px -2px rgba(0,0,0,0.2), 0 2px 6px -1px rgba(0,0,0,0.1)' };
                     } else if (photoFrame === 'classic' && photoUrl) {
-                        frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0' };
+                        // Style Classique : cadre simple
+                        frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' };
+                    } else if (photoFrame === 'clean' && photoUrl) {
+                        // Style Clean : sans espacement, bordures fines
+                        frameStyle = { border: '1px solid rgba(255,255,255,0.3)' };
+                    } else if (photoFrame === 'mosaic' && photoUrl) {
+                        // Style Mosaic : ombre subtile pour effet 3D
+                        frameStyle = { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' };
+                    } else if (photoFrame === 'minimal' && photoUrl) {
+                        // Style Minimal : espacement égal, coins légers
+                        frameStyle = { border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' };
                     }
 
                     const photo = (

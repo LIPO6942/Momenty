@@ -14,17 +14,23 @@ interface CollageCanvasProps {
     gap: number;
     borderRadius: number;
     bgColor: string;
-    ratio: '1:1' | '4:5' | '16:9';
+    ratio: '1:1' | '4:5' | '16:9' | '9:16' | '2:3' | '3:2' | '3:4' | '21:9' | '1:1.414';
     bgPattern?: string;
-    photoFrame?: 'none' | 'polaroid' | 'classic';
+    photoFrame?: 'none' | 'polaroid' | 'classic' | 'clean' | 'mosaic' | 'minimal';
     photoTilt?: boolean;
     onNewPhotoDropped?: (newPhoto: string, slotIndex: number) => void;
 }
 
 const RATIO_PADDING: Record<string, string> = {
-    '1:1':  'pb-[100%]',
-    '4:5':  'pb-[125%]',
-    '16:9': 'pb-[56.25%]',
+    '1:1':     'pb-[100%]',      // Carré
+    '4:5':     'pb-[125%]',      // Instagram portrait
+    '16:9':    'pb-[56.25%]',    // Paysage HD
+    '9:16':    'pb-[177.78%]',   // Stories
+    '2:3':     'pb-[150%]',      // Portrait
+    '3:2':     'pb-[66.67%]',    // Paysage photo
+    '3:4':     'pb-[133.33%]',   // Portrait classique
+    '21:9':    'pb-[42.86%]',    // Cinéma
+    '1:1.414': 'pb-[141.4%]',    // A4
 };
 
 // Helper for patterns
@@ -230,9 +236,15 @@ export function CollageCanvas({
                         // Frames
                         let frameStyle: React.CSSProperties = {};
                         if (photoFrame === 'polaroid' && photo) {
-                            frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' };
+                            frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 15px -2px rgba(0,0,0,0.2), 0 2px 6px -1px rgba(0,0,0,0.1)' };
                         } else if (photoFrame === 'classic' && photo) {
-                            frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0' };
+                            frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' };
+                        } else if (photoFrame === 'clean' && photo) {
+                            frameStyle = { border: '1px solid rgba(255,255,255,0.3)' };
+                        } else if (photoFrame === 'mosaic' && photo) {
+                            frameStyle = { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' };
+                        } else if (photoFrame === 'minimal' && photo) {
+                            frameStyle = { border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' };
                         }
 
                         return (
