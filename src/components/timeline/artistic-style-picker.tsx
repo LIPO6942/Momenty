@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { deepAIStyles, type DeepAIStyleKey } from "@/lib/deepai";
+import { pollinationsStyles, generatePollinationsArtisticUrl, type PollinationsStyleKey } from "@/lib/pollinations";
 import { Palette, X, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -11,8 +11,8 @@ import { toast } from "@/hooks/use-toast";
 
 interface ArtisticStylePickerProps {
   photoUrl: string | null;
-  selectedStyle: DeepAIStyleKey | null;
-  onStyleSelect: (style: DeepAIStyleKey | null) => void;
+  selectedStyle: PollinationsStyleKey | null;
+  onStyleSelect: (style: PollinationsStyleKey | null) => void;
   onArtisticUrlGenerated?: (artisticUrl: string) => void;
 }
 
@@ -89,8 +89,8 @@ export function ArtisticStylePicker({
     uploadPhoto();
   }, [photoUrl, isCloudinaryUrl]);
 
-  // Generate artistic image via server-side API route
-  const handleStyleSelect = async (style: DeepAIStyleKey | null) => {
+  // Generate artistic image using Pollinations.ai (free, no API key needed)
+  const handleStyleSelect = async (style: PollinationsStyleKey | null) => {
     onStyleSelect(style);
     
     if (!style || !uploadedPhotoUrl) {
@@ -102,40 +102,22 @@ export function ArtisticStylePicker({
     setIsExpanded(false);
     
     try {
-      const response = await fetch('/api/deepai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          photoUrl: uploadedPhotoUrl,
-          style: style,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate artistic style');
-      }
-
-      const result = await response.json();
+      // Pollinations.ai generates the URL instantly - the image is created on-the-fly
+      const artisticUrl = generatePollinationsArtisticUrl(uploadedPhotoUrl, style);
       
-      if (result.artisticUrl) {
-        setGeneratedArtisticUrl(result.artisticUrl);
-        onArtisticUrlGenerated?.(result.artisticUrl);
-        toast({
-          title: "Style artistique généré !",
-          description: "Votre photo a été transformée avec succès par l'IA."
-        });
-      } else {
-        throw new Error('No artistic URL returned');
-      }
+      setGeneratedArtisticUrl(artisticUrl);
+      onArtisticUrlGenerated?.(artisticUrl);
+      
+      toast({
+        title: "Style artistique prêt !",
+        description: "L'image sera générée par l'IA Pollinations (gratuit)."
+      });
     } catch (error) {
       console.error('Error generating artistic style:', error);
       toast({
         variant: "destructive",
-        title: "Échec de la génération",
-        description: error instanceof Error ? error.message : "Impossible de générer le style artistique."
+        title: "Erreur",
+        description: "Impossible de générer le style artistique."
       });
     } finally {
       setIsGenerating(false);
@@ -180,7 +162,7 @@ export function ArtisticStylePicker({
             <div className="flex items-center gap-2">
               <Wand2 className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium text-white">
-                {deepAIStyles.find(s => s.key === selectedStyle)?.emoji} {deepAIStyles.find(s => s.key === selectedStyle)?.label} - Généré par IA
+                {pollinationsStyles.find(s => s.key === selectedStyle)?.emoji} {pollinationsStyles.find(s => s.key === selectedStyle)?.label} - Généré par IA
               </span>
             </div>
           </div>
@@ -215,8 +197,8 @@ export function ArtisticStylePicker({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm">
-                {deepAIStyles.find(s => s.key === selectedStyle)?.emoji} {' '}
-                {deepAIStyles.find(s => s.key === selectedStyle)?.label}
+                {pollinationsStyles.find(s => s.key === selectedStyle)?.emoji} {' '}
+                {pollinationsStyles.find(s => s.key === selectedStyle)?.label}
               </span>
             </div>
           ) : (
@@ -248,7 +230,7 @@ export function ArtisticStylePicker({
           )}
 
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {deepAIStyles.map(({ key, label, emoji }) => (
+            {pollinationsStyles.map(({ key, label, emoji }) => (
               <button
                 key={key}
                 type="button"
@@ -278,7 +260,7 @@ export function ArtisticStylePicker({
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Les styles sont générés par IA (DeepAI) - 10 000 crédits gratuits/mois
+            Les styles sont générés par IA (Pollinations.ai) - Gratuit, sans limite
           </p>
         </div>
       )}
