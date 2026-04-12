@@ -157,6 +157,13 @@ export function ArtisticStylePicker({
             fill
             className="object-cover transition-opacity duration-500"
             sizes="(max-width: 768px) 100vw, 400px"
+            unoptimized
+            onError={(e) => {
+              // If Pollinations image fails, show the original photo
+              if (uploadedPhotoUrl) {
+                (e.target as HTMLImageElement).src = uploadedPhotoUrl;
+              }
+            }}
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
             <div className="flex items-center gap-2">

@@ -48,22 +48,23 @@ export const pollinationsStyles: { key: PollinationsStyleKey; label: string; emo
 ];
 
 // Generate artistic image using Pollinations.ai
-// Uses image-to-image transformation with prompt-based style transfer
+// Uses prompt-based generation with reference image
 export function generatePollinationsArtisticUrl(
   photoUrl: string,
   style: PollinationsStyleKey
 ): string {
   const stylePrompt = stylePromptMap[style];
   
-  // Pollinations.ai format for image-to-image:
-  // https://image.pollinations.ai/prompt/{encoded_prompt}?image={encoded_source_image}&width=1024&height=1024&nologo=true
-  const prompt = `Transform this photo ${stylePrompt}, maintain the composition and subject matter, apply artistic style faithfully`;
+  // Use Pollinations.ai image reference feature with shorter prompt
+  // The 'image' parameter tells Pollinations to use the source as reference
+  const prompt = `artistic photo, ${stylePrompt}, masterpiece`;
   
   const encodedPrompt = encodeURIComponent(prompt);
+  // Use the original photo URL as reference image
   const encodedImage = encodeURIComponent(photoUrl);
   
-  // Generate URL - Pollinations will use the source image and apply the style
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&nologo=true&seed=42&enhance=true`;
+  // Generate URL with proper parameters for image-to-image
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&seed=42&nologo=true`;
   
   return url;
 }
