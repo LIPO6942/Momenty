@@ -1,18 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { artisticStyles, buildArtisticTransform, type ArtisticStyleKey } from "@/lib/cloudinary";
-import { Palette, X, Sparkles, Loader2 } from "lucide-react";
+import { Palette, X, Sparkles, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { toast } from "@/hooks/use-toast";
 
 interface ArtisticStylePickerProps {
   photoUrl: string | null;
   selectedStyle: ArtisticStyleKey | null;
   onStyleSelect: (style: ArtisticStyleKey | null) => void;
   onArtisticUrlGenerated?: (artisticUrl: string) => void;
+}
+
+// Upload a photo to Cloudinary and return the secure URL
+async function uploadPhotoToCloudinary(dataUrl: string): Promise<string | null> {
+  try {
+    const formData = new FormData();
+    const blob = await (await fetch(dataUrl)).blob();
+    formData.append('file', blob);
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    const result = await response.json();
+    return result.secure_url;
+  } catch (error) {
+    console.error('Failed to upload photo:', error);
+    return null;
+  }
 }
 
 export function ArtisticStylePicker({
@@ -24,33 +49,72 @@ export function ArtisticStylePicker({
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<Record<ArtisticStyleKey, string>>({} as Record<ArtisticStyleKey, string>);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
 
-  // Generate preview URLs when photoUrl changes
+  // Check if photoUrl is a Cloudinary URL
+  const isCloudinaryUrl = useCallback((url: string): boolean => {
+    return url.includes('cloudinary.com') || url.includes('res.cloudinary.com');
+  }, []);
+
+  // Upload local photo to Cloudinary when needed
   useEffect(() => {
     if (!photoUrl) {
+      setUploadedPhotoUrl(null);
+      return;
+    }
+
+    // If already a Cloudinary URL, use it directly
+    if (isCloudinaryUrl(photoUrl)) {
+      setUploadedPhotoUrl(photoUrl);
+      return;
+    }
+
+    // Otherwise, upload the local photo
+    const uploadPhoto = async () => {
+      setIsUploading(true);
+      const uploadedUrl = await uploadPhotoToCloudinary(photoUrl);
+      if (uploadedUrl) {
+        setUploadedPhotoUrl(uploadedUrl);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Échec de l'upload",
+          description: "Impossible d'uploader la photo pour la prévisualisation artistique."
+        });
+      }
+      setIsUploading(false);
+    };
+
+    uploadPhoto();
+  }, [photoUrl, isCloudinaryUrl]);
+
+  // Generate preview URLs when uploadedPhotoUrl changes
+  useEffect(() => {
+    if (!uploadedPhotoUrl) {
       setPreviewUrls({} as Record<ArtisticStyleKey, string>);
       return;
     }
 
     const urls: Record<ArtisticStyleKey, string> = {} as Record<ArtisticStyleKey, string>;
     artisticStyles.forEach(({ key }) => {
-      urls[key] = buildArtisticTransform(photoUrl, key, { w: 150, h: 150, c: 'fill' });
+      urls[key] = buildArtisticTransform(uploadedPhotoUrl, key, { w: 150, h: 150, c: 'fill' });
     });
     setPreviewUrls(urls);
-  }, [photoUrl]);
+  }, [uploadedPhotoUrl]);
 
   // Generate full artistic URL when style is selected
   useEffect(() => {
-    if (selectedStyle && photoUrl && onArtisticUrlGenerated) {
+    if (selectedStyle && uploadedPhotoUrl && onArtisticUrlGenerated) {
       setIsGenerating(true);
-      const artisticUrl = buildArtisticTransform(photoUrl, selectedStyle, { w: 1200, h: 900, c: 'fill' });
+      const artisticUrl = buildArtisticTransform(uploadedPhotoUrl, selectedStyle, { w: 1200, h: 900, c: 'fill' });
       // Simulate slight delay for better UX
       setTimeout(() => {
         onArtisticUrlGenerated(artisticUrl);
         setIsGenerating(false);
       }, 300);
     }
-  }, [selectedStyle, photoUrl, onArtisticUrlGenerated]);
+  }, [selectedStyle, uploadedPhotoUrl, onArtisticUrlGenerated]);
 
   if (!photoUrl) {
     return null;
@@ -99,17 +163,31 @@ export function ArtisticStylePicker({
         </div>
       )}
 
+      {isUploading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-3 px-4 bg-muted rounded-lg">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Upload de la photo pour prévisualisation...
+        </div>
+      )}
+
       {!isExpanded ? (
         <Button
           type="button"
           variant="outline"
           onClick={() => setIsExpanded(true)}
+          disabled={isUploading || !uploadedPhotoUrl}
           className={cn(
             "w-full py-6 border-dashed rounded-xl transition-all",
-            selectedStyle && "border-primary bg-primary/5"
+            selectedStyle && "border-primary bg-primary/5",
+            (isUploading || !uploadedPhotoUrl) && "opacity-50 cursor-not-allowed"
           )}
         >
-          {selectedStyle ? (
+          {isUploading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Upload en cours...</span>
+            </div>
+          ) : selectedStyle ? (
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm">
