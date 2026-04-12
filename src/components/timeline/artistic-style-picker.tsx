@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { deepAIStyles, generateArtisticImage, type DeepAIStyleKey } from "@/lib/deepai";
+import { deepAIStyles, type DeepAIStyleKey } from "@/lib/deepai";
 import { Palette, X, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -52,16 +52,6 @@ export function ArtisticStylePicker({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
 
-  // Get DeepAI API key from environment
-  const getDeepAIKey = () => {
-    // In production, this should be set in your environment variables
-    // For now, we'll check if a key is available in localStorage (for demo purposes)
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('DEEPAI_API_KEY') || process.env.NEXT_PUBLIC_DEEPAI_API_KEY || '';
-    }
-    return '';
-  };
-
   // Check if photoUrl is a Cloudinary URL
   const isCloudinaryUrl = useCallback((url: string): boolean => {
     return url.includes('cloudinary.com') || url.includes('res.cloudinary.com');
@@ -99,7 +89,7 @@ export function ArtisticStylePicker({
     uploadPhoto();
   }, [photoUrl, isCloudinaryUrl]);
 
-  // Generate artistic image when style is selected
+  // Generate artistic image via server-side API route
   const handleStyleSelect = async (style: DeepAIStyleKey | null) => {
     onStyleSelect(style);
     
@@ -108,41 +98,44 @@ export function ArtisticStylePicker({
       return;
     }
 
-    const apiKey = getDeepAIKey();
-    if (!apiKey) {
-      toast({
-        variant: "destructive",
-        title: "Clé API manquante",
-        description: "Veuillez configurer votre clé API DeepAI dans les paramètres."
-      });
-      return;
-    }
-
     setIsGenerating(true);
     setIsExpanded(false);
     
     try {
-      const artisticUrl = await generateArtisticImage(uploadedPhotoUrl, style, apiKey);
-      if (artisticUrl) {
-        setGeneratedArtisticUrl(artisticUrl);
-        onArtisticUrlGenerated?.(artisticUrl);
+      const response = await fetch('/api/deepai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          photoUrl: uploadedPhotoUrl,
+          style: style,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate artistic style');
+      }
+
+      const result = await response.json();
+      
+      if (result.artisticUrl) {
+        setGeneratedArtisticUrl(result.artisticUrl);
+        onArtisticUrlGenerated?.(result.artisticUrl);
         toast({
           title: "Style artistique généré !",
-          description: "Votre photo a été transformée avec succès."
+          description: "Votre photo a été transformée avec succès par l'IA."
         });
       } else {
-        toast({
-          variant: "destructive",
-          title: "Échec de la génération",
-          description: "Impossible de générer le style artistique. Veuillez réessayer."
-        });
+        throw new Error('No artistic URL returned');
       }
     } catch (error) {
       console.error('Error generating artistic style:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la génération."
+        title: "Échec de la génération",
+        description: error instanceof Error ? error.message : "Impossible de générer le style artistique."
       });
     } finally {
       setIsGenerating(false);
