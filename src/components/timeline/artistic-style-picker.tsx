@@ -76,6 +76,29 @@ export function ArtisticStylePicker({
         )}
       </div>
 
+      {/* Aperçu du style sélectionné */}
+      {selectedStyle && photoUrl && (
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-muted border-2 border-primary/30">
+          <Image
+            src={previewUrls[selectedStyle] || photoUrl}
+            alt="Aperçu du style artistique"
+            fill
+            className="object-cover transition-opacity duration-500"
+            sizes="(max-width: 768px) 100vw, 400px"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">
+                {artisticStyles.find(s => s.key === selectedStyle)?.emoji}
+              </span>
+              <span className="text-sm font-medium text-white">
+                Aperçu: {artisticStyles.find(s => s.key === selectedStyle)?.label}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!isExpanded ? (
         <Button
           type="button"

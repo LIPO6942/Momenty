@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
+import { clTransform, buildTransformFromDisplay, buildArtisticTransform } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
 import type { DisplayTransform, CollageTemplate, ArtisticStyle } from "@/lib/types";
@@ -271,7 +271,9 @@ export const PhotoCollage = ({
                 alt={`${title} ${index + 1}`}
                 width={width}
                 height={height}
-                artisticUrl={index === 0 && artisticStyle ? artisticStyle.artisticUrl : undefined}
+                artisticUrl={index === 0 && artisticStyle && photos[index] 
+                    ? buildArtisticTransform(photos[index], artisticStyle.style, { w: 1200, h: 900, c: 'fill' })
+                    : undefined}
             >
                 {content}
             </ImageLightbox>
