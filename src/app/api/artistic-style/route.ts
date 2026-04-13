@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configuration Cloudinary avec les clés secrètes pour signer l'URL
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // On utilise e_gen_restyle qui est le moteur IA (Stable Diffusion) natif de Cloudinary.
-// Il garde les traits de la photo et la redessine selon le prompt.
 const styleGenPrompts: Record<string, string> = {
   vangogh: 'a Van Gogh painting with swirling colors and thick brush strokes',
   manga: 'super detailed anime manga style artwork, studio ghibli, makoto shinkai, perfect character design, cel shading',
@@ -16,6 +23,27 @@ const styleGenPrompts: Record<string, string> = {
   renaissance: 'a classical Renaissance era portrait painting',
   ukiyoe: 'a traditional Japanese ukiyo-e woodblock print',
 };
+
+// Extrait l'ID public depuis une URL Cloudinary
+function getPublicIdFromUrl(url: string) {
+  try {
+    const parts = url.split('/upload/');
+    if (parts.length < 2) return null;
+    let path = parts[1];
+    // Enlever le numéro de version (ex: v171243/... )
+    if (path.match(/^v\d+\//)) {
+      path = path.replace(/^v\d+\//, '');
+    }
+    // Enlever l'extension
+    const lastDotIndex = path.lastIndexOf('.');
+    if (lastDotIndex !== -1) {
+      path = path.substring(0, lastDotIndex);
+    }
+    return path;
+  } catch (e) {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,18 +60,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = styleGenPrompts[style] ?? `a ${style} style artwork`;
-    const effect = `e_gen_restyle:prompt_${encodeURIComponent(prompt)}`;
-
-    // Cloudinary URLs: https://res.cloudinary.com/<cloud>/image/upload/v123456/folder/file.jpg
-    let generatedUrl = photoUrl;
-    if (photoUrl.includes('/upload/')) {
-       generatedUrl = photoUrl.replace('/upload/', `/upload/${effect}/`);
-    } else {
+    const publicId = getPublicIdFromUrl(photoUrl);
+    if (!publicId) {
        return NextResponse.json({ error: 'Format d\'URL Cloudinary non reconnu.' }, { status: 400 });
     }
 
-    // Le backend ne fait que retourner la bonne URL avec l'effet.
+    const rawPrompt = styleGenPrompts[style] ?? `a ${style} style artwork`;
+    // Cloudinary recommande de remplacer les espaces par des underscores pour les prompts
+    const safePrompt = rawPrompt.replace(/ /g, '_');
+    
+    // Cloudinary exige absolument de SIGNER (sign_url: true) les transformations d'IA Générative
+    // Sinon le lien renvoie une erreur 400.
+    const generatedUrl = cloudinary.url(publicId, {
+       effect: `gen_restyle:prompt_${safePrompt}`,
+       sign_url: true,
+       secure: true
+    });
+
     return NextResponse.json({ artisticUrl: generatedUrl });
     
   } catch (error: any) {
@@ -51,3 +84,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
   }
 }
+
