@@ -37,20 +37,20 @@ import { ParallaxContainer } from "@/components/ui/parallax-container";
 
 const getDescriptionContainerClass = (style?: DescriptionStyle) => {
     switch (style) {
-        case 'classique-italique': return "relative mt-2";
-        case 'magazine-bold': return "relative p-4";
-        case 'polaroid-marker': return "relative flex justify-center mt-2";
-        case 'cinematique': return "relative mt-2 flex justify-center";
+        case 'classique-italique': return "relative mt-2 text-center";
+        case 'magazine-bold': return "relative mt-2 px-2";
+        case 'polaroid-marker': return "relative mt-2 text-center";
+        case 'cinematique': return "relative mt-2 text-center";
         default: return "relative mt-2";
     }
 }
 
 const getDescriptionTextClass = (style?: DescriptionStyle) => {
     switch (style) {
-        case 'classique-italique': return "text-white/95 text-base md:text-lg italic font-serif leading-relaxed text-center drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]";
-        case 'magazine-bold': return "text-white text-base md:text-lg font-black uppercase tracking-widest bg-black/80 px-4 py-2 inline-block transform -skew-x-3 shadow-xl backdrop-blur-sm";
-        case 'polaroid-marker': return "text-slate-900 text-base md:text-lg font-medium tracking-tight transform -rotate-2 bg-white/95 backdrop-blur px-5 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.2)]";
-        case 'cinematique': return "text-[#FCEABB] text-xs md:text-sm font-medium tracking-[0.25em] uppercase text-center [text-shadow:_0_2px_4px_black]";
+        case 'classique-italique': return "text-white/95 text-base md:text-xl italic font-serif leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] [text-shadow:_0_1px_2px_black]";
+        case 'magazine-bold': return "text-white text-lg md:text-2xl font-black uppercase tracking-widest drop-shadow-[0_4px_4px_rgba(0,0,0,1)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]";
+        case 'polaroid-marker': return "text-white text-base md:text-xl font-bold tracking-tight transform -rotate-2 drop-shadow-[0_3px_5px_rgba(0,0,0,1)] [text-shadow:_1px_1px_3px_black]";
+        case 'cinematique': return "text-[#FCEABB] text-sm md:text-base font-medium tracking-[0.25em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] [text-shadow:_0_2px_4px_black]";
         default: return "text-white/95 text-base md:text-lg italic font-serif leading-relaxed text-center drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]";
     }
 }

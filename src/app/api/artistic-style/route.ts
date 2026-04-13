@@ -44,11 +44,11 @@ async function callHuggingFace(
   prompt: string,
   token: string,
   modelId: string
-): Promise<Buffer | null> {
+): Promise<{ buffer?: Buffer; retryAfter?: boolean; error?: string }> {
   const base64Image = imageBuffer.toString('base64');
 
   const response = await fetch(
-    `https://api-inference.huggingface.co/models/${modelId}`,
+    `https://router.huggingface.co/hf-inference/models/${modelId}`,
     {
       method: 'POST',
       headers: {
@@ -72,11 +72,17 @@ async function callHuggingFace(
   if (!response.ok) {
     const errText = await response.text();
     console.error(`HuggingFace error (${modelId}):`, response.status, errText);
-    return null;
+    
+    // If 503, it's usually model loading
+    if (response.status === 503) {
+      return { retryAfter: true };
+    }
+    
+    return { error: errText };
   }
 
   const arrayBuf = await response.arrayBuffer();
-  return Buffer.from(arrayBuf);
+  return { buffer: Buffer.from(arrayBuf) };
 }
 
 async function uploadBufferToCloudinary(buffer: Buffer): Promise<string | null> {
@@ -135,7 +141,7 @@ export async function POST(req: NextRequest) {
     const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
 
     // 2. Appeler HuggingFace (primary model)
-    let resultBuffer = await callHuggingFace(
+    let hfRes = await callHuggingFace(
       photoBuffer,
       prompt,
       HF_TOKEN,
@@ -143,19 +149,34 @@ export async function POST(req: NextRequest) {
     );
 
     // 3. Si le modèle primaire est en cours de chargement (cold start), renvoyer 503 avec retryAfter
-    if (!resultBuffer) {
+    if (hfRes.retryAfter) {
       return NextResponse.json(
         {
           error: 'model_loading',
           message:
-            "Le modèle IA est en cours de démarrage (cold start). Réessaie dans 30 secondes.",
+            "Le modèle IA est en cours de démarrage (cold start). Réessaie dans quelques secondes.",
         },
         { status: 503 }
       );
     }
+    
+    if (hfRes.error) {
+       return NextResponse.json(
+        {
+          error: 'hf_error',
+          message: "L'IA HuggingFace a refusé la requête (modèle incompatible ou erreur).",
+          details: hfRes.error,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!hfRes.buffer) {
+       throw new Error("Empty buffer from HF");
+    }
 
     // 4. Upload du résultat sur Cloudinary
-    const cloudinaryUrl = await uploadBufferToCloudinary(resultBuffer);
+    const cloudinaryUrl = await uploadBufferToCloudinary(hfRes.buffer);
     if (!cloudinaryUrl) {
       return NextResponse.json(
         { error: 'Failed to upload result to Cloudinary' },

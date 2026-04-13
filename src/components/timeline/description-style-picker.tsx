@@ -14,19 +14,19 @@ const styles: { id: DescriptionStyle; label: string; previewClass: string; demoT
         id: 'classique-italique', 
         label: 'Classique', 
         previewClass: 'bg-gradient-to-br from-indigo-500/30 to-purple-500/30',
-        demoTextClass: 'text-white text-sm italic font-serif drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]'
+        demoTextClass: 'text-white text-sm italic font-serif drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] [text-shadow:_0_1px_2px_black]'
     },
     { 
         id: 'magazine-bold', 
         label: 'Magazine', 
         previewClass: 'bg-gradient-to-br from-rose-500/30 to-red-500/30',
-        demoTextClass: 'text-white text-[10px] font-black uppercase tracking-widest bg-black/80 px-2 py-0.5'
+        demoTextClass: 'text-white text-[12px] font-black uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,1)] [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]'
     },
     { 
         id: 'polaroid-marker', 
         label: 'Polaroïd', 
         previewClass: 'bg-slate-200/50',
-        demoTextClass: 'text-slate-900 text-sm font-medium -rotate-2 bg-white/95 px-3 mb-1 shadow-sm'
+        demoTextClass: 'text-white text-sm font-bold -rotate-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] [text-shadow:_1px_1px_2px_black]'
     },
     { 
         id: 'cinematique', 
