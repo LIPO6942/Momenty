@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
-export type DescriptionStyle = 'ombre-subtile' | 'contour-leger' | 'gradient-bas' | 'minimal-haut';
+export type DescriptionStyle = 'classique-italique' | 'magazine-bold' | 'polaroid-marker' | 'cinematique';
 
 interface DescriptionStylePickerProps {
     value: DescriptionStyle | undefined;
@@ -11,33 +11,33 @@ interface DescriptionStylePickerProps {
 
 const styles: { id: DescriptionStyle; label: string; previewClass: string; demoTextClass: string }[] = [
     { 
-        id: 'ombre-subtile', 
-        label: 'Ombre subtile', 
-        previewClass: 'bg-gradient-to-br from-blue-500/30 to-purple-500/30',
-        demoTextClass: 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] font-medium'
+        id: 'classique-italique', 
+        label: 'Classique', 
+        previewClass: 'bg-gradient-to-br from-indigo-500/30 to-purple-500/30',
+        demoTextClass: 'text-white text-sm italic font-serif drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]'
     },
     { 
-        id: 'contour-leger', 
-        label: 'Contour léger', 
-        previewClass: 'bg-gradient-to-br from-emerald-500/30 to-teal-500/30',
-        demoTextClass: 'text-white font-medium'
+        id: 'magazine-bold', 
+        label: 'Magazine', 
+        previewClass: 'bg-gradient-to-br from-rose-500/30 to-red-500/30',
+        demoTextClass: 'text-white text-[10px] font-black uppercase tracking-widest bg-black/80 px-2 py-0.5'
     },
     { 
-        id: 'gradient-bas', 
-        label: 'Dégradé bas', 
-        previewClass: 'bg-gradient-to-br from-orange-500/30 to-red-500/30',
-        demoTextClass: 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] font-medium'
+        id: 'polaroid-marker', 
+        label: 'Polaroïd', 
+        previewClass: 'bg-slate-200/50',
+        demoTextClass: 'text-slate-900 text-sm font-medium -rotate-2 bg-white/95 px-3 mb-1 shadow-sm'
     },
     { 
-        id: 'minimal-haut', 
-        label: 'Minimal haut', 
-        previewClass: 'bg-gradient-to-br from-pink-500/30 to-rose-500/30',
-        demoTextClass: 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] font-semibold'
+        id: 'cinematique', 
+        label: 'Cinéma', 
+        previewClass: 'bg-gradient-to-br from-amber-500/20 to-orange-500/20',
+        demoTextClass: 'text-[#FCEABB] text-[9px] tracking-[0.2em] uppercase [text-shadow:_0_1px_2px_black]'
     },
 ];
 
 export function DescriptionStylePicker({ value, onChange }: DescriptionStylePickerProps) {
-    const currentValue = value || 'ombre-subtile';
+    const currentValue = (value && styles.some(s => s.id === value)) ? value : 'classique-italique';
 
     return (
         <div className="space-y-3">

@@ -105,7 +105,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
-    const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("ombre-subtile");
+    const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("classique-italique");
 
     // ── Artistic style state ─────────────────────────────────────────────────
     const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(null);
@@ -408,7 +408,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
         setDisplayGravity("auto");
-        setDescriptionStyle("ombre-subtile");
+        setDescriptionStyle("classique-italique");
         // Artistic style cleanup
         setSelectedArtisticStyle(null);
         setArtisticUrl(null);

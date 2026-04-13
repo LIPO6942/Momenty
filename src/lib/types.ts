@@ -80,7 +80,7 @@ export interface Instant {
     category?: string[]; // AI-generated category, now an array
     displayTransform?: DisplayTransform; // Optional persisted display settings
     collageTemplate?: CollageTemplate; // Optional collage template settings
-    descriptionStyle?: 'ombre-subtile' | 'contour-leger' | 'gradient-bas' | 'minimal-haut'; // Optional style for description overlay
+    descriptionStyle?: 'classique-italique' | 'magazine-bold' | 'polaroid-marker' | 'cinematique'; // Optional style for description overlay
     artisticStyle?: ArtisticStyle; // Optional artistic transformation for the main photo
 }
 

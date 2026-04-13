@@ -100,7 +100,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
   const [displayPositionX, setDisplayPositionX] = useState<number>(50);
   const [displayPositionY, setDisplayPositionY] = useState<number>(50);
-  const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>(instantToEdit.descriptionStyle || "chat");
+  const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
   // ── Artistic style state ─────────────────────────────────────────────────
@@ -120,7 +120,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
       setDisplayPositionX(instantToEdit.displayTransform?.positionX ?? 50);
       setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
-      setDescriptionStyle(instantToEdit.descriptionStyle || "chat");
+      setDescriptionStyle((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
       setAudioUrl(instantToEdit.audio || null);
       // Initialize artistic style state
       setSelectedArtisticStyle(instantToEdit.artisticStyle?.style || null);
@@ -293,7 +293,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     setDisplayPreset(instantToEdit.displayTransform?.preset ?? 'landscape');
     setDisplayCrop(instantToEdit.displayTransform?.crop ?? 'fit');
     setDisplayGravity(instantToEdit.displayTransform?.gravity ?? 'auto');
-    setDescriptionStyle(instantToEdit.descriptionStyle || 'chat');
+    setDescriptionStyle((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
     setAudioUrl(instantToEdit.audio || null);
     setIsAnalyzing(false);
     setIsImprovingText(false);
