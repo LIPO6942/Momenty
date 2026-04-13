@@ -347,19 +347,20 @@ export function ImageLightbox({
                         
                         {/* Loader pendant la génération AI */}
                         {isArtisticLoading && (
-                          <div className="absolute inset-x-0 inset-y-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px]">
+                          <div className="absolute inset-x-0 inset-y-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-md transition-all duration-500">
                             <div className="relative">
-                              <div className="h-16 w-16 rounded-full border-t-2 border-r-2 border-white animate-spin"></div>
+                              <div className="h-16 w-16 rounded-full border-t-4 border-r-4 border-white animate-spin"></div>
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="h-10 w-10 rounded-full border-b-2 border-l-2 border-primary animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                                <div className="h-10 w-10 rounded-full border-b-4 border-l-4 border-primary animate-[spin_0.8s_linear_infinite_reverse]"></div>
                               </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-white font-black text-sm uppercase tracking-[0.2em] animate-pulse">Style en préparation...</span>
-                              <span className="text-white/40 text-[10px] font-medium uppercase tracking-widest mt-1 italic">Veuillez patienter</span>
+                            <div className="flex flex-col items-center text-center px-6">
+                              <span className="text-white font-black text-base uppercase tracking-[0.3em] animate-pulse">Magie en cours...</span>
+                              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2 bg-white/10 px-3 py-1 rounded-full border border-white/10">Transformation Turbo Activée</span>
                             </div>
                           </div>
                         )}
+
                       </>
                     )}
                     
