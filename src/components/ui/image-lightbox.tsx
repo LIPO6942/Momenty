@@ -118,6 +118,11 @@ export function ImageLightbox({
   }, [isOpen, audioUrl]);
 
 
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isAutoSwiping) return;
+    setSliderPosition(Number(e.target.value));
+  };
+
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsMuted(!isMuted);
