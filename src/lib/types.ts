@@ -58,7 +58,7 @@ export interface CollageTemplate {
     slots: CollageSlot[];
 }
 
-export type ArtisticStyleType = 'monet' | 'vangogh' | 'abstract' | 'cubist' | 'oil' | 'watercolor' | 'line art' | 'comic' | 'cyberpunk' | 'fantasy' | 'renaissance' | 'ukiyoe';
+export type ArtisticStyleType = 'manga' | 'abstract' | 'vangogh' | 'monet' | 'watercolor' | 'comic';
 
 export interface ArtisticStyle {
     style: ArtisticStyleType;

@@ -11,19 +11,12 @@ import type { ArtisticStyleType } from "@/lib/types";
 
 // ─── Style catalogue (labels + emojis only, prompts are server-side) ──────────
 export const artisticStyles: { key: ArtisticStyleType; label: string; emoji: string }[] = [
-  { key: 'vangogh',    label: 'Van Gogh',    emoji: '🌻' },
   { key: 'manga',      label: 'Manga',       emoji: '🌸' },
-  { key: 'monet',      label: 'Monet',       emoji: '🌾' },
   { key: 'abstract',   label: 'Abstrait',    emoji: '🎨' },
-  { key: 'cubist',     label: 'Cubiste',     emoji: '🎭' },
-  { key: 'oil',        label: 'Huile',       emoji: '🖼️' },
+  { key: 'vangogh',    label: 'Van Gogh',    emoji: '🌻' },
+  { key: 'monet',      label: 'Monet',       emoji: '🌾' },
   { key: 'watercolor', label: 'Aquarelle',   emoji: '💧' },
-  { key: 'line art',   label: 'Dessin',      emoji: '✏️' },
   { key: 'comic',      label: 'Comic',       emoji: '💥' },
-  { key: 'cyberpunk',  label: 'Cyberpunk',   emoji: '🤖' },
-  { key: 'fantasy',    label: 'Fantasy',     emoji: '🐉' },
-  { key: 'renaissance',label: 'Renaissance', emoji: '🏛️' },
-  { key: 'ukiyoe',     label: 'Ukiyo-e',     emoji: '🗾' },
 ];
 
 interface ArtisticStylePickerProps {
