@@ -302,8 +302,21 @@ export function ImageLightbox({
                     </div>
                   </>
                 ) : (
-                  <div className="relative w-full h-full flex items-center justify-center p-4 group/slider select-none touch-none">
-                    {/* Image artistique (Background - revealed via clip-path) */}
+                  <div className="relative w-full h-full flex items-center justify-center p-4 group/slider select-none touch-none bg-black/20">
+                    
+                    {/* layer 1: Image originale (Background - toujours pleine et visible) */}
+                    <div className="absolute inset-0 flex items-center justify-center p-4 z-0">
+                      <Image
+                        src={lightboxPhotos[0]}
+                        alt={alt}
+                        fill
+                        className="object-contain pointer-events-none"
+                        quality={100}
+                        priority
+                      />
+                    </div>
+
+                    {/* layer 2: Image artistique (Top - révélée par clip-path) */}
                     {artisticUrl && (
                       <div 
                         className="absolute inset-0 flex items-center justify-center p-4 z-10"
@@ -318,30 +331,16 @@ export function ImageLightbox({
                         />
                       </div>
                     )}
-
-                    {/* Image originale (Foreground - always partially visible) */}
-                    <div 
-                      className="absolute inset-0 flex items-center justify-center p-4 z-0"
-                      style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
-                    >
-                      <Image
-                        src={lightboxPhotos[0]}
-                        alt={alt}
-                        fill
-                        className="object-contain pointer-events-none"
-                        quality={100}
-                        priority
-                      />
-                    </div>
                     
                     {/* Magic Reveal Controls */}
                     {artisticUrl && (
                       <>
-                        {/* Range Input invisible pour contrôle tactile/souris précis */}
+                        {/* Range Input invisible pour contrôle tactile/souris précis sur toute la zone */}
                         <input
                           type="range"
                           min="0"
                           max="100"
+                          step="0.1"
                           value={sliderPosition}
                           onChange={handleSliderChange}
                           className="absolute inset-0 w-full h-full opacity-0 z-40 cursor-ew-resize"
@@ -350,34 +349,45 @@ export function ImageLightbox({
                         {/* Barre de séparation visuelle (Handle) */}
                         <div 
                           className={cn(
-                            "absolute top-4 bottom-4 w-0.5 bg-white z-30 pointer-events-none transition-shadow",
-                            !isAutoSwiping && "group-hover/slider:shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                            "absolute top-4 bottom-4 w-[2px] bg-white/80 z-30 pointer-events-none transition-shadow",
+                            !isAutoSwiping && "group-hover/slider:shadow-[0_0_20px_rgba(255,255,255,1)] shadow-[0_0_10px_rgba(0,0,0,0.5)]"
                           )}
                           style={{ left: `${sliderPosition}%` }}
                         >
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center">
-                            <div className="flex items-center gap-1">
-                              <ChevronLeft className="h-3 w-3 text-white" />
-                              <ChevronRight className="h-3 w-3 text-white" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/60 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-xl">
+                            <div className="flex items-center gap-0.5">
+                              <ChevronLeft className="h-4 w-4 text-white" />
+                              <ChevronRight className="h-4 w-4 text-white" />
                             </div>
                           </div>
                           
-                          {/* Etiquettes contextuelles */}
-                          <div className="absolute top-4 -left-20 px-2 py-0.5 rounded-sm bg-black/40 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover/slider:opacity-100 transition-opacity">Artiste</div>
-                          <div className="absolute top-4 left-4 px-2 py-0.5 rounded-sm bg-black/40 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover/slider:opacity-100 transition-opacity whitespace-nowrap">Photo Originale</div>
+                          {/* Etiquettes stylisées */}
+                          <div className={cn(
+                            "absolute top-4 -left-24 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white uppercase tracking-widest transition-opacity duration-300",
+                            sliderPosition < 10 ? "opacity-0" : "opacity-100"
+                          )}>
+                            Artiste
+                          </div>
+                          <div className={cn(
+                            "absolute top-4 left-6 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white uppercase tracking-widest transition-opacity duration-300 whitespace-nowrap",
+                            sliderPosition > 90 ? "opacity-0" : "opacity-100"
+                          )}>
+                            Originale
+                          </div>
                         </div>
                         
-                        {/* Scan Line effect during auto-swipe */}
+                        {/* Scan Line effect during auto-swipe (pure visual polish) */}
                         {isAutoSwiping && (
                           <div 
-                            className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-white/0 via-white/30 to-white/0 z-30 pointer-events-none skew-x-12"
-                            style={{ left: `${sliderPosition - 10}%` }}
+                            className="absolute top-0 bottom-0 w-32 bg-gradient-to-r from-white/0 via-white/40 to-white/0 z-30 pointer-events-none skew-x-12"
+                            style={{ left: `${sliderPosition - 15}%` }}
                           />
                         )}
                       </>
                     )}
                   </div>
                 )}
+
             </div>
           </div>
         </DialogContent>
