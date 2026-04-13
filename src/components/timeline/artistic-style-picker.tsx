@@ -104,7 +104,7 @@ export function ArtisticStylePicker({
 
       if (!res.ok || !data.artisticUrl) {
         setGenState('error');
-        setErrorMsg(data?.message || "Erreur de génération. Réessaie.");
+        setErrorMsg((data?.message || "Erreur de génération. Réessaie.") + (data?.details ? ` (${data.details})` : ""));
         return;
       }
 
