@@ -20,6 +20,7 @@ interface CollageRendererProps {
     title: string;
     audioUrl?: string | null;
     interactive?: boolean;
+    artisticStyle?: ArtisticStyle;
 }
 
 const RATIO_PADDING: Record<string, string> = {
@@ -39,6 +40,7 @@ export const CollageRenderer = ({
     title,
     audioUrl,
     interactive = true,
+    artisticStyle,
 }: CollageRendererProps) => {
     const def = getTemplateById(collageTemplate.templateId);
     if (!def) return null;
@@ -119,6 +121,7 @@ export const CollageRenderer = ({
                                     alt={`${title} — photo ${slotDef.slotIndex + 1}`}
                                     width={800}
                                     height={800}
+                                    artisticUrl={slotDef.slotIndex === 0 && artisticStyle ? artisticStyle.artisticUrl : undefined}
                                 >
                                     <Image
                                         src={photoUrl}
@@ -179,6 +182,7 @@ export const PhotoCollage = ({
                     title={title}
                     audioUrl={audioUrl}
                     interactive={interactive}
+                    artisticStyle={artisticStyle}
                 />
             </div>
         );

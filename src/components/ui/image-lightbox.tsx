@@ -43,37 +43,50 @@ export function ImageLightbox({
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // Morph animation state for artistic image reveal
-  const [showArtistic, setShowArtistic] = useState(false);
-  const [isMorphing, setIsMorphing] = useState(false);
+  // Magic Reveal Slider state
+  const [sliderPosition, setSliderPosition] = useState(50);
+  const [isAutoSwiping, setIsAutoSwiping] = useState(false);
   
   // Create an array of photos from either the photos array or the single src
   const lightboxPhotos = photos.length > 0 ? photos : (src ? [src] : []);
 
-  // Auto-trigger morph animation when lightbox opens with artistic image
+  // Effect for Magic Reveal teaser and state reset
   useEffect(() => {
     if (isOpen && artisticUrl && lightboxPhotos.length === 1) {
-      // Reset state
-      setShowArtistic(false);
-      setIsMorphing(false);
+      // Reset position to fully original
+      setSliderPosition(0);
+      setIsAutoSwiping(true);
       
-      // Démarrer l'animation après un court délai (500ms)
+      // Petit délai avant le scan automatique
       const startTimer = setTimeout(() => {
-        setIsMorphing(true);
-        // La transition dure 2 secondes pour un effet "ralenti" dramatique
-        const revealTimer = setTimeout(() => {
-          setShowArtistic(true);
-        }, 2000);
-        return () => clearTimeout(revealTimer);
-      }, 500);
+        // Balayage automatique (scan) de 0 à 100% puis retour à 50%
+        let pos = 0;
+        const interval = setInterval(() => {
+          pos += 1.5;
+          if (pos >= 100) {
+            clearInterval(interval);
+            // Retour fluide au milieu
+            setTimeout(() => {
+              setIsAutoSwiping(false); // On rend la main à l'utilisateur
+              setSliderPosition(50);
+            }, 300);
+          } else {
+            setSliderPosition(pos);
+          }
+        }, 16); // ~60fps
+      }, 800);
       
       return () => clearTimeout(startTimer);
     } else {
-      // Reset when closing or no artistic image
-      setShowArtistic(false);
-      setIsMorphing(false);
+      setSliderPosition(50);
+      setIsAutoSwiping(false);
     }
   }, [isOpen, artisticUrl, lightboxPhotos.length]);
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isAutoSwiping) return;
+    setSliderPosition(Number(e.target.value));
+  };
   
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     startIndex: initialIndex,
@@ -289,46 +302,79 @@ export function ImageLightbox({
                     </div>
                   </>
                 ) : (
-                  <div className="relative w-full h-full flex items-center justify-center p-4">
-                    {/* Image originale */}
-                    <Image
-                      src={lightboxPhotos[0]}
-                      alt={alt}
-                      fill
-                      className={cn(
-                        "object-contain transition-all duration-[2000ms] ease-in-out",
-                        isMorphing && !showArtistic && "scale-105"
-                      )}
-                      quality={100}
-                      priority
-                    />
-                    
-                    {/* Image artistique avec animation morph */}
+                  <div className="relative w-full h-full flex items-center justify-center p-4 group/slider select-none touch-none">
+                    {/* Image artistique (Background - revealed via clip-path) */}
                     {artisticUrl && (
-                      <div
-                        className={cn(
-                          "absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-[2000ms] ease-in-out",
-                          showArtistic ? "opacity-100" : "opacity-0"
-                        )}
+                      <div 
+                        className="absolute inset-0 flex items-center justify-center p-4 z-10"
+                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                       >
                         <Image
                           src={artisticUrl}
                           alt={`${alt} - Version artistique`}
                           fill
-                          className={cn(
-                            "object-contain transition-all duration-[2000ms] ease-in-out",
-                            showArtistic ? "scale-100" : "scale-110"
-                          )}
+                          className="object-contain pointer-events-none"
                           quality={100}
                         />
                       </div>
                     )}
+
+                    {/* Image originale (Foreground - always partially visible) */}
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center p-4 z-0"
+                      style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+                    >
+                      <Image
+                        src={lightboxPhotos[0]}
+                        alt={alt}
+                        fill
+                        className="object-contain pointer-events-none"
+                        quality={100}
+                        priority
+                      />
+                    </div>
                     
-                    {/* Indicateur de style artistique */}
+                    {/* Magic Reveal Controls */}
                     {artisticUrl && (
-                      <div className="absolute top-20 left-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20">
-                        <span className="text-xs font-medium text-white">Version Artistique</span>
-                      </div>
+                      <>
+                        {/* Range Input invisible pour contrôle tactile/souris précis */}
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={sliderPosition}
+                          onChange={handleSliderChange}
+                          className="absolute inset-0 w-full h-full opacity-0 z-40 cursor-ew-resize"
+                        />
+                        
+                        {/* Barre de séparation visuelle (Handle) */}
+                        <div 
+                          className={cn(
+                            "absolute top-4 bottom-4 w-0.5 bg-white z-30 pointer-events-none transition-shadow",
+                            !isAutoSwiping && "group-hover/slider:shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                          )}
+                          style={{ left: `${sliderPosition}%` }}
+                        >
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center">
+                            <div className="flex items-center gap-1">
+                              <ChevronLeft className="h-3 w-3 text-white" />
+                              <ChevronRight className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
+                          
+                          {/* Etiquettes contextuelles */}
+                          <div className="absolute top-4 -left-20 px-2 py-0.5 rounded-sm bg-black/40 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover/slider:opacity-100 transition-opacity">Artiste</div>
+                          <div className="absolute top-4 left-4 px-2 py-0.5 rounded-sm bg-black/40 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover/slider:opacity-100 transition-opacity whitespace-nowrap">Photo Originale</div>
+                        </div>
+                        
+                        {/* Scan Line effect during auto-swipe */}
+                        {isAutoSwiping && (
+                          <div 
+                            className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-white/0 via-white/30 to-white/0 z-30 pointer-events-none skew-x-12"
+                            style={{ left: `${sliderPosition - 10}%` }}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 )}
