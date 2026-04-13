@@ -38,6 +38,7 @@ export function ImageLightbox({
   showAudioIcon = true,
   artisticUrl
 }: ImageLightboxProps) {
+  // 1. ALL STATES AT THE TOP
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -48,17 +49,33 @@ export function ImageLightbox({
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
   const [isArtisticLoading, setIsArtisticLoading] = useState(true);
   const [artisticError, setArtisticError] = useState(false);
+
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    startIndex: initialIndex,
+    loop: false
+  });
   
-  // Create an array of photos from either the photos array or the single src
+  // 2. DERIVED VALUES
   const lightboxPhotos = photos.length > 0 ? photos : (src ? [src] : []);
 
-  // Effect for Magic Reveal teaser and state reset
+  // 3. EFFECTS
   useEffect(() => {
-    // Show teaser if there is an artistic URL and the current slide IS the one with the artistic version (index 0)
+    if (emblaApi) {
+      emblaApi.on("select", () => {
+        setCurrentIndex(emblaApi.selectedScrollSnap());
+      });
+      if (isOpen) {
+        emblaApi.scrollTo(initialIndex, true);
+        setCurrentIndex(initialIndex);
+      }
+    }
+  }, [emblaApi, isOpen, initialIndex]);
+
+  useEffect(() => {
     const shouldShowTeaser = isOpen && artisticUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
     
     if (shouldShowTeaser) {
-      // Reset states
       setSliderPosition(0);
       setIsAutoSwiping(true);
       setIsArtisticLoading(true);
@@ -82,7 +99,6 @@ export function ImageLightbox({
       
       return () => clearTimeout(startTimer);
     } else {
-      // If we move away from slide 0 in a carousel, reset slider
       if (lightboxPhotos.length > 1 && currentIndex !== 0) {
         setSliderPosition(50);
         setIsAutoSwiping(false);
@@ -90,33 +106,6 @@ export function ImageLightbox({
     }
   }, [isOpen, artisticUrl, lightboxPhotos.length, currentIndex]);
 
-
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isAutoSwiping) return;
-    setSliderPosition(Number(e.target.value));
-  };
-  
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    startIndex: initialIndex,
-    loop: false
-  });
-
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-
-  useEffect(() => {
-    if (emblaApi) {
-      emblaApi.on("select", () => {
-        setCurrentIndex(emblaApi.selectedScrollSnap());
-      });
-      // Ensure we jump to the clicked index when opening
-      if (isOpen) {
-        emblaApi.scrollTo(initialIndex, true);
-        setCurrentIndex(initialIndex);
-      }
-    }
-  }, [emblaApi, isOpen, initialIndex]);
-
-  // Audio Playback Logic
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !audioUrl) return;
@@ -127,6 +116,7 @@ export function ImageLightbox({
       setIsPlaying(false);
     }
   }, [isOpen, audioUrl]);
+
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
