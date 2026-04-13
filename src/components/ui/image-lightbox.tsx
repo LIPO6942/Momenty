@@ -46,6 +46,8 @@ export function ImageLightbox({
   // Magic Reveal Slider state
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
+  const [isArtisticLoading, setIsArtisticLoading] = useState(true);
+  const [artisticError, setArtisticError] = useState(false);
   
   // Create an array of photos from either the photos array or the single src
   const lightboxPhotos = photos.length > 0 ? photos : (src ? [src] : []);
@@ -53,9 +55,11 @@ export function ImageLightbox({
   // Effect for Magic Reveal teaser and state reset
   useEffect(() => {
     if (isOpen && artisticUrl && lightboxPhotos.length === 1) {
-      // Reset position to fully original
+      // Reset states
       setSliderPosition(0);
       setIsAutoSwiping(true);
+      setIsArtisticLoading(true);
+      setArtisticError(false);
       
       // Petit délai avant le scan automatique
       const startTimer = setTimeout(() => {
@@ -80,6 +84,7 @@ export function ImageLightbox({
     } else {
       setSliderPosition(50);
       setIsAutoSwiping(false);
+      setIsArtisticLoading(false);
     }
   }, [isOpen, artisticUrl, lightboxPhotos.length]);
 
@@ -317,19 +322,45 @@ export function ImageLightbox({
                     </div>
 
                     {/* layer 2: Image artistique (Top - révélée par clip-path) */}
-                    {artisticUrl && (
-                      <div 
-                        className="absolute inset-0 flex items-center justify-center p-4 z-10"
-                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                      >
-                        <Image
-                          src={artisticUrl}
-                          alt={`${alt} - Version artistique`}
-                          fill
-                          className="object-contain pointer-events-none"
-                          quality={100}
-                        />
-                      </div>
+                    {artisticUrl && !artisticError && (
+                      <>
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center p-4 z-10"
+                          style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                        >
+                          <Image
+                            src={artisticUrl}
+                            alt={`${alt} - Version artistique`}
+                            fill
+                            className={cn(
+                              "object-contain pointer-events-none transition-opacity duration-500",
+                              isArtisticLoading ? "opacity-0" : "opacity-100"
+                            )}
+                            quality={100}
+                            onLoad={() => setIsArtisticLoading(false)}
+                            onError={() => {
+                              setIsArtisticLoading(false);
+                              setArtisticError(true);
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Loader pendant la génération AI */}
+                        {isArtisticLoading && (
+                          <div className="absolute inset-x-0 inset-y-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px]">
+                            <div className="relative">
+                              <div className="h-16 w-16 rounded-full border-t-2 border-r-2 border-white animate-spin"></div>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="h-10 w-10 rounded-full border-b-2 border-l-2 border-primary animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-white font-black text-sm uppercase tracking-[0.2em] animate-pulse">Style en préparation...</span>
+                              <span className="text-white/40 text-[10px] font-medium uppercase tracking-widest mt-1 italic">Veuillez patienter</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     
                     {/* Magic Reveal Controls */}
