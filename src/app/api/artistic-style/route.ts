@@ -62,9 +62,24 @@ async function getDetailedVisionDescription(photoUrl: string, token: string): Pr
 
 export async function POST(req: NextRequest) {
   try {
-    const { photoUrl, style } = await req.json();
+    const { photoUrl, style, width, height } = await req.json();
     if (!photoUrl || !style) {
       return NextResponse.json({ error: 'photoUrl and style are required' }, { status: 400 });
+    }
+
+    // DIMENSION MANAGEMENT: Maintain aspect ratio, max 1024 on long edge
+    let targetWidth = 1024;
+    let targetHeight = 1024;
+    
+    if (width && height) {
+      const ratio = width / height;
+      if (width > height) {
+        targetWidth = 1024;
+        targetHeight = Math.round(1024 / ratio);
+      } else {
+        targetHeight = 1024;
+        targetWidth = Math.round(1024 * ratio);
+      }
     }
 
     const HF_TOKEN = process.env.HUGGINGFACE_API_TOKEN;
@@ -92,11 +107,11 @@ export async function POST(req: NextRequest) {
     
     let referenceUrl = photoUrl;
     if (photoUrl.includes('res.cloudinary.com')) {
-        referenceUrl = photoUrl.replace('/upload/', '/upload/c_limit,w_1024,h_1024,q_auto:best/');
+        referenceUrl = photoUrl.replace('/upload/', `/upload/c_limit,w_${targetWidth},h_${targetHeight},q_auto:best/`);
     }
     const encodedImage = encodeURIComponent(referenceUrl);
 
-    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&model=turbo&nologo=true&seed=${seed}&enhance=false`;
+    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=${targetWidth}&height=${targetHeight}&model=turbo&nologo=true&seed=${seed}&enhance=false`;
 
     // PERSISTENCE: Download from Pollinations and Upload to Cloudinary
     console.log("Fetching from Pollinations...");

@@ -71,10 +71,26 @@ export function ArtisticStylePicker({
     setErrorMsg(null);
 
     try {
+      const getImageDimensions = (url: string): Promise<{ width: number; height: number }> => {
+        return new Promise((resolve) => {
+          const img = new (window as any).Image();
+          img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+          img.onerror = () => resolve({ width: 1024, height: 1024 });
+          img.src = url;
+        });
+      };
+
+      const dims = await getImageDimensions(cloudinaryPhotoUrl);
+
       const res = await fetch('/api/artistic-style', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoUrl: cloudinaryPhotoUrl, style }),
+        body: JSON.stringify({ 
+          photoUrl: cloudinaryPhotoUrl, 
+          style,
+          width: dims.width,
+          height: dims.height
+        }),
       });
 
       const data = await res.json();

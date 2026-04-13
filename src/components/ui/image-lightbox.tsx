@@ -82,18 +82,26 @@ export function ImageLightbox({
       setArtisticError(false);
       
       const startTimer = setTimeout(() => {
-        let pos = 0;
+        let pos = 100; // Start at Original
+        let direction = -1; // Going towards Artistic (0)
+        
         const interval = setInterval(() => {
-          pos += 1.5;
-          if (pos >= 100) {
+          pos += direction * 2; // Speed up slightly
+          
+          if (direction === -1 && pos <= 0) {
+            pos = 0;
+            direction = 1; // Change to return
+            // Brief pause at artistic
+          } else if (direction === 1 && pos >= 100) {
+            pos = 100;
             clearInterval(interval);
             setTimeout(() => {
               setIsAutoSwiping(false); 
-              setSliderPosition(50);
+              setSliderPosition(100); // Leave it at Original as requested
             }, 300);
-          } else {
-            setSliderPosition(pos);
           }
+          
+          setSliderPosition(pos);
         }, 16);
       }, 800);
       
