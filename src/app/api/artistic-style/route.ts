@@ -1,49 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 
-// Configuration Cloudinary avec les clés secrètes pour signer l'URL
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// On utilise e_gen_restyle qui est le moteur IA (Stable Diffusion) natif de Cloudinary.
 const styleGenPrompts: Record<string, string> = {
-  vangogh: 'a Van Gogh painting with swirling colors and thick brush strokes',
-  manga: 'super detailed anime manga style artwork, studio ghibli, makoto shinkai, perfect character design, cel shading',
-  monet: 'an impressionist painting by Claude Monet, soft lighting',
-  abstract: 'an abstract geometric cubist painting, vibrant',
-  oil: 'a classical renaissance oil painting, highly detailed',
+  vangogh: 'a Van Gogh painting with swirling colors and thick brush strokes, impressionism style',
+  manga: '2D Anime Manga style illustration, studio ghibli anime, makoto shinkai aesthetic, perfect cel shading, colorful manga',
+  monet: 'an impressionist painting by Claude Monet, soft lighting, peaceful',
+  abstract: 'an abstract geometric cubist painting, vibrant abstract art',
+  oil: 'a classical renaissance oil painting, highly detailed masterpiece',
   watercolor: 'a delicate watercolor painting, soft bleeding ethereal colors',
-  'line art': 'a clean black and white ink line art drawing',
-  comic: 'an american comic book illustration, pop art shading',
-  cyberpunk: 'a futuristic cyberpunk artwork, neon lights',
-  fantasy: 'a beautiful ethereal fantasy digital painting',
-  renaissance: 'a classical Renaissance era portrait painting',
-  ukiyoe: 'a traditional Japanese ukiyo-e woodblock print',
+  'line art': 'a clean black and white ink line art drawing, minimal contour',
+  comic: 'an american comic book illustration, pop art shading, bold outlines',
+  cyberpunk: 'a futuristic cyberpunk artwork, neon street lights, sci-fi dystopian',
+  fantasy: 'a beautiful ethereal fantasy digital painting, magical glow',
+  renaissance: 'a classical Renaissance era portrait painting, sfumato',
+  ukiyoe: 'a traditional Japanese ukiyo-e woodblock print, flat vibrant colors',
 };
-
-// Extrait l'ID public depuis une URL Cloudinary
-function getPublicIdFromUrl(url: string) {
-  try {
-    const parts = url.split('/upload/');
-    if (parts.length < 2) return null;
-    let path = parts[1];
-    // Enlever le numéro de version (ex: v171243/... )
-    if (path.match(/^v\d+\//)) {
-      path = path.replace(/^v\d+\//, '');
-    }
-    // Enlever l'extension
-    const lastDotIndex = path.lastIndexOf('.');
-    if (lastDotIndex !== -1) {
-      path = path.substring(0, lastDotIndex);
-    }
-    return path;
-  } catch (e) {
-    return null;
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,35 +23,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'photoUrl and style are required' }, { status: 400 });
     }
 
-    if (!photoUrl.includes('res.cloudinary.com')) {
-      return NextResponse.json(
-        { error: 'L\'image doit d\'abord être hébergée sur notre serveur (Cloudinary).' },
-        { status: 400 }
-      );
-    }
-
-    const publicId = getPublicIdFromUrl(photoUrl);
-    if (!publicId) {
-       return NextResponse.json({ error: 'Format d\'URL Cloudinary non reconnu.' }, { status: 400 });
-    }
-
-    const rawPrompt = styleGenPrompts[style] ?? `a ${style} style artwork`;
-    // Cloudinary recommande de remplacer les espaces par des underscores pour les prompts
-    const safePrompt = rawPrompt.replace(/ /g, '_');
+    // Le style demandé
+    const styleDescription = styleGenPrompts[style] ?? `a ${style} style artwork`;
     
-    // Cloudinary exige absolument de SIGNER (sign_url: true) les transformations d'IA Générative
-    // Sinon le lien renvoie une erreur 400.
-    const generatedUrl = cloudinary.url(publicId, {
-       effect: `gen_restyle:prompt_${safePrompt}`,
-       sign_url: true,
-       secure: true
-    });
+    // Instruction EXTRÊMEMENT stricte pour forcer l'IA à utiliser l'image originale comme ControlNet
+    const prompt = `EXACT COPY of the provided image but transformed into: ${styleDescription}. KEEEP EXACT SAME FACES, SAME PEOPLE, SAME POSITIONS, SAME BACKGROUND LAYOUT. DO NOT change the identity of the subjects.`;
 
-    return NextResponse.json({ artisticUrl: generatedUrl });
+    const encodedPrompt = encodeURIComponent(prompt);
+    
+    // Si l'image vient de Cloudinary, on réduit sa taille pour que Pollinations puisse l'avaler comme modèle (image2image)
+    let optimizedImageUrl = photoUrl;
+    if (photoUrl.includes('res.cloudinary.com')) {
+        // Redimensionner l'image source à 512px max pour mieux marcher comme inpainting/img2img
+        optimizedImageUrl = photoUrl.replace('/upload/', '/upload/c_limit,w_512,h_512/');
+    }
+
+    const encodedImage = encodeURIComponent(optimizedImageUrl);
+
+    // Construction de l'URL Pollinations :
+    // model=flux (le plus performant actuellement pour l'img2img)
+    // enhance=false (on ne veut pas qu'il hallucine des détails)
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&model=flux&nologo=true`;
+
+    return NextResponse.json({ artisticUrl: pollinationsUrl });
     
   } catch (error: any) {
     console.error('Artistic style error:', error);
     return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
   }
 }
+
 

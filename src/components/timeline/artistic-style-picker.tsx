@@ -12,7 +12,8 @@ import type { ArtisticStyleType } from "@/lib/types";
 // ─── Style catalogue (labels + emojis only, prompts are server-side) ──────────
 export const artisticStyles: { key: ArtisticStyleType; label: string; emoji: string }[] = [
   { key: 'vangogh',    label: 'Van Gogh',    emoji: '🌻' },
-  { key: 'monet',      label: 'Monet',       emoji: '🌸' },
+  { key: 'manga',      label: 'Manga',       emoji: '🌸' },
+  { key: 'monet',      label: 'Monet',       emoji: '🌾' },
   { key: 'abstract',   label: 'Abstrait',    emoji: '🎨' },
   { key: 'cubist',     label: 'Cubiste',     emoji: '🎭' },
   { key: 'oil',        label: 'Huile',       emoji: '🖼️' },
