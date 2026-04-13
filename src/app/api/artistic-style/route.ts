@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const styleGenPrompts: Record<string, string> = {
   manga: '2D Anime Manga style, Studio Ghibli illustration, high-quality digital art, vibrant cell shading, masterpiece',
@@ -38,24 +46,11 @@ async function getDetailedVisionDescription(photoUrl: string, token: string): Pr
     );
 
     if (!hfResponse.ok) {
-       // Fallback to BLIP-2
-       const blip2Res = await fetch(
-         'https://router.huggingface.co/hf-inference/models/Salesforce/blip2-opt-2.7b',
-         {
-           method: 'POST',
-           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
-           body: buffer,
-           signal: AbortSignal.timeout(15000),
-         }
-       );
-       if (!blip2Res.ok) return null;
-       const blipData = await blip2Res.json();
-       return blipData[0]?.generated_text || null;
+       return null;
     }
 
     const result = await hfResponse.json();
     if (Array.isArray(result) && result[0]?.generated_text) {
-      // CLEANING technical tags
       return result[0].generated_text.replace(/<[^>]*>/g, '').trim(); 
     }
     return null;
@@ -84,12 +79,13 @@ export async function POST(req: NextRequest) {
     }
 
     /** 
-     * THE FIDELITY ENGINE: Constructing a strict keyword-based prompt.
-     * Tokens like 'exact_likeness' and 'high_structural_fidelity' help stay close to the source.
+     * SUBJECT-FIRST FIDELITY PROMPT
+     * We anchor the model on the subject first to avoid style hallucinations (like Van Gogh's face).
      */
-    const qualityTokens = "high quality, extremely detailed, structural_integrity:1.4";
-    const fidelityTokens = `exact facial proportions, identical background elements, maintain theater decor:1.3, ${visualContext}`;
-    const finalPrompt = `${stylePrompt}, ${fidelityTokens}, ${qualityTokens}, photorealistic composition, masterwork`;
+    const qualityTokens = "high quality, extremely detailed masterpiece, photorealistic composition";
+    const subjectPrefix = `A faithful artistic depiction of the people and scene from the original photo: ${visualContext}.`;
+    const constraints = "Maintain exact facial features and theater decor. Do NOT change the subjects identity.";
+    const finalPrompt = `${subjectPrefix} Style: ${stylePrompt}. Constraints: ${constraints}. Quality: ${qualityTokens}.`;
     
     const seed = Math.floor(Math.random() * 888888);
     const encodedPrompt = encodeURIComponent(finalPrompt);
@@ -100,8 +96,37 @@ export async function POST(req: NextRequest) {
     }
     const encodedImage = encodeURIComponent(referenceUrl);
 
-    // SWITCHING TO MODEL=TURBO FOR INSTANT RESPONSE (0.1s vs 3s)
-    const artisticUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&model=turbo&nologo=true&seed=${seed}&enhance=false`;
+    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=1024&height=1024&model=turbo&nologo=true&seed=${seed}&enhance=false`;
+
+    // PERSISTENCE: Download from Pollinations and Upload to Cloudinary
+    console.log("Fetching from Pollinations...");
+    const imageResponse = await fetch(pollinationUrl);
+    if (!imageResponse.ok) throw new Error("Failed to fetch from Pollinations");
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const buffer = Buffer.from(imageBuffer);
+
+    console.log("Uploading to Cloudinary...");
+    const cloudinaryResponse: any = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { 
+            folder: 'artistic_versions',
+            resource_type: 'image',
+            transformation: [{ quality: "auto:best" }, { fetch_format: "auto" }]
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        const readable = new Readable();
+        readable._read = () => {};
+        readable.push(buffer);
+        readable.push(null);
+        readable.pipe(uploadStream);
+    });
+
+    const artisticUrl = cloudinaryResponse.secure_url;
+    console.log("Persistence successful:", artisticUrl);
 
     return NextResponse.json({ artisticUrl });
     
@@ -110,6 +135,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
   }
 }
+
 
 
 

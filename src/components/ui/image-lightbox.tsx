@@ -54,39 +54,42 @@ export function ImageLightbox({
 
   // Effect for Magic Reveal teaser and state reset
   useEffect(() => {
-    if (isOpen && artisticUrl && lightboxPhotos.length === 1) {
+    // Show teaser if there is an artistic URL and the current slide IS the one with the artistic version (index 0)
+    const shouldShowTeaser = isOpen && artisticUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
+    
+    if (shouldShowTeaser) {
       // Reset states
       setSliderPosition(0);
       setIsAutoSwiping(true);
       setIsArtisticLoading(true);
       setArtisticError(false);
       
-      // Petit délai avant le scan automatique
       const startTimer = setTimeout(() => {
-        // Balayage automatique (scan) de 0 à 100% puis retour à 50%
         let pos = 0;
         const interval = setInterval(() => {
           pos += 1.5;
           if (pos >= 100) {
             clearInterval(interval);
-            // Retour fluide au milieu
             setTimeout(() => {
-              setIsAutoSwiping(false); // On rend la main à l'utilisateur
+              setIsAutoSwiping(false); 
               setSliderPosition(50);
             }, 300);
           } else {
             setSliderPosition(pos);
           }
-        }, 16); // ~60fps
+        }, 16);
       }, 800);
       
       return () => clearTimeout(startTimer);
     } else {
-      setSliderPosition(50);
-      setIsAutoSwiping(false);
-      setIsArtisticLoading(false);
+      // If we move away from slide 0 in a carousel, reset slider
+      if (lightboxPhotos.length > 1 && currentIndex !== 0) {
+        setSliderPosition(50);
+        setIsAutoSwiping(false);
+      }
     }
-  }, [isOpen, artisticUrl, lightboxPhotos.length]);
+  }, [isOpen, artisticUrl, lightboxPhotos.length, currentIndex]);
+
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isAutoSwiping) return;
@@ -261,7 +264,7 @@ export function ImageLightbox({
               </Button>
             </div>
 
-            {/* Carousel Content */}
+              {/* Carousel Content */}
             <div className="relative w-full h-full flex items-center justify-center">
                 {lightboxPhotos.length > 1 ? (
                   <>
@@ -269,14 +272,86 @@ export function ImageLightbox({
                       <div className="flex w-full h-full">
                         {lightboxPhotos.map((photoSrc, idx) => (
                           <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full flex items-center justify-center p-4">
-                            <Image
-                              src={photoSrc}
-                              alt={`${alt} ${idx + 1}`}
-                              fill
-                              className="object-contain"
-                              quality={100}
-                              priority={idx === currentIndex}
-                            />
+                            {/* IF Artistic version exists for THIS photo (index 0 based on our logic) */}
+                            {idx === 0 && artisticUrl ? (
+                              <div className="relative w-full h-full group/slider select-none touch-none bg-black/20">
+                                {/* layer 1: Original */}
+                                <div className="absolute inset-0 flex items-center justify-center z-0">
+                                  <Image
+                                    src={photoSrc}
+                                    alt={`${alt} ${idx + 1}`}
+                                    fill
+                                    className="object-contain pointer-events-none"
+                                    quality={100}
+                                    priority={idx === currentIndex}
+                                  />
+                                </div>
+                                
+                                {/* layer 2: Artistic (Clip) */}
+                                {!artisticError && (
+                                  <>
+                                    <div 
+                                      className="absolute inset-0 flex items-center justify-center z-10"
+                                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                                    >
+                                      <Image
+                                        src={artisticUrl}
+                                        alt={`${alt} - Version artistique`}
+                                        fill
+                                        className={cn(
+                                          "object-contain pointer-events-none transition-opacity duration-500",
+                                          isArtisticLoading ? "opacity-0" : "opacity-100"
+                                        )}
+                                        quality={100}
+                                        onLoad={() => setIsArtisticLoading(false)}
+                                        onError={() => {
+                                          setIsArtisticLoading(false);
+                                          setArtisticError(true);
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    {/* Magic Reveal Controls inside Carousel */}
+                                    {idx === currentIndex && (
+                                      <>
+                                        <input
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          step="0.1"
+                                          value={sliderPosition}
+                                          onChange={handleSliderChange}
+                                          className="absolute inset-0 w-full h-full opacity-0 z-40 cursor-ew-resize"
+                                        />
+                                        <div 
+                                          className={cn(
+                                            "absolute top-4 bottom-4 w-[2px] bg-white/80 z-30 pointer-events-none transition-shadow",
+                                            !isAutoSwiping && "group-hover/slider:shadow-[0_0_20px_rgba(255,255,255,1)] shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                                          )}
+                                          style={{ left: `${sliderPosition}%` }}
+                                        >
+                                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-xl">
+                                             <div className="flex items-center gap-0.5 scale-75">
+                                               <ChevronLeft className="h-4 w-4 text-white" />
+                                               <ChevronRight className="h-4 w-4 text-white" />
+                                             </div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <Image
+                                src={photoSrc}
+                                alt={`${alt} ${idx + 1}`}
+                                fill
+                                className="object-contain"
+                                quality={100}
+                                priority={idx === currentIndex}
+                              />
+                            )}
                           </div>
                         ))}
                       </div>
