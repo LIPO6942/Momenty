@@ -10,6 +10,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 interface ImageLightboxProps {
   src?: string;
@@ -50,7 +51,7 @@ export function ImageLightbox({
   const [kenBurnsEnabled, setKenBurnsEnabled] = useState(false);
   
   // Magic Reveal Slider state
-  const [sliderPosition, setSliderPosition] = useState(50);
+  const [sliderPosition, setSliderPosition] = useState(0);
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
   const [isEffectLoading, setIsEffectLoading] = useState(true);
   const [effectError, setEffectError] = useState(false);
@@ -68,7 +69,7 @@ export function ImageLightbox({
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
-      if (raw === '1') setKenBurnsEnabled(true);
+      if (raw === '1' || raw === 'true') setKenBurnsEnabled(true);
     } catch {
       // ignore
     }
@@ -137,7 +138,7 @@ export function ImageLightbox({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !audioUrl) return;
+    if (!audio || !audioUrl) return; 
 
     if (!isOpen) {
       audio.pause();
@@ -212,10 +213,31 @@ export function ImageLightbox({
         )}
 
         {/* Badge Mélodie Permanent */}
+        {/* Badge Mélodie Permanent (clicable) */}
         {audioUrl && showAudioIcon && (
-          <div className="absolute top-3 left-3 z-30 flex items-center justify-center h-6 w-6 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-none group-hover:bg-primary/80 transition-colors duration-300">
-            <Music className="h-3 w-3 text-white animate-pulse" />
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              try {
+                if (isPlaying) {
+                  audioRef.current?.pause();
+                  setIsPlaying(false);
+                } else {
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = 0;
+                    audioRef.current.play().catch(() => {});
+                  }
+                  setIsPlaying(true);
+                }
+              } catch (err) {
+                console.error('Audio toggle failed', err);
+              }
+            }}
+            title={isPlaying ? 'Pause audio' : 'Lire audio'}
+            className="absolute top-3 left-3 z-30 flex items-center justify-center h-7 w-7 bg-black/70 backdrop-blur-md rounded-full border border-white/20 shadow-lg pointer-events-auto transition-colors duration-300"
+          >
+            <Music className="h-3 w-3 text-white" />
+          </button>
         )}
 
         {/* Overlay avec icône de zoom au survol */}
@@ -236,11 +258,12 @@ export function ImageLightbox({
           <div className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
             <style jsx global>{`
               @keyframes momenty-kenburns {
-                0% { transform: scale(1) translateX(0); }
-                100% { transform: scale(1.25) translateX(-8%); }
+                0% { transform: scale(1) translateX(0) translateY(0); }
+                50% { transform: scale(1.35) translateX(-12%) translateY(-3%); }
+                100% { transform: scale(1.25) translateX(0) translateY(0); }
               }
               .momenty-kenburns {
-                animation: momenty-kenburns 18s ease-in-out infinite;
+                animation: momenty-kenburns 20s ease-in-out infinite alternate;
                 will-change: transform;
               }
             `}</style>

@@ -57,9 +57,10 @@ export const ParallaxContainer = ({
     >
       <div
         style={{
-          transform: `scale(1.15) translateY(${offset}px)`,
+          // stronger Ken Burns: larger scale and subtle horizontal move based on scroll offset
+          transform: `scale(1.3) translate(${Math.max(Math.min(offset * 0.35, 20), -20)}px, ${offset}px)`,
         }}
-        className="h-full w-full transition-transform duration-75 ease-out will-change-transform"
+        className="h-full w-full transition-transform duration-150 ease-out will-change-transform"
       >
         {children}
       </div>

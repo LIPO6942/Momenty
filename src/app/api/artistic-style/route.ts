@@ -11,24 +11,28 @@ import { NextRequest, NextResponse } from 'next/server';
 // Avoid: distort, noise, tint advanced syntax, gamma - these may fail on free/basic plans
 const filterConfigs: Record<string, string> = {
   // Noir & Blanc: grayscale + contrast boost
-  bw: 'e_grayscale:100,e_contrast:25',
+  // Strong B&W: true grayscale + auto contrast + darker tones + grain
+  bw: 'e_grayscale:100,e_auto_contrast,e_contrast:30,e_brightness:-6,e_grain:40',
+
+  // Sépia: classic sepia with auto color and subtle grain
+  sepia: 'e_sepia:100,e_auto_color,e_contrast:18,e_brightness:-4,e_grain:14',
   
-  // Sépia: classic sepia
-  sepia: 'e_sepia:100',
-  
-  // Fisheye: simulated with strong vignette + saturation boost + slight blur edges
-  // (e_distort is not available on all plans, so we fake it)
-  fisheye: 'e_vignette:70,e_saturation:40,e_brightness:5',
+  // Fisheye: best-effort simulation using vignette, radial blur and auto color
+  // True geometric fisheye requires paid/advanced transforms; this simulates the visual.
+  fisheye: 'e_vignette:90,e_radial_blur:1,e_auto_color,e_saturation:30,e_brightness:8,e_grain:12',
   
   // Vibrant: maximum saturation
-  vibrant: 'e_saturation:100,e_contrast:10',
+  // Vibrant: aggressive saturation with auto color-correction and sharpen-like clarity
+  vibrant: 'e_auto_color,e_saturation:140,e_contrast:22,e_brightness:6,e_grain:6',
   
   // Vintage: sepia + vignette + dither (paper texture effect) + contrast
-  vintage: 'e_sepia:70,e_vignette:50,e_ordered_dither:5,e_brightness:-10,e_contrast:20',
+  // Vintage + paper texture: strong dither + heavy grain to simulate aged paper/film
+  vintage: 'e_sepia:85,e_vignette:75,e_ordered_dither:10,e_brightness:-14,e_contrast:36,e_saturation:-16,e_grain:48',
   
   // Cinéma: warm tone simulated with sepia + contrast + brightness + vignette
   // (using basic transformations instead of advanced tint)
-  cinema: 'e_sepia:30,e_contrast:15,e_brightness:-5,e_vignette:30,e_saturation:25'
+  // Cinema: warm tone, punchy contrast and subtle film grain
+  cinema: 'e_sepia:35,e_auto_color,e_contrast:20,e_vignette:30,e_saturation:28,e_grain:12'
 };
 
 // Human-readable filter names

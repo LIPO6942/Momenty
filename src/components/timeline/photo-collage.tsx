@@ -200,7 +200,8 @@ export const PhotoCollage = ({
     // Ken Burns toggle state
     const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('momenty:kenBurnsEnabled') === 'true';
+            const raw = localStorage.getItem('momenty:kenBurnsEnabled');
+            return raw === '1' || raw === 'true';
         }
         return false;
     });

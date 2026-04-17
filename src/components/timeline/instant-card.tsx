@@ -66,10 +66,12 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
     // Filter out invalid photo URLs (empty strings, null, undefined)
     const validPhotos = instant.photos?.filter(photo => photo && photo.trim().length > 0) || [];
 
+    const hue = (instant.id.charCodeAt(0) * 137.508) % 360;
+
     if (validPhotos.length > 0) {
         return (
             <>
-            <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
+            <Card id={`instant-${instant.id}`} style={{ backgroundColor: `hsl(${hue}, 70%, 98%)` }} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 <CardHeader className="p-0 relative">
                     <PhotoCollage photos={validPhotos} title={instant.title} displayTransform={instant.displayTransform} audioUrl={instant.audio} collageTemplate={instant.collageTemplate} photoFilter={instant.photoFilter} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
@@ -105,7 +107,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
                 {/* Conteneur du texte */}
                 <div className="absolute bottom-0 left-0 w-full pointer-events-none">
-                    <div className={cn(
+                        <div className={cn(
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
                     )}>
@@ -171,7 +173,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
     return (
         <>
-        <Card id={`instant-${instant.id}`} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
+        <Card id={`instant-${instant.id}`} style={{ backgroundColor: `hsl(${hue}, 70%, 98%)` }} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80">
             <CardHeader className="flex flex-row items-start justify-between p-4 pb-0">
                 <div className="flex items-start gap-4">
                     <div className={cn("w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0 relative", instant.color)}>
@@ -228,23 +230,23 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
             </CardContent>
 
             <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
-                <div className="w-full ml-14">
+                    <div className="w-full ml-14">
                     {/* Location & Date - One line with colored background */}
                     <div 
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap overflow-hidden"
                         style={{ 
-                            backgroundColor: `hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 95%)`,
-                            borderLeft: `3px solid hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 50%)`
+                            backgroundColor: `hsl(${hue}, 70%, 95%)`,
+                            borderLeft: `3px solid hsl(${hue}, 70%, 50%)`
                         }}
                     >
                         <MapPin 
                             className="h-4 w-4 flex-shrink-0" 
-                            style={{ color: `hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 45%)` }}
+                            style={{ color: `hsl(${hue}, 70%, 45%)` }}
                         />
-                        <span className="font-semibold text-sm text-foreground truncate flex-shrink-0">
+                        <span className="font-semibold text-sm text-foreground truncate">
                             {getCity(instant.location)}, {getCountry(instant.location)}
                         </span>
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-xs text-muted-foreground truncate ml-2">
                             • {format(parseISO(instant.date), "d MMM yyyy", { locale: fr })}
                         </span>
                     </div>
