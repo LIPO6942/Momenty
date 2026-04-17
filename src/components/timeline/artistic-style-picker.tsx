@@ -7,7 +7,7 @@ import { Palette, X, Sparkles, Loader2, Wand2, RefreshCw, AlertCircle } from "lu
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "@/hooks/use-toast";
-import type { ArtisticStyleType } from "@/lib/types";
+import type { ArtisticStyleType, ArtisticModeType } from "@/lib/types";
 
 // ─── Style catalogue (labels + emojis only, prompts are server-side) ──────────
 export const artisticStyles: { key: ArtisticStyleType; label: string; emoji: string }[] = [
@@ -22,7 +22,8 @@ export const artisticStyles: { key: ArtisticStyleType; label: string; emoji: str
 interface ArtisticStylePickerProps {
   photoUrl: string | null;
   selectedStyle: ArtisticStyleType | null;
-  onStyleSelect: (style: ArtisticStyleType | null) => void;
+  selectedMode?: ArtisticModeType;
+  onStyleSelect: (style: ArtisticStyleType | null, mode?: ArtisticModeType) => void;
   onArtisticUrlGenerated?: (artisticUrl: string) => void;
 }
 
@@ -31,14 +32,17 @@ type GenerationState = 'idle' | 'generating' | 'retrying' | 'done' | 'error';
 export function ArtisticStylePicker({
   photoUrl,
   selectedStyle,
+  selectedMode = 'creative',
   onStyleSelect,
   onArtisticUrlGenerated,
 }: ArtisticStylePickerProps) {
   const [isExpanded, setIsExpanded]             = useState(false);
+  const [generationMode, setGenerationMode]     = useState<ArtisticModeType>(selectedMode);
   const [generatedArtisticUrl, setGeneratedArtisticUrl] = useState<string | null>(null);
   const [genState, setGenState]                 = useState<GenerationState>('idle');
   const [retryCount, setRetryCount]             = useState(0);
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
+  const [originalAspectRatio, setOriginalAspectRatio] = useState<number>(16/9);
 
   // ─── Upload helper: detect if URL is already a Cloudinary URL ───────────────
   const isCloudinaryUrl = useCallback((url: string) =>
@@ -61,11 +65,23 @@ export function ArtisticStylePicker({
     }
   }, [isCloudinaryUrl]);
 
+  // ─── Get original image aspect ratio ────────────────────────────────────────
+  useEffect(() => {
+    if (!photoUrl) return;
+    const img = new (window as any).Image();
+    img.onload = () => {
+      const ratio = img.naturalWidth / img.naturalHeight;
+      setOriginalAspectRatio(ratio);
+    };
+    img.src = photoUrl;
+  }, [photoUrl]);
+
   // ─── Core generation function (called on first try + retries) ────────────────
   const generateArtistic = useCallback(async (
     style: ArtisticStyleType,
     cloudinaryPhotoUrl: string,
-    attempt: number
+    attempt: number,
+    mode: ArtisticModeType
   ) => {
     setGenState(attempt === 0 ? 'generating' : 'retrying');
     setErrorMsg(null);
@@ -88,6 +104,7 @@ export function ArtisticStylePicker({
         body: JSON.stringify({ 
           photoUrl: cloudinaryPhotoUrl, 
           style,
+          mode,
           width: dims.width,
           height: dims.height
         }),
@@ -133,7 +150,7 @@ export function ArtisticStylePicker({
 
   // ─── Handle style selection ───────────────────────────────────────────────────
   const handleStyleSelect = async (style: ArtisticStyleType | null) => {
-    onStyleSelect(style);
+    onStyleSelect(style, generationMode);
     setIsExpanded(false);
 
     if (!style || !photoUrl) {
@@ -151,7 +168,7 @@ export function ArtisticStylePicker({
     }
 
     setRetryCount(0);
-    generateArtistic(style, cloudinaryUrl, 0);
+    generateArtistic(style, cloudinaryUrl, 0, generationMode);
   };
 
   // ─── Manual retry ─────────────────────────────────────────────────────────────
@@ -160,7 +177,15 @@ export function ArtisticStylePicker({
     const cloudinaryUrl = await ensureCloudinaryUrl(photoUrl);
     if (!cloudinaryUrl) return;
     setRetryCount(0);
-    generateArtistic(selectedStyle, cloudinaryUrl, 0);
+    generateArtistic(selectedStyle, cloudinaryUrl, 0, generationMode);
+  };
+
+  // ─── Handle mode change ───────────────────────────────────────────────────────
+  const handleModeChange = (mode: ArtisticModeType) => {
+    setGenerationMode(mode);
+    if (selectedStyle) {
+      onStyleSelect(selectedStyle, mode);
+    }
   };
 
   if (!photoUrl) return null;
@@ -176,6 +201,36 @@ export function ArtisticStylePicker({
           <Palette className="h-4 w-4" />
           Version Artistique
         </Label>
+        {/* Mode selector */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleModeChange('faithful')}
+            className={cn(
+              "px-2 py-1 text-xs rounded-md transition-colors",
+              generationMode === 'faithful' 
+                ? "bg-primary text-primary-foreground font-medium" 
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+            title="Préserve les visages, décors et sujets exacts de la photo"
+          >
+            🎯 Fidèle
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('creative')}
+            className={cn(
+              "px-2 py-1 text-xs rounded-md transition-colors",
+              generationMode === 'creative' 
+                ? "bg-primary text-primary-foreground font-medium" 
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+            title="Interprétation artistique libre de la scène"
+          >
+            ✨ Créatif
+          </button>
+        </div>
+
         {selectedStyle && (
           <Button
             variant="ghost"
@@ -193,14 +248,17 @@ export function ArtisticStylePicker({
         )}
       </div>
 
-      {/* Preview of generated image */}
+      {/* Preview of generated image - with dynamic aspect ratio */}
       {selectedStyle && generatedArtisticUrl && genState === 'done' && (
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-muted border-2 border-primary/30">
+        <div 
+          className="relative w-full rounded-xl overflow-hidden bg-muted border-2 border-primary/30"
+          style={{ aspectRatio: originalAspectRatio }}
+        >
           <Image
             src={generatedArtisticUrl}
             alt="Version artistique générée"
             fill
-            className="object-cover transition-opacity duration-500"
+            className="object-contain transition-opacity duration-500"
             sizes="(max-width: 768px) 100vw, 400px"
             unoptimized
           />

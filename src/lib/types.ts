@@ -60,8 +60,11 @@ export interface CollageTemplate {
 
 export type ArtisticStyleType = 'manga' | 'abstract' | 'vangogh' | 'monet' | 'watercolor' | 'comic';
 
+export type ArtisticModeType = 'faithful' | 'creative';
+
 export interface ArtisticStyle {
     style: ArtisticStyleType;
+    mode?: ArtisticModeType;
     artisticUrl: string; // URL de l'image générée par DeepAI
 }
 

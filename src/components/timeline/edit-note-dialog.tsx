@@ -34,7 +34,7 @@ import { AudioPicker } from "../ui/audio-picker";
 import type { DisplayTransform } from "@/lib/types";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
-import type { ArtisticStyle, ArtisticStyleType } from "@/lib/types";
+import type { ArtisticStyle, ArtisticStyleType, ArtisticModeType } from "@/lib/types";
 
 
 interface EditNoteDialogProps {
@@ -105,6 +105,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
 
   // ── Artistic style state ─────────────────────────────────────────────────
   const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(instantToEdit.artisticStyle?.style || null);
+  const [selectedArtisticMode, setSelectedArtisticMode] = useState<ArtisticModeType>(instantToEdit.artisticStyle?.mode || 'creative');
   const [artisticUrl, setArtisticUrl] = useState<string | null>(instantToEdit.artisticStyle?.artisticUrl || null);
 
   useEffect(() => {
@@ -124,6 +125,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setAudioUrl(instantToEdit.audio || null);
       // Initialize artistic style state
       setSelectedArtisticStyle(instantToEdit.artisticStyle?.style || null);
+      setSelectedArtisticMode(instantToEdit.artisticStyle?.mode || 'creative');
       setArtisticUrl(instantToEdit.artisticStyle?.artisticUrl || null);
     }
   }, [open, instantToEdit]);
@@ -234,6 +236,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         audio: audioUrl,
         artisticStyle: selectedArtisticStyle && artisticUrl ? {
           style: selectedArtisticStyle,
+          mode: selectedArtisticMode,
           artisticUrl: artisticUrl
         } : undefined,
       });
@@ -436,7 +439,11 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                       <ArtisticStylePicker
                         photoUrl={photos[0].startsWith('data:') ? photos[0] : photos[0]}
                         selectedStyle={selectedArtisticStyle}
-                        onStyleSelect={setSelectedArtisticStyle}
+                        selectedMode={selectedArtisticMode}
+                        onStyleSelect={(style, mode) => {
+                          setSelectedArtisticStyle(style);
+                          if (mode) setSelectedArtisticMode(mode);
+                        }}
                         onArtisticUrlGenerated={setArtisticUrl}
                       />
                     )}

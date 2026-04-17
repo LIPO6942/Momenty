@@ -27,7 +27,7 @@ import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
-import type { ArtisticStyle, ArtisticStyleType } from "@/lib/types";
+import type { ArtisticStyle, ArtisticStyleType, ArtisticModeType } from "@/lib/types";
 import {
     Command,
     CommandEmpty,
@@ -109,6 +109,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
     // ── Artistic style state ─────────────────────────────────────────────────
     const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(null);
+    const [selectedArtisticMode, setSelectedArtisticMode] = useState<ArtisticModeType>('creative');
     const [artisticUrl, setArtisticUrl] = useState<string | null>(null);
 
     // ── Collage state ──────────────────────────────────────────────────────────
@@ -709,6 +710,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     ...(selectedArtisticStyle && artisticUrl ? {
                         artisticStyle: {
                             style: selectedArtisticStyle,
+                            mode: selectedArtisticMode,
                             artisticUrl: artisticUrl
                         }
                     } : {}),
@@ -1286,7 +1288,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 <ArtisticStylePicker
                                                     photoUrl={photos[0]}
                                                     selectedStyle={selectedArtisticStyle}
-                                                    onStyleSelect={setSelectedArtisticStyle}
+                                                    selectedMode={selectedArtisticMode}
+                                                    onStyleSelect={(style, mode) => {
+                                                        setSelectedArtisticStyle(style);
+                                                        if (mode) setSelectedArtisticMode(mode);
+                                                    }}
                                                     onArtisticUrlGenerated={setArtisticUrl}
                                                 />
                                             )}

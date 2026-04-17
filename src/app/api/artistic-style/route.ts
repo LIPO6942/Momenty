@@ -17,6 +17,16 @@ const styleGenPrompts: Record<string, string> = {
   comic: 'Vintage American comic book style, bold black outlines, pop art dots, vibrant flat colors, graphic novel',
 };
 
+// Faithful mode prompts - stronger emphasis on subject preservation
+const faithfulPrompts: Record<string, string> = {
+  manga: 'Exact same scene and people as reference photo, converted to 2D Anime Manga style, Studio Ghibli illustration, same subjects same poses same location, faithful reproduction with anime aesthetics, high-quality digital art, vibrant cell shading',
+  abstract: 'Abstract interpretation of the exact same scene from reference photo, same subjects and composition transformed into geometric expressionism, bold colors, maintaining recognizable elements from original',
+  vangogh: 'Exact same scene and people from reference photo rendered in Vincent van Gogh painting style, same subjects same location, thick brushstrokes, swirling starry sky oil textures, vivid impressionism, faithful to original composition',
+  monet: 'Exact same scene from reference photo as Claude Monet impressionist oil, same subjects and location, soft focus, dappled sunlight, peaceful atmospheric colors, painterly, maintaining original composition and subjects',
+  watercolor: 'Exact same scene and people from reference photo as delicate hand-painted watercolor, same subjects same location, transparent washes, soft bleeding edges, high quality aesthetic, faithful reproduction',
+  comic: 'Exact same scene and people from reference photo in vintage American comic book style, same subjects same poses, bold black outlines, pop art dots, vibrant flat colors, graphic novel style, faithful to original',
+};
+
 /**
  * Uses Florence-2 on the router endpoint.
  */
@@ -62,7 +72,7 @@ async function getDetailedVisionDescription(photoUrl: string, token: string): Pr
 
 export async function POST(req: NextRequest) {
   try {
-    const { photoUrl, style, width, height } = await req.json();
+    const { photoUrl, style, mode = 'creative', width, height } = await req.json();
     if (!photoUrl || !style) {
       return NextResponse.json({ error: 'photoUrl and style are required' }, { status: 400 });
     }
@@ -83,7 +93,12 @@ export async function POST(req: NextRequest) {
     }
 
     const HF_TOKEN = process.env.HUGGINGFACE_API_TOKEN;
-    const stylePrompt = styleGenPrompts[style as keyof typeof styleGenPrompts] ?? `in ${style} style`;
+    
+    // Select prompt based on mode
+    const isFaithful = mode === 'faithful';
+    const stylePrompt = isFaithful 
+      ? faithfulPrompts[style as keyof typeof faithfulPrompts] 
+      : styleGenPrompts[style as keyof typeof styleGenPrompts] ?? `in ${style} style`;
     
     let visualContext = "";
     if (HF_TOKEN) {
@@ -94,14 +109,32 @@ export async function POST(req: NextRequest) {
     }
 
     /** 
-     * SUBJECT-FIRST FIDELITY PROMPT
-     * We anchor the model on the subject first to avoid style hallucinations (like Van Gogh's face).
+     * MODE-SPECIFIC PROMPT STRATEGY
+     * - FAITHFUL: Strong constraints on subject preservation with detailed visual context
+     * - CREATIVE: Freedom for artistic interpretation
      */
-    const qualityTokens = "high quality, extremely detailed masterpiece, photorealistic composition";
-    const subjectPrefix = `A faithful artistic depiction of the people and scene from the original photo: ${visualContext}.`;
-    const constraints = "Maintain exact facial features and theater decor. Do NOT change the subjects identity.";
-    const finalPrompt = `${subjectPrefix} Style: ${stylePrompt}. Constraints: ${constraints}. Quality: ${qualityTokens}.`;
+    let finalPrompt: string;
     
+    if (isFaithful) {
+      // Faithful mode: Heavy emphasis on matching original content
+      const qualityTokens = "high fidelity, exact subject reproduction, detailed masterpiece";
+      const constraints = "CRITICAL: Maintain EXACT same people, faces, poses, objects, and scene composition as the reference photo. Do NOT invent new subjects. Do NOT change the setting.";
+      const subjectDetails = visualContext 
+        ? `This image shows: ${visualContext}. Use this exact description to guide the transformation.`
+        : "Transform this exact photo while maintaining all original subjects and scene elements.";
+      
+      finalPrompt = `${subjectDetails} Style transformation: ${stylePrompt}. ${constraints}. Quality: ${qualityTokens}.`;
+    } else {
+      // Creative mode: Current behavior with artistic freedom
+      const qualityTokens = "high quality, extremely detailed masterpiece, photorealistic composition";
+      const subjectPrefix = visualContext 
+        ? `Artistic interpretation of: ${visualContext}.`
+        : `Artistic transformation of the scene.`;
+      
+      finalPrompt = `${subjectPrefix} Style: ${stylePrompt}. Quality: ${qualityTokens}.`;
+    }
+    
+    // Use different seeds and model settings based on mode
     const seed = Math.floor(Math.random() * 888888);
     const encodedPrompt = encodeURIComponent(finalPrompt);
     
@@ -111,7 +144,9 @@ export async function POST(req: NextRequest) {
     }
     const encodedImage = encodeURIComponent(referenceUrl);
 
-    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=${targetWidth}&height=${targetHeight}&model=turbo&nologo=true&seed=${seed}&enhance=false`;
+    // Mode-specific parameters for better fidelity in faithful mode
+    const enhanceParam = isFaithful ? 'true' : 'false';
+    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?image=${encodedImage}&width=${targetWidth}&height=${targetHeight}&model=turbo&nologo=true&seed=${seed}&enhance=${enhanceParam}`;
 
     // PERSISTENCE: Download from Pollinations and Upload to Cloudinary
     console.log("Fetching from Pollinations...");
