@@ -129,7 +129,7 @@ export const CollageRenderer = ({
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
             {/* Ken Burns toggle (visible on timeline) - stateful */}
-            <div className="absolute top-2 right-2 z-30">
+            <div className="absolute bottom-2 left-2 z-30">
                 <KenBurnsToggle />
             </div>
             {/* Collage grid icon overlay */}
@@ -425,7 +425,7 @@ export const PhotoCollage = ({
     return (
         <div className="w-full relative">
             {renderGrid()}
-            <div className="absolute top-2 right-2 z-20">
+            <div className="absolute bottom-2 left-2 z-20">
                 <KenBurnsToggle />
             </div>
         </div>

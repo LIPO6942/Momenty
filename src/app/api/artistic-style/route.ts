@@ -11,28 +11,25 @@ import { NextRequest, NextResponse } from 'next/server';
 // Avoid: distort, noise, tint advanced syntax, gamma - these may fail on free/basic plans
 const filterConfigs: Record<string, string> = {
   // Noir & Blanc: grayscale + contrast boost
-  // Strong B&W: true grayscale + auto contrast + darker tones + grain
-  bw: 'e_grayscale:100,e_auto_contrast,e_contrast:30,e_brightness:-6,e_grain:40',
+  // Conservative transforms using widely-supported effects (avoid paid-only ops)
+  bw: 'e_grayscale:100,e_contrast:30',
 
-  // Sépia: classic sepia with auto color and subtle grain
-  sepia: 'e_sepia:100,e_auto_color,e_contrast:18,e_brightness:-4,e_grain:14',
+  sepia: 'e_sepia:100,e_contrast:12',
   
-  // Fisheye: best-effort simulation using vignette and auto color
-  // True geometric fisheye requires paid/advanced transforms; this simulates the visual.
-  fisheye: 'e_vignette:90,e_auto_color,e_saturation:30,e_brightness:8,e_grain:12',
+  // Fisheye: simulate with strong vignette and mild saturation
+  fisheye: 'e_vignette:80,e_saturation:30',
   
   // Vibrant: maximum saturation
-  // Vibrant: aggressive saturation with auto color-correction and sharpen-like clarity
-  vibrant: 'e_auto_color,e_saturation:140,e_contrast:22,e_brightness:6,e_grain:6',
+  vibrant: 'e_saturation:120,e_contrast:12',
   
   // Vintage: sepia + vignette + dither (paper texture effect) + contrast
-  // Vintage + paper texture: strong dither + heavy grain to simulate aged paper/film
-  vintage: 'e_sepia:85,e_vignette:75,e_ordered_dither:10,e_brightness:-14,e_contrast:36,e_saturation:-16,e_grain:48',
+  // Vintage: warm sepia + vignette + contrast + subtle grain
+  vintage: 'e_sepia:80,e_vignette:60,e_contrast:28,e_saturation:-12',
   
   // Cinéma: warm tone simulated with sepia + contrast + brightness + vignette
   // (using basic transformations instead of advanced tint)
-  // Cinema: warm tone, punchy contrast and subtle film grain
-  cinema: 'e_sepia:35,e_auto_color,e_contrast:20,e_vignette:30,e_saturation:28,e_grain:12'
+  // Cinema: warm tone, punchy contrast
+  cinema: 'e_sepia:30,e_contrast:16,e_vignette:30'
 };
 
 // Human-readable filter names

@@ -268,6 +268,15 @@ function TimelineContent() {
 
   const monthNames = useMemo(() => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), 'LLLL', { locale: fr })), []);
 
+  // Simple hash to hue utility
+  const hashHue = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) % 360;
+    }
+    return h;
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
@@ -347,9 +356,9 @@ function TimelineContent() {
                   <div className="flex items-center gap-4 py-2 sticky top-2 z-10 bg-background/80 backdrop-blur-sm rounded-lg pl-2">
                     <div className="h-10 w-1 bg-primary rounded-full"></div>
                     <div>
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-primary" /> {group.location}
-                      </h3>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-primary" /> {group.location}
+                        </h3>
                       <p className="text-sm text-muted-foreground font-medium flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         Jour {firstDayNum} - {lastDayNum}
@@ -361,9 +370,10 @@ function TimelineContent() {
                   <div className="pl-4 border-l-2 border-primary/20 space-y-4 ml-2">
                     {group.days.map((day) => (
                       <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
-                        <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
-                          {day.title}
-                        </AccordionTrigger>
+                              <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
+                                style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
+                                <span className="truncate whitespace-nowrap">{day.title}</span>
+                              </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-6 pt-4">
                             {day.instants.map((instant) => (
@@ -382,8 +392,9 @@ function TimelineContent() {
             const day = group.days[0];
             return (
               <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
-                <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 bg-card rounded-xl shadow-md shadow-slate-200/80 hover:no-underline">
-                  {day.title}
+                <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
+                  style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
+                  <span className="truncate whitespace-nowrap">{day.title}</span>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-6 pt-4">

@@ -10,12 +10,12 @@ import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris intense', transform: 'e_grayscale:100,e_auto_contrast,e_contrast:30,e_brightness:-6,e_grain:40' },
-  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100,e_auto_color,e_contrast:18,e_brightness:-4,e_grain:14' },
-  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Simulation fisheye (vignette + flou radial)', transform: 'e_vignette:90,e_radial_blur:1,e_auto_color,e_saturation:30,e_brightness:8,e_grain:12' },
-  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_auto_color,e_saturation:140,e_contrast:22,e_brightness:6,e_grain:6' },
-  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + papier + trame', transform: 'e_sepia:85,e_vignette:75,e_ordered_dither:10,e_brightness:-14,e_contrast:36,e_saturation:-16,e_grain:48' },
-  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teinte chaude', transform: 'e_sepia:35,e_auto_color,e_contrast:20,e_vignette:30,e_saturation:28,e_grain:12' },
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale:100,e_contrast:30' },
+  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte sépia', transform: 'e_sepia:100,e_contrast:12' },
+    { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Simulation fisheye (vignette)', transform: 'e_vignette:80,e_saturation:30' },
+    { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:120,e_contrast:12' },
+    { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + trame', transform: 'e_sepia:80,e_vignette:60,e_contrast:28,e_saturation:-12' },
+    { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teinte chaude', transform: 'e_sepia:30,e_contrast:16,e_vignette:30' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
