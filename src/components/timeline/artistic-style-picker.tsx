@@ -10,12 +10,12 @@ import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale' },
-  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:80' },
-  { key: 'contrast', label: 'Contraste++',  icon: '◐', description: 'Contraste élevé', transform: 'e_contrast:30' },
-  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:50' },
-  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + vignette', transform: 'e_sepia:60,e_vignette:30' },
-  { key: 'dramatic', label: 'Dramatique',   icon: '🎭', description: 'Fort contraste', transform: 'e_contrast:40,e_brightness:-10' },
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:30' },
+  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100' },
+  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Distortion bombée', transform: 'e_distort:arc:25,e_zoom:1.1' },
+  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:80' },
+  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + papier + poussière', transform: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15' },
+  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teal & orange look', transform: 'e_tint:35:rgb:ff8c42:0p:rgb:2d5a5a:100p,e_shadows:30,e_highlight:15,e_contrast:15,e_saturation:25,e_vignette:15' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
@@ -30,7 +30,7 @@ function getFilterThumbnailUrl(photoUrl: string | null, transform: string): stri
   }
   
   // Parse the Cloudinary URL properly
-  // Format: https://res.cloudinary.com/{cloud}/image/upload/v{version}/{path}
+  // Format: https://res.cloudinary.com/{cloud}/image/upload/{transforms}/v{version}/{path}
   const match = photoUrl.match(/(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.*)/);
   if (!match) {
     console.log('[Thumbnail] URL regex match failed');
@@ -40,21 +40,21 @@ function getFilterThumbnailUrl(photoUrl: string | null, transform: string): stri
   const [, baseUrl, pathWithVersion] = match;
   const pathParts = pathWithVersion.split('/');
   
-  // Find version segment (v123456...)
+  // Find version segment (v123456...) - transformations are before it
   const versionIndex = pathParts.findIndex(part => /^v\d+$/.test(part));
   
   let cleanPath: string;
   if (versionIndex >= 0) {
-    // Keep from version onwards
+    // Keep from version onwards (removes all existing transformations)
     cleanPath = pathParts.slice(versionIndex).join('/');
   } else {
     cleanPath = pathWithVersion;
   }
   
-  // Build URL with transformation - add w_200 for thumbnail size + cache busting
+  // Build URL: transform + thumbnail sizing + clean path + cache buster
   const timestamp = Date.now();
   const thumbnailUrl = `${baseUrl}${transform},w_200,h_200,c_fill,q_auto/${cleanPath}?_cb=${timestamp}`;
-  console.log(`[Thumbnail] Generated for transform "${transform.substring(0, 30)}...": ${thumbnailUrl.substring(0, 100)}...`);
+  console.log(`[Thumbnail] Generated: ${thumbnailUrl.substring(0, 120)}...`);
   return thumbnailUrl;
 }
 

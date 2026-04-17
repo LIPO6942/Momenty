@@ -7,35 +7,36 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 // Filter configurations with Cloudinary transformation strings
-// Using basic effects that are guaranteed to work
 const filterConfigs: Record<string, string> = {
-  // Noir & Blanc: gris pur
-  bw: 'e_grayscale',
+  // Noir & Blanc: gris pur avec boost de contraste
+  bw: 'e_grayscale,e_contrast:30',
   
-  // Sépia: teinte vintage
-  sepia: 'e_sepia:80',
+  // Sépia: teinte vintage marquée
+  sepia: 'e_sepia:100',
   
-  // Contraste++: contraste boosté
-  contrast: 'e_contrast:30',
+  // Fisheye: distorsion bombée, centre "poussé", lignes courbes aux bords
+  fisheye: 'e_distort:arc:25,e_zoom:1.1',
   
-  // Vibrant: saturation élevée
-  vibrant: 'e_saturation:50',
+  // Vibrant: saturation très élevée
+  vibrant: 'e_saturation:80',
   
-  // Vintage: sépia + vignette
-  vintage: 'e_sepia:60,e_vignette:30',
+  // Vintage: sépia + vignette + texture papier (noise) + fines rayures/poussières
+  vintage: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15',
   
-  // Dramatique: fort contraste
-  dramatic: 'e_contrast:40,e_brightness:-10'
+  // Cinéma: look teal & orange - peaux chaudes (orange), ombres bleu-vert (teal)
+  // blancs réduits (e_highlight), ombres relevées (e_shadows), midtones chauds
+  // e_tint: orange sur highlights (0p) + teal sur ombres (100p)
+  cinema: 'e_tint:35:rgb:ff8c42:0p:rgb:2d5a5a:100p,e_shadows:30,e_highlight:15,e_contrast:15,e_saturation:25,e_vignette:15'
 };
 
 // Human-readable filter names
 const filterNames: Record<string, string> = {
   bw: 'Noir & Blanc',
   sepia: 'Sépia',
-  contrast: 'Contraste++',
+  fisheye: 'Fisheye',
   vibrant: 'Vibrant',
   vintage: 'Vintage',
-  dramatic: 'Dramatique'
+  cinema: 'Cinéma'
 };
 
 export async function POST(req: NextRequest) {
@@ -79,24 +80,30 @@ export async function POST(req: NextRequest) {
     
     // Remove any existing transformations from the path
     // Cloudinary URLs have format: /upload/v1234567890/folder/image.jpg
-    // OR with transformations: /upload/e_grayscale/v1234567890/folder/image.jpg
+    // OR with transformations: /upload/c_fill,w_200,h_200,e_grayscale/v1234567890/folder/image.jpg
     const pathParts = pathWithVersion.split('/');
     
     // Find the version segment (starts with 'v' followed by digits)
     const versionIndex = pathParts.findIndex(part => /^v\d+$/.test(part));
     
     let cleanPath: string;
-    if (versionIndex > 0) {
-      // Skip transformation segments before the version
+    if (versionIndex >= 0) {
+      // Keep from version onwards (this removes all transformations before version)
       cleanPath = pathParts.slice(versionIndex).join('/');
-    } else if (versionIndex === 0) {
-      // No transformations, path starts with version
-      cleanPath = pathWithVersion;
     } else {
-      // Fallback: assume last part is filename, rest is path
-      const lastPart = pathParts[pathParts.length - 1];
-      const folderPath = pathParts.slice(0, -1).join('/');
-      cleanPath = folderPath ? folderPath + '/' + lastPart : lastPart;
+      // Fallback: look for the folder path pattern (usually contains 'moment/' or similar)
+      const folderIndex = pathParts.findIndex(part => part.includes('_') && !part.includes(','));
+      if (folderIndex >= 0) {
+        cleanPath = pathParts.slice(folderIndex).join('/');
+      } else {
+        // Last resort: assume everything before last part with comma is transformation
+        const lastPart = pathParts[pathParts.length - 1];
+        const safeParts = pathParts.filter((part, idx) => {
+          if (idx === pathParts.length - 1) return true; // keep filename
+          return !part.includes(',') && !part.match(/^(c_|w_|h_|e_|q_|f_|v)\d/);
+        });
+        cleanPath = safeParts.join('/');
+      }
     }
     
     // Get the transformation string for the selected filter
