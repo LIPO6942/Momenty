@@ -22,14 +22,11 @@ const filterConfigs: Record<string, string> = {
   // Vibrant: maximum saturation
   vibrant: 'e_saturation:120,e_contrast:12',
   
-  // Vintage: sepia + vignette + dither (paper texture effect) + contrast
-  // Vintage: warm sepia + vignette + contrast + subtle grain
-  vintage: 'e_sepia:80,e_vignette:60,e_contrast:28,e_saturation:-12',
+  // Vintage: warm sepia, stronger vignette, subtle grain, and softer saturation for an aged feel
+  vintage: 'e_sepia:70,e_vignette:70,e_contrast:30,e_saturation:-25,e_grain:25',
   
-  // Cinéma: warm tone simulated with sepia + contrast + brightness + vignette
-  // (using basic transformations instead of advanced tint)
-  // Cinema: warm tone, punchy contrast
-  cinema: 'e_sepia:30,e_contrast:16,e_vignette:30'
+  // Cinéma: warm orange/cool blue illusion with punchy contrast, brightness, and vignette
+  cinema: 'e_sepia:25,e_contrast:22,e_brightness:8,e_vignette:45,e_saturation:110'
 };
 
 // Human-readable filter names

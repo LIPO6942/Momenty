@@ -15,8 +15,8 @@ export const photoFilters: { key: PhotoFilterType; label: string; icon: string; 
   { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte sépia', transform: 'e_sepia,e_contrast:12' },
     { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Simulation fisheye (vignette)', transform: 'e_vignette:80,e_saturation:30' },
     { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:120,e_contrast:12' },
-    { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + trame', transform: 'e_sepia:80,e_vignette:60,e_contrast:28,e_saturation:-12' },
-    { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teinte chaude', transform: 'e_sepia:30,e_contrast:16,e_vignette:30' },
+{ key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia profond, grain et vignette', transform: 'e_sepia:70,e_vignette:70,e_contrast:30,e_saturation:-25,e_grain:25' },
+  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Contraste chaud et vibrant', transform: 'e_sepia:25,e_contrast:22,e_brightness:8,e_vignette:45,e_saturation:110' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
@@ -78,6 +78,8 @@ export function ArtisticStylePicker({
   const [filteredUrl, setFilteredUrl] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<FilterState>('idle');
   const [originalAspectRatio, setOriginalAspectRatio] = useState<number>(16/9);
+  const [sliderPosition, setSliderPosition] = useState<number>(100);
+  const [isAutoSwiping, setIsAutoSwiping] = useState<boolean>(false);
 
   // ─── Get original image aspect ratio ────────────────────────────────────────
   useEffect(() => {
@@ -135,6 +137,8 @@ export function ArtisticStylePicker({
   const handleFilterSelect = async (filter: PhotoFilterType | null) => {
     onFilterSelect(filter);
     setIsExpanded(false);
+    setSliderPosition(0);
+    setIsAutoSwiping(false);
 
     if (!filter || !photoUrl) {
       setFilteredUrl(null);
@@ -145,6 +149,32 @@ export function ArtisticStylePicker({
     // Apply filter immediately
     applyFilter(filter);
   };
+
+  useEffect(() => {
+    if (filterState === 'done' && filteredUrl) {
+      setSliderPosition(0);
+      setIsAutoSwiping(true);
+
+      const interval = window.setInterval(() => {
+        setSliderPosition((current) => {
+          const next = Math.min(current + 1, 100);
+          if (next >= 100) {
+            window.clearInterval(interval);
+            setIsAutoSwiping(false);
+          }
+          return next;
+        });
+      }, 25);
+
+      return () => {
+        window.clearInterval(interval);
+      };
+    }
+
+    if (filterState !== 'done') {
+      setIsAutoSwiping(false);
+    }
+  }, [filterState, filteredUrl]);
 
   if (!photoUrl) return null;
 
@@ -183,23 +213,61 @@ export function ArtisticStylePicker({
           className="relative w-full rounded-xl overflow-hidden bg-muted border-2 border-primary/30"
           style={{ aspectRatio: originalAspectRatio }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="absolute inset-0 bg-black/10" />
+
+          {/* Original image */}
           <img
-            key={filteredUrl}
-            src={filteredUrl}
-            alt={`Filtre ${currentFilter?.label}`}
-            className="object-contain w-full h-full transition-opacity duration-300"
-            style={currentFilter ? { filter: getPhotoFilterCss(currentFilter.key) } : undefined}
-            onError={() => console.error('[Preview] Failed to load filtered image:', filteredUrl.substring(0, 100))}
-            onLoad={() => console.log('[Preview] Filtered image loaded successfully')}
+            key={`${photoUrl}-original`}
+            src={photoUrl}
+            alt="Originale"
+            className="object-contain w-full h-full absolute inset-0"
+            style={{ opacity: 1 }}
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+
+          {/* Filtered image reveal */}
+          <div
+            className="absolute inset-0 overflow-hidden"
+            style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+          >
+            <img
+              key={filteredUrl}
+              src={filteredUrl}
+              alt={`Filtre ${currentFilter?.label}`}
+              className="object-contain w-full h-full transition-opacity duration-300"
+              style={currentFilter ? { filter: getPhotoFilterCss(currentFilter.key) } : undefined}
+              onError={() => console.error('[Preview] Failed to load filtered image:', filteredUrl.substring(0, 100))}
+              onLoad={() => console.log('[Preview] Filtered image loaded successfully')}
+            />
+          </div>
+
+          {/* Slider control */}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="0.1"
+            value={sliderPosition}
+            onChange={(event) => {
+              setSliderPosition(Number(event.target.value));
+              setIsAutoSwiping(false);
+            }}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
+          />
+
+          <div className="absolute inset-y-0 left-0 right-0 pointer-events-none">
+            <div className="absolute top-0 bottom-0 w-[2px] bg-white/90" style={{ left: `${sliderPosition}%` }} />
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium text-white">
                 {currentFilter?.icon} {currentFilter?.label}
               </span>
             </div>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-white/80">
+              {sliderPosition.toFixed(0)} % filtré
+            </span>
           </div>
         </div>
       )}
