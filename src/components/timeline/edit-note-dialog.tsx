@@ -365,6 +365,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                           setDisplayPositionX(x);
                           setDisplayPositionY(y);
                         }}
+                        photoFilter={selectedFilter && filteredUrl ? { filter: selectedFilter, filteredUrl } : undefined}
                       />
                     </div>
                     {photos.length > 1 && (

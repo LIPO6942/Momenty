@@ -52,7 +52,7 @@ const KenBurnsToggle = () => {
     return (
         <button
             type="button"
-            onClick={toggle}
+            onClick={(e) => { e.stopPropagation(); toggle(); }}
             aria-pressed={on}
             className={cn(
                 "h-8 w-8 rounded-md flex items-center justify-center text-white transition-colors duration-150",
@@ -133,7 +133,7 @@ export const CollageRenderer = ({
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
             {/* Ken Burns toggle (visible on timeline) - stateful */}
-            <div className="absolute bottom-2 left-2 z-30">
+            <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
                 <KenBurnsToggle />
             </div>
             {/* Collage grid icon overlay */}
@@ -429,7 +429,7 @@ export const PhotoCollage = ({
     return (
         <div className="w-full relative">
             {renderGrid()}
-            <div className="absolute bottom-2 left-2 z-20">
+            <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
                 <KenBurnsToggle />
             </div>
         </div>
