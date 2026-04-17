@@ -15,7 +15,7 @@ const filterConfigs: Record<string, string> = {
   sepia: 'e_sepia:100',
   
   // Fisheye: distorsion bombée, centre "poussé", lignes courbes aux bords
-  fisheye: 'e_distort:arc:25,e_zoom:1.1',
+  fisheye: 'e_distort:arc:35',
   
   // Vibrant: saturation très élevée
   vibrant: 'e_saturation:80',
@@ -23,10 +23,9 @@ const filterConfigs: Record<string, string> = {
   // Vintage: sépia + vignette + texture papier (noise) + fines rayures/poussières
   vintage: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15',
   
-  // Cinéma: look teal & orange - peaux chaudes (orange), ombres bleu-vert (teal)
-  // blancs réduits (e_highlight), ombres relevées (e_shadows), midtones chauds
-  // e_tint: orange sur highlights (0p) + teal sur ombres (100p)
-  cinema: 'e_tint:35:rgb:ff8c42:0p:rgb:2d5a5a:100p,e_shadows:30,e_highlight:15,e_contrast:15,e_saturation:25,e_vignette:15'
+  // Cinéma: grade doux fiable (évite tint/distort avancés qui peuvent échouer selon le compte)
+  // Objectif: blancs doux, noirs jamais absolus, midtones légèrement chauds
+  cinema: 'e_contrast:12,e_saturation:18,e_brightness:-4,e_gamma:1.15,e_vignette:25,e_tint:12:rgb:ff8c42'
 };
 
 // Human-readable filter names
@@ -108,6 +107,7 @@ export async function POST(req: NextRequest) {
     
     // Get the transformation string for the selected filter
     const transformation = filterConfigs[filter];
+    console.log(`[Photo Filter] transformation: ${transformation}`);
     
     // Build the filtered URL carefully
     // Ensure cleanPath doesn't start with / to avoid double slashes

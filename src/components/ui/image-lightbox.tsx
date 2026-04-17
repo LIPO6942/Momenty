@@ -47,6 +47,7 @@ export function ImageLightbox({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [kenBurnsEnabled, setKenBurnsEnabled] = useState(false);
   
   // Magic Reveal Slider state
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -64,6 +65,23 @@ export function ImageLightbox({
   const lightboxPhotos = photos.length > 0 ? photos : (src ? [src] : []);
 
   // 3. EFFECTS
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
+      if (raw === '1') setKenBurnsEnabled(true);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('momenty:kenBurnsEnabled', kenBurnsEnabled ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  }, [kenBurnsEnabled]);
+
   useEffect(() => {
     if (emblaApi) {
       emblaApi.on("select", () => {
@@ -216,11 +234,36 @@ export function ImageLightbox({
           </VisuallyHidden>
 
           <div className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
+            <style jsx global>{`
+              @keyframes momenty-kenburns {
+                0% { transform: scale(1) translate3d(0, 0, 0); }
+                45% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+                100% { transform: scale(1) translate3d(0, 0, 0); }
+              }
+              .momenty-kenburns {
+                animation: momenty-kenburns 22s ease-in-out infinite;
+                will-change: transform;
+              }
+            `}</style>
 
 
             {/* Header Controls */}
             <div className="absolute top-4 left-4 right-4 z-[60] flex justify-between items-center pointer-events-none">
               <div className="flex gap-2 pointer-events-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-10 rounded-full px-4 bg-black/60 text-white backdrop-blur-sm transition-all border border-white/10 hover:bg-black/80",
+                    kenBurnsEnabled && "border-primary/60 text-primary"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setKenBurnsEnabled(v => !v);
+                  }}
+                >
+                  Ken Burns
+                </Button>
                 {audioUrl && (
                   <div className="flex items-center gap-2 pointer-events-auto">
                     <Button
@@ -287,7 +330,10 @@ export function ImageLightbox({
                                     src={photoSrc}
                                     alt={`${alt} ${idx + 1}`}
                                     fill
-                                    className="object-contain pointer-events-none"
+                                    className={cn(
+                                      "object-contain pointer-events-none",
+                                      kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
+                                    )}
                                     quality={100}
                                     priority={idx === currentIndex}
                                   />
@@ -306,8 +352,10 @@ export function ImageLightbox({
                                         fill
                                         className={cn(
                                           "object-contain pointer-events-none transition-opacity duration-500",
-                                          isEffectLoading ? "opacity-0" : "opacity-100"
+                                          isEffectLoading ? "opacity-0" : "opacity-100",
+                                          kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
                                         )}
+                                        unoptimized
                                         quality={100}
                                         onLoad={() => setIsEffectLoading(false)}
                                         onError={() => {
@@ -396,7 +444,10 @@ export function ImageLightbox({
                         src={lightboxPhotos[0]}
                         alt={alt}
                         fill
-                        className="object-contain pointer-events-none"
+                        className={cn(
+                          "object-contain pointer-events-none",
+                          kenBurnsEnabled && "momenty-kenburns"
+                        )}
                         quality={100}
                         priority
                       />
@@ -415,8 +466,10 @@ export function ImageLightbox({
                             fill
                             className={cn(
                               "object-contain pointer-events-none transition-opacity duration-500",
-                              isEffectLoading ? "opacity-0" : "opacity-100"
+                              isEffectLoading ? "opacity-0" : "opacity-100",
+                              kenBurnsEnabled && "momenty-kenburns"
                             )}
+                            unoptimized
                             quality={100}
                             onLoad={() => setIsEffectLoading(false)}
                             onError={() => {

@@ -12,10 +12,10 @@ import type { PhotoFilterType } from "@/lib/types";
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
   { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:30' },
   { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100' },
-  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Distortion bombée', transform: 'e_distort:arc:25,e_zoom:1.1' },
+  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Distortion bombée', transform: 'e_distort:arc:35' },
   { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:80' },
   { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + papier + poussière', transform: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15' },
-  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teal & orange look', transform: 'e_tint:35:rgb:ff8c42:0p:rgb:2d5a5a:100p,e_shadows:30,e_highlight:15,e_contrast:15,e_saturation:25,e_vignette:15' },
+  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teal & orange look', transform: 'e_contrast:12,e_saturation:18,e_brightness:-4,e_gamma:1.15,e_vignette:25,e_tint:12:rgb:ff8c42' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
@@ -286,6 +286,7 @@ export function ArtisticStylePicker({
                         fill
                         className="object-cover"
                         sizes="120px"
+                        unoptimized
                         onError={() => console.error(`[Thumbnail] Failed to load image for ${key}:`, thumbnailUrl.substring(0, 100))}
                         onLoad={() => console.log(`[Thumbnail] Successfully loaded for ${key}`)}
                       />
