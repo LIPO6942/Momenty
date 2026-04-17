@@ -7,25 +7,28 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 // Filter configurations with Cloudinary transformation strings
+// Using ONLY widely-supported transformations (grayscale, sepia, saturation, brightness, contrast, blur)
+// Avoid: distort, noise, tint advanced syntax, gamma - these may fail on free/basic plans
 const filterConfigs: Record<string, string> = {
-  // Noir & Blanc: gris pur avec boost de contraste
-  bw: 'e_grayscale,e_contrast:30',
+  // Noir & Blanc: grayscale + contrast boost
+  bw: 'e_grayscale:100,e_contrast:25',
   
-  // Sépia: teinte vintage marquée
+  // Sépia: classic sepia
   sepia: 'e_sepia:100',
   
-  // Fisheye: distorsion bombée, centre "poussé", lignes courbes aux bords
-  fisheye: 'e_distort:arc:35',
+  // Fisheye: simulated with strong vignette + saturation boost + slight blur edges
+  // (e_distort is not available on all plans, so we fake it)
+  fisheye: 'e_vignette:70,e_saturation:40,e_brightness:5',
   
-  // Vibrant: saturation très élevée
-  vibrant: 'e_saturation:80',
+  // Vibrant: maximum saturation
+  vibrant: 'e_saturation:100,e_contrast:10',
   
-  // Vintage: sépia + vignette + texture papier (noise) + fines rayures/poussières
-  vintage: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15',
+  // Vintage: sepia + vignette + dither (paper texture effect) + contrast
+  vintage: 'e_sepia:70,e_vignette:50,e_ordered_dither:5,e_brightness:-10,e_contrast:20',
   
-  // Cinéma: grade doux fiable (évite tint/distort avancés qui peuvent échouer selon le compte)
-  // Objectif: blancs doux, noirs jamais absolus, midtones légèrement chauds
-  cinema: 'e_contrast:12,e_saturation:18,e_brightness:-4,e_gamma:1.15,e_vignette:25,e_tint:12:rgb:ff8c42'
+  // Cinéma: warm tone simulated with sepia + contrast + brightness + vignette
+  // (using basic transformations instead of advanced tint)
+  cinema: 'e_sepia:30,e_contrast:15,e_brightness:-5,e_vignette:30,e_saturation:25'
 };
 
 // Human-readable filter names

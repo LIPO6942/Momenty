@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { X, ZoomIn, ChevronLeft, ChevronRight, Volume2, VolumeX, Music, Play, Pause } from "lucide-react";
+import { X, ZoomIn, ChevronLeft, ChevronRight, Volume2, VolumeX, Music, Play, Pause, Maximize2 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -237,11 +237,11 @@ export function ImageLightbox({
             <style jsx global>{`
               @keyframes momenty-kenburns {
                 0% { transform: scale(1) translate3d(0, 0, 0); }
-                45% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+                50% { transform: scale(1.12) translate3d(3%, -2%, 0); }
                 100% { transform: scale(1) translate3d(0, 0, 0); }
               }
               .momenty-kenburns {
-                animation: momenty-kenburns 22s ease-in-out infinite;
+                animation: momenty-kenburns 18s ease-in-out infinite;
                 will-change: transform;
               }
             `}</style>
@@ -250,20 +250,6 @@ export function ImageLightbox({
             {/* Header Controls */}
             <div className="absolute top-4 left-4 right-4 z-[60] flex justify-between items-center pointer-events-none">
               <div className="flex gap-2 pointer-events-auto">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-10 rounded-full px-4 bg-black/60 text-white backdrop-blur-sm transition-all border border-white/10 hover:bg-black/80",
-                    kenBurnsEnabled && "border-primary/60 text-primary"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setKenBurnsEnabled(v => !v);
-                  }}
-                >
-                  Ken Burns
-                </Button>
                 {audioUrl && (
                   <div className="flex items-center gap-2 pointer-events-auto">
                     <Button
@@ -434,6 +420,23 @@ export function ImageLightbox({
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/40 px-4 py-1.5 rounded-full text-white text-xs font-bold backdrop-blur-sm">
                       {currentIndex + 1} / {lightboxPhotos.length}
                     </div>
+
+                    {/* Ken Burns Toggle - Bottom Right */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "absolute bottom-6 right-6 z-50 h-9 w-9 rounded-full bg-black/50 text-white/80 backdrop-blur-sm transition-all border border-white/10 hover:bg-black/70 hover:scale-110",
+                        kenBurnsEnabled && "bg-primary/60 text-white border-primary/40"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setKenBurnsEnabled(v => !v);
+                      }}
+                      title={kenBurnsEnabled ? "Désactiver Ken Burns" : "Activer Ken Burns"}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
                   </>
                 ) : (
                   <div className="relative w-full h-full flex items-center justify-center p-4 group/slider select-none touch-none bg-black/20">
@@ -551,6 +554,23 @@ export function ImageLightbox({
                         )}
                       </>
                     )}
+
+                    {/* Ken Burns Toggle - Bottom Right (Single Photo) */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "absolute bottom-6 right-6 z-50 h-9 w-9 rounded-full bg-black/50 text-white/80 backdrop-blur-sm transition-all border border-white/10 hover:bg-black/70 hover:scale-110",
+                        kenBurnsEnabled && "bg-primary/60 text-white border-primary/40"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setKenBurnsEnabled(v => !v);
+                      }}
+                      title={kenBurnsEnabled ? "Désactiver Ken Burns" : "Activer Ken Burns"}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
 

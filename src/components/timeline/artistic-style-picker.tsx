@@ -10,12 +10,12 @@ import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:30' },
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale:100,e_contrast:25' },
   { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100' },
-  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Distortion bombée', transform: 'e_distort:arc:35' },
-  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:80' },
-  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + papier + poussière', transform: 'e_sepia:80,e_vignette:40,e_brightness:-8,e_noise:25,e_contrast:15' },
-  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teal & orange look', transform: 'e_contrast:12,e_saturation:18,e_brightness:-4,e_gamma:1.15,e_vignette:25,e_tint:12:rgb:ff8c42' },
+  { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Effet vignette', transform: 'e_vignette:70,e_saturation:40,e_brightness:5' },
+  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:100,e_contrast:10' },
+  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + papier + trame', transform: 'e_sepia:70,e_vignette:50,e_ordered_dither:5,e_brightness:-10,e_contrast:20' },
+  { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Teinte chaude', transform: 'e_sepia:30,e_contrast:15,e_brightness:-5,e_vignette:30,e_saturation:25' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
