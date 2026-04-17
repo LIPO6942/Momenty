@@ -93,3 +93,24 @@ export const getCity = (loc: string) => {
 
   return rawCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
+
+export const getPhotoFilterCss = (filter?: string): string | undefined => {
+  if (!filter) return undefined;
+
+  switch (filter) {
+    case 'bw':
+      return 'grayscale(1) contrast(1.15)';
+    case 'sepia':
+      return 'sepia(1) contrast(1.1)';
+    case 'vibrant':
+      return 'saturate(1.4) contrast(1.1)';
+    case 'vintage':
+      return 'sepia(0.7) contrast(1.05) saturate(0.85) brightness(0.95)';
+    case 'cinema':
+      return 'sepia(0.3) contrast(1.15) brightness(1.05)';
+    case 'fisheye':
+      return 'contrast(1.1) saturate(1.1)';
+    default:
+      return undefined;
+  }
+};

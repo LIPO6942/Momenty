@@ -7,6 +7,7 @@ import { Sliders, X, Sparkles, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import type { PhotoFilterType } from "@/lib/types";
+import { getPhotoFilterCss } from "@/lib/utils";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
@@ -188,7 +189,7 @@ export function ArtisticStylePicker({
             src={filteredUrl}
             alt={`Filtre ${currentFilter?.label}`}
             className="object-contain w-full h-full transition-opacity duration-300"
-            style={currentFilter?.key === 'bw' ? { filter: 'grayscale(1)' } : undefined}
+            style={currentFilter ? { filter: getPhotoFilterCss(currentFilter.key) } : undefined}
             onError={() => console.error('[Preview] Failed to load filtered image:', filteredUrl.substring(0, 100))}
             onLoad={() => console.log('[Preview] Filtered image loaded successfully')}
           />
