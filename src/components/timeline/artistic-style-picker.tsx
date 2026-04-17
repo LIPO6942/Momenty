@@ -188,6 +188,7 @@ export function ArtisticStylePicker({
             src={filteredUrl}
             alt={`Filtre ${currentFilter?.label}`}
             className="object-contain w-full h-full transition-opacity duration-300"
+            style={currentFilter?.key === 'bw' ? { filter: 'grayscale(1)' } : undefined}
             onError={() => console.error('[Preview] Failed to load filtered image:', filteredUrl.substring(0, 100))}
             onLoad={() => console.log('[Preview] Filtered image loaded successfully')}
           />

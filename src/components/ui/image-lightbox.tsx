@@ -65,12 +65,23 @@ export function ImageLightbox({
 
   // 3. EFFECTS
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
-      if (raw === '1' || raw === 'true') setKenBurnsEnabled(true);
-    } catch {
-      // ignore
-    }
+    const syncKenBurnsFromStorage = () => {
+      try {
+        const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
+        setKenBurnsEnabled(raw === '1' || raw === 'true');
+      } catch {
+        // ignore
+      }
+    };
+
+    syncKenBurnsFromStorage();
+    window.addEventListener('storage', syncKenBurnsFromStorage);
+    window.addEventListener('momenty:kenBurnsChanged', syncKenBurnsFromStorage as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', syncKenBurnsFromStorage);
+      window.removeEventListener('momenty:kenBurnsChanged', syncKenBurnsFromStorage as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -97,40 +108,16 @@ export function ImageLightbox({
     const shouldShowTeaser = isOpen && effectUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
     
     if (shouldShowTeaser) {
-      setSliderPosition(0);
-      setIsAutoSwiping(true);
+      setSliderPosition(100);
+      setIsAutoSwiping(false);
       setIsEffectLoading(true);
       setEffectError(false);
-      
-      const startTimer = setTimeout(() => {
-        let pos = 0; // Start at Original (Filtered hidden)
-        let direction = 1; // Going towards Filtered (100)
-        
-        const interval = setInterval(() => {
-          pos += direction * 0.37; // Adjusted for ~12s total animation
-          
-          if (direction === 1 && pos >= 100) {
-            pos = 100;
-            direction = -1; // Return to Original
-          } else if (direction === -1 && pos <= 0) {
-            pos = 0;
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsAutoSwiping(false); 
-              setSliderPosition(0); // Keep Original
-            }, 1200); // Extended final pause
-          }
-          
-          setSliderPosition(pos);
-        }, 16);
-      }, 3000); // Extended initial delay
-      
-      return () => clearTimeout(startTimer);
-    } else {
-      if (lightboxPhotos.length > 1 && currentIndex !== 0) {
-        setSliderPosition(50);
-        setIsAutoSwiping(false);
-      }
+      return;
+    }
+
+    if (lightboxPhotos.length > 1 && currentIndex !== 0) {
+      setSliderPosition(50);
+      setIsAutoSwiping(false);
     }
   }, [isOpen, effectUrl, lightboxPhotos.length, currentIndex]);
 

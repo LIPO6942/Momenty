@@ -148,6 +148,7 @@ export const CollageRenderer = ({
                                             fill
                                             className="object-cover w-full h-full"
                                             sizes="(max-width: 640px) 50vw, 400px"
+                                            style={photoFilter?.filter === 'bw' ? { filter: 'grayscale(1)' } : undefined}
                                         />
                                     </ParallaxContainer>
                                 </ImageLightbox>
@@ -158,6 +159,7 @@ export const CollageRenderer = ({
                                     fill
                                     className="object-cover w-full h-full"
                                     sizes="(max-width: 640px) 50vw, 400px"
+                                    style={photoFilter?.filter === 'bw' ? { filter: 'grayscale(1)' } : undefined}
                                 />
                             )}
                         </div>
@@ -285,7 +287,10 @@ export const PhotoCollage = ({
                         className,
                         !interactive && "cursor-move touch-none"
                     )}
-                    style={{ objectPosition }}
+                    style={{
+                        objectPosition,
+                        ...(photoFilter?.filter === 'bw' ? { filter: 'grayscale(1)' } : {})
+                    }}
                     onMouseDown={(e) => handleMouseDown(e, index)}
                     onTouchStart={(e) => handleMouseDown(e, index)}
                 />
