@@ -29,7 +29,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Instant } from "@/lib/types";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
-import { PhotoCollage } from "@/components/timeline/photo-collage";
+import { PhotoCollage, KenBurnsToggle } from "@/components/timeline/photo-collage";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
 
 
@@ -74,6 +74,9 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
             <Card id={`instant-${instant.id}`} style={{ backgroundColor: `hsl(${hue}, 70%, 98%)` }} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                 <CardHeader className="p-0 relative">
                     <PhotoCollage photos={validPhotos} title={instant.title} displayTransform={instant.displayTransform} audioUrl={instant.audio} collageTemplate={instant.collageTemplate} photoFilter={instant.photoFilter} />
+                    <div className="absolute bottom-3 left-3 z-50 pointer-events-auto">
+                        <KenBurnsToggle />
+                    </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
                     <div className="absolute top-2 right-2 z-10">

@@ -24,7 +24,7 @@ const isKenBurnsEnabled = () => {
 }
 
 // Small toggle used in the collage UI — dispatches a custom event so other parts update
-const KenBurnsToggle = () => {
+export const KenBurnsToggle = () => {
     const [on, setOn] = React.useState(isKenBurnsEnabled());
 
     React.useEffect(() => {
@@ -93,37 +93,44 @@ export const CollageRenderer = ({
     collageTemplate,
     title,
     audioUrl,
-    interactive = true,
-    photoFilter,
-}: CollageRendererProps) => {
-    const def = getTemplateById(collageTemplate.templateId);
-    if (!def) return null;
+                    if (interactive) {
+                        return (
+                            <ImageLightbox
+                                src={photoUrl}
+                                photos={allPhotos}
+                                audioUrl={audioUrl}
+                                initialIndex={slotDef.slotIndex}
+                                showAudioIcon={slotDef.slotIndex === 0}
+                                alt={`${title} — photo ${slotDef.slotIndex + 1}`}
+                                width={800}
+                                height={800}
+                                filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
+                            >
+                                <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
+                                    <Image
+                                        src={photoUrl}
+                                        alt={`${title} ${slotDef.slotIndex + 1}`}
+                                        fill
+                                        className="object-cover w-full h-full"
+                                        sizes="(max-width: 640px) 50vw, 400px"
+                                    />
+                                </ParallaxContainer>
+                            </ImageLightbox>
+                        );
+                    }
 
-    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => isKenBurnsEnabled());
-    React.useEffect(() => {
-        const handler = () => setKenBurnsEnabled(isKenBurnsEnabled());
-        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
-        window.addEventListener('storage', handler);
-        return () => {
-            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
-            window.removeEventListener('storage', handler);
-        };
-    }, []);
+                    // Non-interactive preview (e.g. edit dialog) should show filtered image when available
+                    const displaySrc = slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : photoUrl;
 
-    const { gap, borderRadius, bgColor, slots, ratio = '1:1', bgPattern, photoFrame, photoTilt } = collageTemplate;
-
-    const allPhotos = slots
-        .sort((a, b) => a.slotIndex - b.slotIndex)
-        .map(s => s.photoUrl)
-        .filter(Boolean);
-
-    const gridStyle: React.CSSProperties = {
-        display: 'grid',
-        gridTemplateColumns: def.gridTemplateColumns,
-        gridTemplateRows: def.gridTemplateRows,
-        gap: `${gap}px`,
-        ...getPatternStyle(bgPattern, bgColor),
-        overflow: 'hidden',
+                    return (
+                        <Image
+                            src={displaySrc}
+                            alt={`${title} ${slotDef.slotIndex + 1}`}
+                            fill
+                            className="object-cover w-full h-full"
+                            sizes="(max-width: 640px) 50vw, 400px"
+                        />
+                    );
         width: '100%',
         height: '100%',
         position: 'absolute',
@@ -323,10 +330,12 @@ export const PhotoCollage = ({
             ? `${displayTransform.positionX ?? 50}% ${displayTransform.positionY ?? 50}%`
             : undefined;
 
+        const displaySrc = (photoFilter && index === 0) ? photoFilter.filteredUrl : src;
+
         const content = (
             <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full" active={interactive && kenBurnsEnabled}>
                 <Image
-                    src={src}
+                    src={displaySrc}
                     alt={`${title} ${index + 1}`}
                     width={width}
                     height={height}
