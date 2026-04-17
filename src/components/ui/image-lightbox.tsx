@@ -90,7 +90,7 @@ export function ImageLightbox({
         let direction = 1; // Going towards Filtered (100)
         
         const interval = setInterval(() => {
-          pos += direction * 0.67; // Slowed down by 3x (was 2)
+          pos += direction * 0.37; // Adjusted for ~12s total animation
           
           if (direction === 1 && pos >= 100) {
             pos = 100;
@@ -101,12 +101,12 @@ export function ImageLightbox({
             setTimeout(() => {
               setIsAutoSwiping(false); 
               setSliderPosition(0); // Keep Original
-            }, 900); // Slowed down by 3x (was 300)
+            }, 1200); // Extended final pause
           }
           
           setSliderPosition(pos);
         }, 16);
-      }, 2400); // Slowed down by 3x (was 800)
+      }, 3000); // Extended initial delay
       
       return () => clearTimeout(startTimer);
     } else {

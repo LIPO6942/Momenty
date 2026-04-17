@@ -9,14 +9,23 @@ import Image from "next/image";
 import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
-export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris' },
-  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage' },
-  { key: 'contrast', label: 'Contraste++',  icon: '◐', description: 'Contraste élevé' },
-  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost' },
-  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + vignette' },
-  { key: 'dramatic', label: 'Dramatique',   icon: '🎭', description: 'Fort contraste' },
+export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:25' },
+  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100,e_contrast:15' },
+  { key: 'contrast', label: 'Contraste++',  icon: '◐', description: 'Contraste élevé', transform: 'e_contrast:50,e_brightness:12' },
+  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:65,e_contrast:18,e_brightness:5' },
+  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + vignette', transform: 'e_sepia:80,e_vignette:50,e_brightness:-8,e_contrast:15,e_noise:40' },
+  { key: 'dramatic', label: 'Dramatique',   icon: '🎭', description: 'Fort contraste', transform: 'e_contrast:65,e_shadows:50,e_vignette:55,e_brightness:-15,e_noise:50' },
 ];
+
+// Helper to generate Cloudinary thumbnail URL with filter applied
+function getFilterThumbnailUrl(photoUrl: string | null, transform: string): string | null {
+  if (!photoUrl) return null;
+  if (!photoUrl.includes('cloudinary.com')) return photoUrl;
+  
+  // Insert transformation before /upload/
+  return photoUrl.replace('/upload/', `/upload/${transform}/`);
+}
 
 interface PhotoFilterPickerProps {
   photoUrl: string | null;
@@ -214,36 +223,51 @@ export function ArtisticStylePicker({
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {photoFilters.map(({ key, label, icon, description }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleFilterSelect(selectedFilter === key ? null : key)}
-                disabled={isApplying}
-                className={cn(
-                  "relative flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
-                  selectedFilter === key
-                    ? "border-primary bg-primary/10"
-                    : "border-transparent hover:border-muted bg-background hover:bg-muted",
-                  isApplying && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <div className="relative w-full aspect-square rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                  <span className="text-2xl">{icon}</span>
-                  {selectedFilter === key && !isApplying && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Check className="h-5 w-5 text-primary" />
-                    </div>
+            {photoFilters.map(({ key, label, icon, description, transform }) => {
+              const thumbnailUrl = getFilterThumbnailUrl(photoUrl, transform);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleFilterSelect(selectedFilter === key ? null : key)}
+                  disabled={isApplying}
+                  className={cn(
+                    "relative flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                    selectedFilter === key
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent hover:border-muted bg-background hover:bg-muted",
+                    isApplying && "opacity-50 cursor-not-allowed"
                   )}
-                </div>
-                <span className="text-xs font-medium truncate w-full text-center">
-                  {label}
-                </span>
-                <span className="text-[10px] text-muted-foreground truncate w-full text-center">
-                  {description}
-                </span>
-              </button>
-            ))}
+                >
+                  <div className="relative w-full aspect-square rounded-md overflow-hidden bg-muted">
+                    {thumbnailUrl ? (
+                      <Image
+                        src={thumbnailUrl}
+                        alt={label}
+                        fill
+                        className="object-cover"
+                        sizes="120px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-2xl">{icon}</span>
+                      </div>
+                    )}
+                    {selectedFilter === key && !isApplying && (
+                      <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
+                        <Check className="h-6 w-6 text-primary bg-white/80 rounded-full p-1" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium truncate w-full text-center">
+                    {label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate w-full text-center">
+                    {description}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
