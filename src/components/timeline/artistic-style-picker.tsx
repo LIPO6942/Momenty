@@ -10,12 +10,12 @@ import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:25' },
-  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:100,e_contrast:15' },
-  { key: 'contrast', label: 'Contraste++',  icon: '◐', description: 'Contraste élevé', transform: 'e_contrast:50,e_brightness:12' },
-  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:65,e_contrast:18,e_brightness:5' },
-  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + vignette', transform: 'e_sepia:80,e_vignette:50,e_brightness:-8,e_contrast:15,e_noise:40' },
-  { key: 'dramatic', label: 'Dramatique',   icon: '🎭', description: 'Fort contraste', transform: 'e_contrast:65,e_shadows:50,e_vignette:55,e_brightness:-15,e_noise:50' },
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale' },
+  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte vintage', transform: 'e_sepia:80' },
+  { key: 'contrast', label: 'Contraste++',  icon: '◐', description: 'Contraste élevé', transform: 'e_contrast:30' },
+  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:50' },
+  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + vignette', transform: 'e_sepia:60,e_vignette:30' },
+  { key: 'dramatic', label: 'Dramatique',   icon: '🎭', description: 'Fort contraste', transform: 'e_contrast:40,e_brightness:-10' },
 ];
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
@@ -182,12 +182,14 @@ export function ArtisticStylePicker({
           className="relative w-full rounded-xl overflow-hidden bg-muted border-2 border-primary/30"
           style={{ aspectRatio: originalAspectRatio }}
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={filteredUrl}
             src={filteredUrl}
             alt={`Filtre ${currentFilter?.label}`}
-            fill
-            className="object-contain transition-opacity duration-300"
-            sizes="(max-width: 768px) 100vw, 400px"
+            className="object-contain w-full h-full transition-opacity duration-300"
+            onError={() => console.error('[Preview] Failed to load filtered image:', filteredUrl.substring(0, 100))}
+            onLoad={() => console.log('[Preview] Filtered image loaded successfully')}
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
             <div className="flex items-center gap-2">
@@ -284,6 +286,8 @@ export function ArtisticStylePicker({
                         fill
                         className="object-cover"
                         sizes="120px"
+                        onError={() => console.error(`[Thumbnail] Failed to load image for ${key}:`, thumbnailUrl.substring(0, 100))}
+                        onLoad={() => console.log(`[Thumbnail] Successfully loaded for ${key}`)}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
