@@ -12,6 +12,55 @@ import { LayoutGrid, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getPatternStyle } from "./collage-canvas";
 
+// Helper: read ken burns flag from localStorage safely
+const isKenBurnsEnabled = () => {
+    try {
+        if (typeof window === 'undefined') return false;
+        const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
+        return raw === '1' || raw === 'true';
+    } catch (e) {
+        return false;
+    }
+}
+
+// Small toggle used in the collage UI — dispatches a custom event so other parts update
+const KenBurnsToggle = () => {
+    const [on, setOn] = React.useState(isKenBurnsEnabled());
+
+    React.useEffect(() => {
+        const handler = () => setOn(isKenBurnsEnabled());
+        window.addEventListener('storage', handler);
+        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        return () => {
+            window.removeEventListener('storage', handler);
+            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        };
+    }, []);
+
+    const toggle = () => {
+        const next = !isKenBurnsEnabled();
+        try {
+            window.localStorage.setItem('momenty:kenBurnsEnabled', next ? '1' : '0');
+        } catch (e) {
+            console.error('Failed to write kenBurns flag', e);
+        }
+        // notify others
+        try { window.dispatchEvent(new Event('momenty:kenBurnsChanged')); } catch {}
+        setOn(next);
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={toggle}
+            className="h-8 w-8 rounded-md bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60"
+            title={on ? 'Désactiver Ken Burns' : 'Activer Ken Burns'}
+        >
+            <Maximize2 className="h-4 w-4" />
+        </button>
+    );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // COLLAGE RENDERER — reconstructs from CollageTemplate JSON
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,6 +95,17 @@ export const CollageRenderer = ({
     const def = getTemplateById(collageTemplate.templateId);
     if (!def) return null;
 
+    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => isKenBurnsEnabled());
+    React.useEffect(() => {
+        const handler = () => setKenBurnsEnabled(isKenBurnsEnabled());
+        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        window.addEventListener('storage', handler);
+        return () => {
+            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
+            window.removeEventListener('storage', handler);
+        };
+    }, []);
+
     const { gap, borderRadius, bgColor, slots, ratio = '1:1', bgPattern, photoFrame, photoTilt } = collageTemplate;
 
     const allPhotos = slots
@@ -68,6 +128,10 @@ export const CollageRenderer = ({
 
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
+            {/* Ken Burns toggle (visible on timeline) - stateful */}
+            <div className="absolute top-2 right-2 z-30">
+                <KenBurnsToggle />
+            </div>
             {/* Collage grid icon overlay */}
             <div className="absolute top-2 left-2 z-20 bg-black/40 backdrop-blur-sm rounded-md p-1" title="Collage">
                 <LayoutGrid className="h-3 w-3 text-white/80" />
@@ -124,13 +188,15 @@ export const CollageRenderer = ({
                                     height={800}
                                     filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
                                 >
-                                    <Image
-                                        src={photoUrl}
-                                        alt={`${title} ${slotDef.slotIndex + 1}`}
-                                        fill
-                                        className="object-cover w-full h-full"
-                                        sizes="(max-width: 640px) 50vw, 400px"
-                                    />
+                                    <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
+                                        <Image
+                                            src={photoUrl}
+                                            alt={`${title} ${slotDef.slotIndex + 1}`}
+                                            fill
+                                            className="object-cover w-full h-full"
+                                            sizes="(max-width: 640px) 50vw, 400px"
+                                        />
+                                    </ParallaxContainer>
                                 </ImageLightbox>
                             ) : (
                                 <Image
@@ -254,7 +320,7 @@ export const PhotoCollage = ({
             : undefined;
 
         const content = (
-            <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full" active={interactive}>
+            <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full" active={interactive && kenBurnsEnabled}>
                 <Image
                     src={src}
                     alt={`${title} ${index + 1}`}
@@ -356,5 +422,12 @@ export const PhotoCollage = ({
         }
     };
 
-    return <div className="w-full">{renderGrid()}</div>;
+    return (
+        <div className="w-full relative">
+            {renderGrid()}
+            <div className="absolute top-2 right-2 z-20">
+                <KenBurnsToggle />
+            </div>
+        </div>
+    );
 }

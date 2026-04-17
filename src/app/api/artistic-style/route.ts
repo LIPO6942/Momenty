@@ -17,9 +17,9 @@ const filterConfigs: Record<string, string> = {
   // Sépia: classic sepia with auto color and subtle grain
   sepia: 'e_sepia:100,e_auto_color,e_contrast:18,e_brightness:-4,e_grain:14',
   
-  // Fisheye: best-effort simulation using vignette, radial blur and auto color
+  // Fisheye: best-effort simulation using vignette and auto color
   // True geometric fisheye requires paid/advanced transforms; this simulates the visual.
-  fisheye: 'e_vignette:90,e_radial_blur:1,e_auto_color,e_saturation:30,e_brightness:8,e_grain:12',
+  fisheye: 'e_vignette:90,e_auto_color,e_saturation:30,e_brightness:8,e_grain:12',
   
   // Vibrant: maximum saturation
   // Vibrant: aggressive saturation with auto color-correction and sharpen-like clarity
