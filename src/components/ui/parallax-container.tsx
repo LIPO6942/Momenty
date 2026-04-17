@@ -57,8 +57,10 @@ export const ParallaxContainer = ({
     >
       <div
         style={{
-          // stronger Ken Burns: larger scale and subtle horizontal move based on scroll offset
-          transform: `scale(1.3) translate(${Math.max(Math.min(offset * 0.35, 20), -20)}px, ${offset}px)`,
+          // Apply Ken Burns only when enabled, otherwise render normally.
+          transform: active
+            ? `scale(1.3) translate(${Math.max(Math.min(offset * 0.35, 20), -20)}px, ${offset}px)`
+            : 'none',
         }}
         className="h-full w-full transition-transform duration-150 ease-out will-change-transform"
       >
