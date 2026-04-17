@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
   try {
     const { photoUrl, filter } = await req.json();
     
+    console.log(`[Photo Filter] Received request - filter: ${filter}, photoUrl: ${photoUrl?.substring(0, 80)}...`);
+    
     if (!photoUrl || !filter) {
       return NextResponse.json({ 
         error: 'photoUrl and filter are required' 
@@ -67,41 +69,41 @@ export async function POST(req: NextRequest) {
     const cloudinaryMatch = photoUrl.match(/(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.*)/);
     
     if (!cloudinaryMatch) {
+      console.error('[Photo Filter] URL regex match failed for:', photoUrl);
       return NextResponse.json({ 
         error: 'Invalid Cloudinary URL format' 
       }, { status: 400 });
     }
 
-    const [, baseUrl, pathWithTransformations] = cloudinaryMatch;
+    const [, baseUrl, pathWithVersion] = cloudinaryMatch;
     
     // Remove any existing transformations from the path
-    // Transformations are comma-separated before the version/folder path
-    const pathParts = pathWithTransformations.split('/');
-    const lastPart = pathParts[pathParts.length - 1]; // filename
-    const folderPath = pathParts.slice(0, -1).join('/');
+    // Cloudinary URLs have format: /upload/v1234567890/folder/image.jpg
+    // OR with transformations: /upload/e_grayscale/v1234567890/folder/image.jpg
+    const pathParts = pathWithVersion.split('/');
     
-    // Check if first segment contains transformations (has commas or effect prefixes)
-    const firstSegment = folderPath.split('/')[0];
-    const hasTransformations = firstSegment.includes(',') || 
-                               firstSegment.startsWith('e_') ||
-                               firstSegment.startsWith('c_') ||
-                               firstSegment.startsWith('w_') ||
-                               firstSegment.startsWith('h_');
+    // Find the version segment (starts with 'v' followed by digits)
+    const versionIndex = pathParts.findIndex(part => /^v\d+$/.test(part));
     
-    // Build clean path without existing transformations
     let cleanPath: string;
-    if (hasTransformations) {
-      cleanPath = folderPath.split('/').slice(1).join('/') + '/' + lastPart;
+    if (versionIndex > 0) {
+      // Skip transformation segments before the version
+      cleanPath = pathParts.slice(versionIndex).join('/');
+    } else if (versionIndex === 0) {
+      // No transformations, path starts with version
+      cleanPath = pathWithVersion;
     } else {
-      cleanPath = folderPath + '/' + lastPart;
+      // Fallback: assume last part is filename, rest is path
+      const lastPart = pathParts[pathParts.length - 1];
+      const folderPath = pathParts.slice(0, -1).join('/');
+      cleanPath = folderPath ? folderPath + '/' + lastPart : lastPart;
     }
     
     // Get the transformation string for the selected filter
     const transformation = filterConfigs[filter];
     
-    // Build the filtered URL
-    // Add quality and format optimizations
-    const filteredUrl = `${baseUrl}${transformation},q_auto:best,f_auto/${cleanPath}`;
+    // Build the filtered URL - ensure no double slashes
+    const filteredUrl = `${baseUrl}${transformation},q_auto:best,f_auto/${cleanPath}`.replace(/\/+/g, '/').replace(':/', '://');
     
     console.log(`[Photo Filter] Applied ${filterNames[filter]} filter: ${filteredUrl}`);
 

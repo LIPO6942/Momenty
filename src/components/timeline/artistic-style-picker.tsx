@@ -21,9 +21,13 @@ export const photoFilters: { key: PhotoFilterType; label: string; icon: string; 
 // Helper to generate Cloudinary thumbnail URL with filter applied
 function getFilterThumbnailUrl(photoUrl: string | null, transform: string): string | null {
   if (!photoUrl) return null;
-  if (!photoUrl.includes('cloudinary.com')) return photoUrl;
+  if (!photoUrl.includes('res.cloudinary.com')) return photoUrl;
   
   // Insert transformation before /upload/
+  // Handle both /upload/ and /upload/v123456/ formats
+  if (photoUrl.includes('/upload/v')) {
+    return photoUrl.replace('/upload/v', `/upload/${transform}/v`);
+  }
   return photoUrl.replace('/upload/', `/upload/${transform}/`);
 }
 
@@ -60,8 +64,12 @@ export function ArtisticStylePicker({
 
   // ─── Apply filter via API ───────────────────────────────────────────────────
   const applyFilter = useCallback(async (filter: PhotoFilterType) => {
-    if (!photoUrl) return;
+    if (!photoUrl) {
+      console.error('[Picker] No photoUrl provided');
+      return;
+    }
     
+    console.log(`[Picker] Applying filter ${filter} to ${photoUrl}`);
     setFilterState('applying');
     
     try {
@@ -75,20 +83,22 @@ export function ArtisticStylePicker({
       });
 
       const data = await res.json();
+      console.log('[Picker] API response:', data);
 
       if (!res.ok || !data.filteredUrl) {
-        console.error('Filter error:', data);
+        console.error('[Picker] Filter error:', data);
         setFilterState('error');
         return;
       }
 
       // Success - URL is generated instantly via Cloudinary transformation
+      console.log('[Picker] Filter applied successfully:', data.filteredUrl);
       setFilteredUrl(data.filteredUrl);
       onFilteredUrlGenerated?.(data.filteredUrl);
       setFilterState('done');
       
     } catch (err) {
-      console.error('Filter application error:', err);
+      console.error('[Picker] Filter application error:', err);
       setFilterState('error');
     }
   }, [photoUrl, onFilteredUrlGenerated]);
