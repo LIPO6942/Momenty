@@ -93,100 +93,42 @@ export const CollageRenderer = ({
     collageTemplate,
     title,
     audioUrl,
-                    if (interactive) {
-                        return (
-                            <ImageLightbox
-                                src={photoUrl}
-                                photos={allPhotos}
-                                audioUrl={audioUrl}
-                                initialIndex={slotDef.slotIndex}
-                                showAudioIcon={slotDef.slotIndex === 0}
-                                alt={`${title} — photo ${slotDef.slotIndex + 1}`}
-                                width={800}
-                                height={800}
-                                filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
-                            >
-                                <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
-                                    <Image
-                                        src={photoUrl}
-                                        alt={`${title} ${slotDef.slotIndex + 1}`}
-                                        fill
-                                        className="object-cover w-full h-full"
-                                        sizes="(max-width: 640px) 50vw, 400px"
-                                    />
-                                </ParallaxContainer>
-                            </ImageLightbox>
-                        );
-                    }
+    interactive = true,
+    photoFilter,
+}: CollageRendererProps) => {
+    const ratio = collageTemplate?.ratio ?? '1:1';
+    const slots = collageTemplate?.slots ?? [];
+    const allPhotos = slots.map(s => s.photoUrl).filter(Boolean) as string[];
+    const kenBurnsEnabled = isKenBurnsEnabled();
 
-                    // Non-interactive preview (e.g. edit dialog) should show filtered image when available
-                    const displaySrc = slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : photoUrl;
-
-                    return (
-                        <Image
-                            src={displaySrc}
-                            alt={`${title} ${slotDef.slotIndex + 1}`}
-                            fill
-                            className="object-cover w-full h-full"
-                            sizes="(max-width: 640px) 50vw, 400px"
-                        />
-                    );
+    const columns = Math.min(3, Math.max(1, slots.length));
+    const gridStyle: React.CSSProperties = {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: `${collageTemplate?.gap ?? 4}px`,
         width: '100%',
         height: '100%',
-        position: 'absolute',
-        inset: 0,
+        position: 'relative',
     };
 
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
-            {/* Ken Burns toggle (visible on timeline) - stateful */}
             <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
                 <KenBurnsToggle />
             </div>
-            {/* Collage grid icon overlay */}
             <div className="absolute top-2 left-2 z-20 bg-black/40 backdrop-blur-sm rounded-md p-1" title="Collage">
                 <LayoutGrid className="h-3 w-3 text-white/80" />
             </div>
 
             <div style={gridStyle}>
-                {def.slots.map(slotDef => {
-                    const slotData = slots.find(s => s.slotIndex === slotDef.slotIndex);
-                    const photoUrl = slotData?.photoUrl;
-
+                {slots.map((slotDef) => {
+                    const photoUrl = slotDef.photoUrl;
                     if (!photoUrl) return null;
 
-                    const tilt = photoTilt && photoUrl ? (slotDef.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
-                    let frameStyle: React.CSSProperties = {};
-                    if (photoFrame === 'polaroid' && photoUrl) {
-                        // Style Polaroid : marges blanches, ombre portée
-                        frameStyle = { padding: '8px 8px 30px 8px', backgroundColor: '#fff', boxShadow: '0 4px 15px -2px rgba(0,0,0,0.2), 0 2px 6px -1px rgba(0,0,0,0.1)' };
-                    } else if (photoFrame === 'classic' && photoUrl) {
-                        // Style Classique : cadre simple
-                        frameStyle = { padding: '6px', backgroundColor: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' };
-                    } else if (photoFrame === 'clean' && photoUrl) {
-                        // Style Clean : sans espacement, bordures fines
-                        frameStyle = { border: '1px solid rgba(255,255,255,0.3)' };
-                    } else if (photoFrame === 'mosaic' && photoUrl) {
-                        // Style Mosaic : ombre subtile pour effet 3D
-                        frameStyle = { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' };
-                    } else if (photoFrame === 'minimal' && photoUrl) {
-                        // Style Minimal : espacement égal, coins légers
-                        frameStyle = { border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' };
-                    }
+                    const displaySrc = slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : photoUrl;
 
-                    const photo = (
-                        <div
-                            key={slotDef.slotIndex}
-                            style={{
-                                gridColumn: slotDef.gridColumn,
-                                gridRow: slotDef.gridRow,
-                                borderRadius: `${borderRadius}px`,
-                                overflow: 'hidden',
-                                position: 'relative',
-                                transform: `rotate(${tilt})`,
-                                ...frameStyle
-                            }}
-                        >
+                    return (
+                        <div key={slotDef.slotIndex} style={{ position: 'relative', overflow: 'hidden', borderRadius: `${collageTemplate?.borderRadius ?? 0}px` }}>
                             {interactive ? (
                                 <ImageLightbox
                                     src={photoUrl}
@@ -201,7 +143,7 @@ export const CollageRenderer = ({
                                 >
                                     <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
                                         <Image
-                                            src={photoUrl}
+                                            src={displaySrc}
                                             alt={`${title} ${slotDef.slotIndex + 1}`}
                                             fill
                                             className="object-cover w-full h-full"
@@ -211,7 +153,7 @@ export const CollageRenderer = ({
                                 </ImageLightbox>
                             ) : (
                                 <Image
-                                    src={photoUrl}
+                                    src={displaySrc}
                                     alt={`${title} ${slotDef.slotIndex + 1}`}
                                     fill
                                     className="object-cover w-full h-full"
@@ -220,8 +162,6 @@ export const CollageRenderer = ({
                             )}
                         </div>
                     );
-
-                    return photo;
                 })}
             </div>
         </div>
