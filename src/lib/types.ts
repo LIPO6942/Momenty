@@ -58,14 +58,11 @@ export interface CollageTemplate {
     slots: CollageSlot[];
 }
 
-export type ArtisticStyleType = 'manga' | 'abstract' | 'vangogh' | 'monet' | 'watercolor' | 'comic';
+export type PhotoFilterType = 'bw' | 'sepia' | 'contrast' | 'vibrant' | 'vintage' | 'dramatic';
 
-export type ArtisticModeType = 'faithful' | 'creative';
-
-export interface ArtisticStyle {
-    style: ArtisticStyleType;
-    mode?: ArtisticModeType;
-    artisticUrl: string; // URL de l'image générée par DeepAI
+export interface PhotoFilter {
+    filter: PhotoFilterType;
+    filteredUrl: string; // URL de l'image générée par DeepAI
 }
 
 export interface Instant {
@@ -84,7 +81,7 @@ export interface Instant {
     displayTransform?: DisplayTransform; // Optional persisted display settings
     collageTemplate?: CollageTemplate; // Optional collage template settings
     descriptionStyle?: 'classique-italique' | 'magazine-bold' | 'polaroid-marker' | 'cinematique'; // Optional style for description overlay
-    artisticStyle?: ArtisticStyle; // Optional artistic transformation for the main photo
+    photoFilter?: PhotoFilter; // Optional photo filter transformation
 }
 
 export interface Encounter {

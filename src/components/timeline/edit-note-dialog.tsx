@@ -34,7 +34,7 @@ import { AudioPicker } from "../ui/audio-picker";
 import type { DisplayTransform } from "@/lib/types";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
-import type { ArtisticStyle, ArtisticStyleType, ArtisticModeType } from "@/lib/types";
+import type { PhotoFilter, PhotoFilterType } from "@/lib/types";
 
 
 interface EditNoteDialogProps {
@@ -103,10 +103,9 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
-  // ── Artistic style state ─────────────────────────────────────────────────
-  const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(instantToEdit.artisticStyle?.style || null);
-  const [selectedArtisticMode, setSelectedArtisticMode] = useState<ArtisticModeType>(instantToEdit.artisticStyle?.mode || 'creative');
-  const [artisticUrl, setArtisticUrl] = useState<string | null>(instantToEdit.artisticStyle?.artisticUrl || null);
+  // ── Photo filter state ─────────────────────────────────────────────────
+  const [selectedFilter, setSelectedFilter] = useState<PhotoFilterType | null>(instantToEdit.photoFilter?.filter || null);
+  const [filteredUrl, setFilteredUrl] = useState<string | null>(instantToEdit.photoFilter?.filteredUrl || null);
 
   useEffect(() => {
     if (open && instantToEdit) {
@@ -123,10 +122,9 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
       setDescriptionStyle((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
       setAudioUrl(instantToEdit.audio || null);
-      // Initialize artistic style state
-      setSelectedArtisticStyle(instantToEdit.artisticStyle?.style || null);
-      setSelectedArtisticMode(instantToEdit.artisticStyle?.mode || 'creative');
-      setArtisticUrl(instantToEdit.artisticStyle?.artisticUrl || null);
+      // Initialize photo filter state
+      setSelectedFilter(instantToEdit.photoFilter?.filter || null);
+      setFilteredUrl(instantToEdit.photoFilter?.filteredUrl || null);
     }
   }, [open, instantToEdit]);
 
@@ -234,10 +232,9 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         },
         descriptionStyle: finalPhotoUrls.length > 0 ? descriptionStyle : undefined,
         audio: audioUrl,
-        artisticStyle: selectedArtisticStyle && artisticUrl ? {
-          style: selectedArtisticStyle,
-          mode: selectedArtisticMode,
-          artisticUrl: artisticUrl
+        photoFilter: selectedFilter && filteredUrl ? {
+          filter: selectedFilter,
+          filteredUrl: filteredUrl
         } : undefined,
       });
 
@@ -434,17 +431,13 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                   <div className="mt-4 space-y-4">
                     <Separator className="mb-4" />
                     <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
-                    {/* Artistic style picker - only for single photos */}
+                    {/* Photo filter picker - only for single photos */}
                     {photos.length === 1 && (
                       <ArtisticStylePicker
                         photoUrl={photos[0].startsWith('data:') ? photos[0] : photos[0]}
-                        selectedStyle={selectedArtisticStyle}
-                        selectedMode={selectedArtisticMode}
-                        onStyleSelect={(style, mode) => {
-                          setSelectedArtisticStyle(style);
-                          if (mode) setSelectedArtisticMode(mode);
-                        }}
-                        onArtisticUrlGenerated={setArtisticUrl}
+                        selectedFilter={selectedFilter}
+                        onFilterSelect={setSelectedFilter}
+                        onFilteredUrlGenerated={setFilteredUrl}
                       />
                     )}
                   </div>

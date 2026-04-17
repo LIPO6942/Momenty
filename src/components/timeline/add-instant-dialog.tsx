@@ -27,7 +27,7 @@ import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
-import type { ArtisticStyle, ArtisticStyleType, ArtisticModeType } from "@/lib/types";
+import type { PhotoFilter, PhotoFilterType } from "@/lib/types";
 import {
     Command,
     CommandEmpty,
@@ -107,10 +107,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
     const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("classique-italique");
 
-    // ── Artistic style state ─────────────────────────────────────────────────
-    const [selectedArtisticStyle, setSelectedArtisticStyle] = useState<ArtisticStyleType | null>(null);
-    const [selectedArtisticMode, setSelectedArtisticMode] = useState<ArtisticModeType>('creative');
-    const [artisticUrl, setArtisticUrl] = useState<string | null>(null);
+    // ── Photo filter state ─────────────────────────────────────────────────
+    const [selectedFilter, setSelectedFilter] = useState<PhotoFilterType | null>(null);
+    const [filteredUrl, setFilteredUrl] = useState<string | null>(null);
 
     // ── Collage state ──────────────────────────────────────────────────────────
     const [isCollageMode, setIsCollageMode] = useState(false);
@@ -707,11 +706,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                     descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
                     ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
-                    ...(selectedArtisticStyle && artisticUrl ? {
-                        artisticStyle: {
-                            style: selectedArtisticStyle,
-                            mode: selectedArtisticMode,
-                            artisticUrl: artisticUrl
+                    ...(selectedFilter && filteredUrl ? {
+                        photoFilter: {
+                            filter: selectedFilter,
+                            filteredUrl: filteredUrl
                         }
                     } : {}),
                 };
@@ -1283,17 +1281,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         <>
                                             <Separator />
                                             <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
-                                            {/* Artistic style picker - only for single photos */}
+                                            {/* Photo filter picker - only for single photos */}
                                             {photos.length === 1 && (
                                                 <ArtisticStylePicker
                                                     photoUrl={photos[0]}
-                                                    selectedStyle={selectedArtisticStyle}
-                                                    selectedMode={selectedArtisticMode}
-                                                    onStyleSelect={(style, mode) => {
-                                                        setSelectedArtisticStyle(style);
-                                                        if (mode) setSelectedArtisticMode(mode);
-                                                    }}
-                                                    onArtisticUrlGenerated={setArtisticUrl}
+                                                    selectedFilter={selectedFilter}
+                                                    onFilterSelect={setSelectedFilter}
+                                                    onFilteredUrlGenerated={setFilteredUrl}
                                                 />
                                             )}
                                         </>
