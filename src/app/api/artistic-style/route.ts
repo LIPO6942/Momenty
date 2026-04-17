@@ -19,12 +19,16 @@ const styleGenPrompts: Record<string, string> = {
 
 // Faithful mode prompts - stronger emphasis on subject preservation
 const faithfulPrompts: Record<string, string> = {
-  manga: 'Exact same scene and people as reference photo, converted to 2D Anime Manga style, Studio Ghibli illustration, same subjects same poses same location, faithful reproduction with anime aesthetics, high-quality digital art, vibrant cell shading',
-  abstract: 'Abstract interpretation of the exact same scene from reference photo, same subjects and composition transformed into geometric expressionism, bold colors, maintaining recognizable elements from original',
-  vangogh: 'Exact same scene and people from reference photo rendered in Vincent van Gogh painting style, same subjects same location, thick brushstrokes, swirling starry sky oil textures, vivid impressionism, faithful to original composition',
-  monet: 'Exact same scene from reference photo as Claude Monet impressionist oil, same subjects and location, soft focus, dappled sunlight, peaceful atmospheric colors, painterly, maintaining original composition and subjects',
-  watercolor: 'Exact same scene and people from reference photo as delicate hand-painted watercolor, same subjects same location, transparent washes, soft bleeding edges, high quality aesthetic, faithful reproduction',
-  comic: 'Exact same scene and people from reference photo in vintage American comic book style, same subjects same poses, bold black outlines, pop art dots, vibrant flat colors, graphic novel style, faithful to original',
+  manga: "RECREATE the EXACT SAME image as manga anime style. MANDATORY: Keep the SAME people, SAME faces, SAME expressions, SAME poses, SAME clothing, SAME background, SAME objects, SAME scene layout. Only apply manga aesthetics: cel shading, clean ink lines, anime features. DO NOT change subjects. DO NOT alter composition.",
+  comic: "RECREATE the EXACT SAME image as comic book style. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME setting, SAME action, SAME background details. Only apply comic aesthetics: bold outlines, dynamic shading, vibrant colors. DO NOT change subjects. DO NOT alter composition.",
+  watercolor: "RECREATE the EXACT SAME image as watercolor painting. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME clothing, SAME background, SAME objects, SAME scene composition. Only apply watercolor aesthetics: soft washes, paper texture, fluid blends. DO NOT change subjects. DO NOT alter layout.",
+  oil: "RECREATE the EXACT SAME image as oil painting. MANDATORY: Keep the SAME people, SAME faces, SAME expressions, SAME poses, SAME setting, SAME background, SAME objects. Only apply oil paint aesthetics: rich brushwork, canvas texture, classical technique. DO NOT change subjects. DO NOT alter composition.",
+  sketch: "RECREATE the EXACT SAME image as pencil sketch. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME clothing, SAME background, SAME objects, SAME scene layout. Only apply sketch aesthetics: graphite shading, cross-hatching, paper texture. DO NOT change subjects.",
+  neon: "RECREATE the EXACT SAME image with neon cyberpunk lighting. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME clothing, SAME scene composition, SAME objects. Only add: neon glow effects, futuristic lighting, cyberpunk atmosphere. DO NOT change subjects. DO NOT alter layout.",
+  vintage: "RECREATE the EXACT SAME image as vintage photograph. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME clothing, SAME background, SAME objects. Only apply: sepia tone, aged paper texture, vintage color grading. DO NOT change subjects.",
+  "pop-art": "RECREATE the EXACT SAME image as pop art. MANDATORY: Keep the SAME people, SAME faces, SAME poses, SAME clothing, SAME background elements, SAME composition. Only apply: bold flat colors, halftone patterns, Warhol style. DO NOT change subjects.",
+  minimal: "RECREATE the EXACT SAME image as minimalist line art. MANDATORY: Keep the SAME people, SAME poses, SAME clothing silhouettes, SAME scene composition, SAME background key elements. Only apply: simplified lines, minimal detail, clean aesthetic. DO NOT change subjects.",
+  pixel: "RECREATE the EXACT SAME image as pixel art. MANDATORY: Keep the SAME people, SAME poses, SAME clothing, SAME background, SAME objects, SAME scene layout. Only apply: pixelated aesthetic, limited palette, retro 8-bit style. DO NOT change subjects."
 };
 
 /**
@@ -116,14 +120,14 @@ export async function POST(req: NextRequest) {
     let finalPrompt: string;
     
     if (isFaithful) {
-      // Faithful mode: Heavy emphasis on matching original content
-      const qualityTokens = "high fidelity, exact subject reproduction, detailed masterpiece";
-      const constraints = "CRITICAL: Maintain EXACT same people, faces, poses, objects, and scene composition as the reference photo. Do NOT invent new subjects. Do NOT change the setting.";
+      // Faithful mode: EXTREME emphasis on exact reproduction
+      const strictConstraint = "ABSOLUTE REQUIREMENT: This MUST be the EXACT SAME image with ONLY style transformation applied. The people, their faces, their clothing, their poses, the background, the decor, the objects, the lighting direction, and the scene composition MUST remain IDENTICAL to the reference.";
+      const forbidden = "FORBIDDEN: Adding new subjects, removing existing subjects, changing poses, altering facial features, modifying the background, moving objects, changing clothing, or any creative reinterpretation.";
       const subjectDetails = visualContext 
-        ? `This image shows: ${visualContext}. Use this exact description to guide the transformation.`
-        : "Transform this exact photo while maintaining all original subjects and scene elements.";
+        ? `The reference photo shows EXACTLY: ${visualContext}. You MUST reproduce these EXACT SAME elements with ONLY the style transformation applied.`
+        : "You are transforming the style ONLY. The subjects, scene, and composition MUST remain EXACTLY as in the reference.";
       
-      finalPrompt = `${subjectDetails} Style transformation: ${stylePrompt}. ${constraints}. Quality: ${qualityTokens}.`;
+      finalPrompt = `${strictConstraint} ${subjectDetails} Transformation instructions: ${stylePrompt}. ${forbidden} REPEAT: Same people, same faces, same poses, same background, same objects - ONLY style changes.`;
     } else {
       // Creative mode: Current behavior with artistic freedom
       const qualityTokens = "high quality, extremely detailed masterpiece, photorealistic composition";
