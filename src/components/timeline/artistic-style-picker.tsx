@@ -20,15 +20,42 @@ export const photoFilters: { key: PhotoFilterType; label: string; icon: string; 
 
 // Helper to generate Cloudinary thumbnail URL with filter applied
 function getFilterThumbnailUrl(photoUrl: string | null, transform: string): string | null {
-  if (!photoUrl) return null;
-  if (!photoUrl.includes('res.cloudinary.com')) return photoUrl;
-  
-  // Insert transformation before /upload/
-  // Handle both /upload/ and /upload/v123456/ formats
-  if (photoUrl.includes('/upload/v')) {
-    return photoUrl.replace('/upload/v', `/upload/${transform}/v`);
+  if (!photoUrl) {
+    console.log('[Thumbnail] No photoUrl provided');
+    return null;
   }
-  return photoUrl.replace('/upload/', `/upload/${transform}/`);
+  if (!photoUrl.includes('res.cloudinary.com')) {
+    console.log('[Thumbnail] Not a Cloudinary URL:', photoUrl.substring(0, 50));
+    return photoUrl;
+  }
+  
+  // Parse the Cloudinary URL properly
+  // Format: https://res.cloudinary.com/{cloud}/image/upload/v{version}/{path}
+  const match = photoUrl.match(/(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.*)/);
+  if (!match) {
+    console.log('[Thumbnail] URL regex match failed');
+    return photoUrl;
+  }
+  
+  const [, baseUrl, pathWithVersion] = match;
+  const pathParts = pathWithVersion.split('/');
+  
+  // Find version segment (v123456...)
+  const versionIndex = pathParts.findIndex(part => /^v\d+$/.test(part));
+  
+  let cleanPath: string;
+  if (versionIndex >= 0) {
+    // Keep from version onwards
+    cleanPath = pathParts.slice(versionIndex).join('/');
+  } else {
+    cleanPath = pathWithVersion;
+  }
+  
+  // Build URL with transformation - add w_200 for thumbnail size + cache busting
+  const timestamp = Date.now();
+  const thumbnailUrl = `${baseUrl}${transform},w_200,h_200,c_fill,q_auto/${cleanPath}?_cb=${timestamp}`;
+  console.log(`[Thumbnail] Generated for transform "${transform.substring(0, 30)}...": ${thumbnailUrl.substring(0, 100)}...`);
+  return thumbnailUrl;
 }
 
 interface PhotoFilterPickerProps {

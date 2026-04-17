@@ -102,9 +102,16 @@ export async function POST(req: NextRequest) {
     // Get the transformation string for the selected filter
     const transformation = filterConfigs[filter];
     
-    // Build the filtered URL - ensure no double slashes
-    const filteredUrl = `${baseUrl}${transformation},q_auto:best,f_auto/${cleanPath}`.replace(/\/+/g, '/').replace(':/', '://');
+    // Build the filtered URL carefully
+    // Ensure cleanPath doesn't start with / to avoid double slashes
+    const normalizedCleanPath = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
     
+    // Add cache-busting timestamp to force fresh image load
+    const timestamp = Date.now();
+    const filteredUrl = `${baseUrl}${transformation},q_auto:best,f_auto/${normalizedCleanPath}?_cb=${timestamp}`;
+    
+    console.log(`[Photo Filter] baseUrl: ${baseUrl}`);
+    console.log(`[Photo Filter] cleanPath: ${cleanPath}`);
     console.log(`[Photo Filter] Applied ${filterNames[filter]} filter: ${filteredUrl}`);
 
     return NextResponse.json({ 
