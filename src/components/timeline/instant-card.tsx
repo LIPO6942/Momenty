@@ -229,14 +229,24 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
             <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
                 <div className="w-full ml-14">
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4 text-indigo-500" />
-                            <span className="font-semibold text-sm text-foreground">
-                                {getCity(instant.location)}, {getCountry(instant.location)}
-                            </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{format(parseISO(instant.date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                    {/* Location & Date - One line with colored background */}
+                    <div 
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                        style={{ 
+                            backgroundColor: `hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 95%)`,
+                            borderLeft: `3px solid hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 50%)`
+                        }}
+                    >
+                        <MapPin 
+                            className="h-4 w-4 flex-shrink-0" 
+                            style={{ color: `hsl(${(instant.id.charCodeAt(0) * 137.508) % 360}, 70%, 45%)` }}
+                        />
+                        <span className="font-semibold text-sm text-foreground truncate flex-shrink-0">
+                            {getCity(instant.location)}, {getCountry(instant.location)}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate">
+                            • {format(parseISO(instant.date), "d MMM yyyy", { locale: fr })}
+                        </span>
                     </div>
                     <div className="flex gap-2 flex-wrap mt-3">
                         {categories.map(cat => (

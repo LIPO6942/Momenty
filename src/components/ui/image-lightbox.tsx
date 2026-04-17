@@ -236,9 +236,8 @@ export function ImageLightbox({
           <div className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
             <style jsx global>{`
               @keyframes momenty-kenburns {
-                0% { transform: scale(1) translate3d(0, 0, 0); }
-                50% { transform: scale(1.12) translate3d(3%, -2%, 0); }
-                100% { transform: scale(1) translate3d(0, 0, 0); }
+                0% { transform: scale(1) translateX(0); }
+                100% { transform: scale(1.25) translateX(-8%); }
               }
               .momenty-kenburns {
                 animation: momenty-kenburns 18s ease-in-out infinite;
@@ -420,23 +419,6 @@ export function ImageLightbox({
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/40 px-4 py-1.5 rounded-full text-white text-xs font-bold backdrop-blur-sm">
                       {currentIndex + 1} / {lightboxPhotos.length}
                     </div>
-
-                    {/* Ken Burns Toggle - Bottom Right */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "absolute bottom-6 right-6 z-50 h-9 w-9 rounded-full bg-black/50 text-white/80 backdrop-blur-sm transition-all border border-white/10 hover:bg-black/70 hover:scale-110",
-                        kenBurnsEnabled && "bg-primary/60 text-white border-primary/40"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setKenBurnsEnabled(v => !v);
-                      }}
-                      title={kenBurnsEnabled ? "Désactiver Ken Burns" : "Activer Ken Burns"}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
                   </>
                 ) : (
                   <div className="relative w-full h-full flex items-center justify-center p-4 group/slider select-none touch-none bg-black/20">
@@ -554,23 +536,6 @@ export function ImageLightbox({
                         )}
                       </>
                     )}
-
-                    {/* Ken Burns Toggle - Bottom Right (Single Photo) */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "absolute bottom-6 right-6 z-50 h-9 w-9 rounded-full bg-black/50 text-white/80 backdrop-blur-sm transition-all border border-white/10 hover:bg-black/70 hover:scale-110",
-                        kenBurnsEnabled && "bg-primary/60 text-white border-primary/40"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setKenBurnsEnabled(v => !v);
-                      }}
-                      title={kenBurnsEnabled ? "Désactiver Ken Burns" : "Activer Ken Burns"}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 )}
 

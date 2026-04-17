@@ -8,7 +8,8 @@ import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
 import type { DisplayTransform, CollageTemplate, PhotoFilter } from "@/lib/types";
 import { getTemplateById } from "@/lib/collage-templates";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getPatternStyle } from "./collage-canvas";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,6 +196,14 @@ export const PhotoCollage = ({
     // Drag state for manual positioning
     const [isDragging, setIsDragging] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
+    
+    // Ken Burns toggle state
+    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('momenty:kenBurnsEnabled') === 'true';
+        }
+        return false;
+    });
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         if (interactive || !onPositionChange) return;
