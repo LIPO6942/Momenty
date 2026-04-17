@@ -53,10 +53,14 @@ const KenBurnsToggle = () => {
         <button
             type="button"
             onClick={toggle}
-            className="h-8 w-8 rounded-md bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60"
+            aria-pressed={on}
+            className={cn(
+                "h-8 w-8 rounded-md flex items-center justify-center text-white transition-colors duration-150",
+                on ? 'bg-primary ring-2 ring-primary/50 shadow-md' : 'bg-black/40 backdrop-blur-sm hover:bg-black/60'
+            )}
             title={on ? 'Désactiver Ken Burns' : 'Activer Ken Burns'}
         >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className={cn('h-4 w-4', on ? 'text-white' : 'text-white/90')} />
         </button>
     );
 }

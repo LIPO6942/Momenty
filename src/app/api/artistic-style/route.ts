@@ -12,9 +12,9 @@ import { NextRequest, NextResponse } from 'next/server';
 const filterConfigs: Record<string, string> = {
   // Noir & Blanc: grayscale + contrast boost
   // Conservative transforms using widely-supported effects (avoid paid-only ops)
-  bw: 'e_grayscale:100,e_contrast:30',
+  bw: 'e_grayscale,e_contrast:30',
 
-  sepia: 'e_sepia:100,e_contrast:12',
+  sepia: 'e_sepia,e_contrast:12',
   
   // Fisheye: simulate with strong vignette and mild saturation
   fisheye: 'e_vignette:80,e_saturation:30',

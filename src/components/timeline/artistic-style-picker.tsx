@@ -10,8 +10,8 @@ import type { PhotoFilterType } from "@/lib/types";
 
 // ─── Photo Filter catalogue (6 filters using Cloudinary transformations) ──────────
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
-  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale:100,e_contrast:30' },
-  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte sépia', transform: 'e_sepia:100,e_contrast:12' },
+  { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:30' },
+  { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte sépia', transform: 'e_sepia,e_contrast:12' },
     { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Simulation fisheye (vignette)', transform: 'e_vignette:80,e_saturation:30' },
     { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:120,e_contrast:12' },
     { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia + trame', transform: 'e_sepia:80,e_vignette:60,e_contrast:28,e_saturation:-12' },
