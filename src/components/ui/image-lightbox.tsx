@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X, ZoomIn, ChevronLeft, ChevronRight, Volume2, VolumeX, Music, Play, Pause, Maximize2 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 
 interface ImageLightboxProps {
   src?: string;
