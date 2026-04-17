@@ -22,7 +22,8 @@ interface ImageLightboxProps {
   className?: string;
   children?: React.ReactNode;
   showAudioIcon?: boolean;
-  artisticUrl?: string | null; // URL de la version artistique pour animation morph
+  artisticUrl?: string | null; // Legacy: URL de la version artistique
+  filteredUrl?: string | null; // New: URL de la version avec filtre photo
 }
 
 export function ImageLightbox({
@@ -36,8 +37,11 @@ export function ImageLightbox({
   className,
   children,
   showAudioIcon = true,
-  artisticUrl
+  artisticUrl,
+  filteredUrl
 }: ImageLightboxProps) {
+  // Support both legacy artisticUrl and new filteredUrl
+  const effectUrl = filteredUrl || artisticUrl;
   // 1. ALL STATES AT THE TOP
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -47,8 +51,8 @@ export function ImageLightbox({
   // Magic Reveal Slider state
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
-  const [isArtisticLoading, setIsArtisticLoading] = useState(true);
-  const [artisticError, setArtisticError] = useState(false);
+  const [isEffectLoading, setIsEffectLoading] = useState(true);
+  const [effectError, setEffectError] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
@@ -73,20 +77,20 @@ export function ImageLightbox({
   }, [emblaApi, isOpen, initialIndex]);
 
   useEffect(() => {
-    const shouldShowTeaser = isOpen && artisticUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
+    const shouldShowTeaser = isOpen && effectUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
     
     if (shouldShowTeaser) {
       setSliderPosition(0);
       setIsAutoSwiping(true);
-      setIsArtisticLoading(true);
-      setArtisticError(false);
+      setIsEffectLoading(true);
+      setEffectError(false);
       
       const startTimer = setTimeout(() => {
-        let pos = 0; // Start at Original (Artistic hidden)
-        let direction = 1; // Going towards Artistic (100)
+        let pos = 0; // Start at Original (Filtered hidden)
+        let direction = 1; // Going towards Filtered (100)
         
         const interval = setInterval(() => {
-          pos += direction * 2; 
+          pos += direction * 0.67; // Slowed down by 3x (was 2)
           
           if (direction === 1 && pos >= 100) {
             pos = 100;
@@ -97,12 +101,12 @@ export function ImageLightbox({
             setTimeout(() => {
               setIsAutoSwiping(false); 
               setSliderPosition(0); // Keep Original
-            }, 300);
+            }, 900); // Slowed down by 3x (was 300)
           }
           
           setSliderPosition(pos);
         }, 16);
-      }, 800);
+      }, 2400); // Slowed down by 3x (was 800)
       
       return () => clearTimeout(startTimer);
     } else {
@@ -111,7 +115,7 @@ export function ImageLightbox({
         setIsAutoSwiping(false);
       }
     }
-  }, [isOpen, artisticUrl, lightboxPhotos.length, currentIndex]);
+  }, [isOpen, effectUrl, lightboxPhotos.length, currentIndex]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -274,8 +278,8 @@ export function ImageLightbox({
                       <div className="flex w-full h-full">
                         {lightboxPhotos.map((photoSrc, idx) => (
                           <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full flex items-center justify-center p-4">
-                            {/* IF Artistic version exists for THIS photo (index 0 based on our logic) */}
-                            {idx === 0 && artisticUrl ? (
+                            {/* IF Filtered/Artistic version exists for THIS photo (index 0 based on our logic) */}
+                            {idx === 0 && effectUrl ? (
                               <div className="relative w-full h-full group/slider select-none touch-none bg-black/20">
                                 {/* layer 1: Original */}
                                 <div className="absolute inset-0 flex items-center justify-center z-0">
@@ -289,26 +293,26 @@ export function ImageLightbox({
                                   />
                                 </div>
                                 
-                                {/* layer 2: Artistic (Clip) */}
-                                {!artisticError && (
+                                {/* layer 2: Filtered/Artistic (Clip) */}
+                                {!effectError && (
                                   <>
                                     <div 
                                       className="absolute inset-0 flex items-center justify-center z-10"
                                       style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                                     >
                                       <Image
-                                        src={artisticUrl}
-                                        alt={`${alt} - Version artistique`}
+                                        src={effectUrl}
+                                        alt={`${alt} - Version filtrée`}
                                         fill
                                         className={cn(
                                           "object-contain pointer-events-none transition-opacity duration-500",
-                                          isArtisticLoading ? "opacity-0" : "opacity-100"
+                                          isEffectLoading ? "opacity-0" : "opacity-100"
                                         )}
                                         quality={100}
-                                        onLoad={() => setIsArtisticLoading(false)}
+                                        onLoad={() => setIsEffectLoading(false)}
                                         onError={() => {
-                                          setIsArtisticLoading(false);
-                                          setArtisticError(true);
+                                          setIsEffectLoading(false);
+                                          setEffectError(true);
                                         }}
                                       />
                                     </div>
@@ -398,32 +402,32 @@ export function ImageLightbox({
                       />
                     </div>
 
-                    {/* layer 2: Image artistique (Top - révélée par clip-path) */}
-                    {artisticUrl && !artisticError && (
+                    {/* layer 2: Image filtrée/artistique (Top - révélée par clip-path) */}
+                    {effectUrl && !effectError && (
                       <>
                         <div 
                           className="absolute inset-0 flex items-center justify-center p-4 z-10"
                           style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                         >
                           <Image
-                            src={artisticUrl}
-                            alt={`${alt} - Version artistique`}
+                            src={effectUrl}
+                            alt={`${alt} - Version filtrée`}
                             fill
                             className={cn(
                               "object-contain pointer-events-none transition-opacity duration-500",
-                              isArtisticLoading ? "opacity-0" : "opacity-100"
+                              isEffectLoading ? "opacity-0" : "opacity-100"
                             )}
                             quality={100}
-                            onLoad={() => setIsArtisticLoading(false)}
+                            onLoad={() => setIsEffectLoading(false)}
                             onError={() => {
-                              setIsArtisticLoading(false);
-                              setArtisticError(true);
+                              setIsEffectLoading(false);
+                              setEffectError(true);
                             }}
                           />
                         </div>
                         
-                        {/* Loader pendant la génération AI */}
-                        {isArtisticLoading && (
+                        {/* Loader pendant le chargement */}
+                        {isEffectLoading && (
                           <div className="absolute inset-x-0 inset-y-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-md transition-all duration-500">
                             <div className="relative">
                               <div className="h-16 w-16 rounded-full border-t-4 border-r-4 border-white animate-spin"></div>
@@ -442,7 +446,7 @@ export function ImageLightbox({
                     )}
                     
                     {/* Magic Reveal Controls */}
-                    {artisticUrl && (
+                    {effectUrl && (
                       <>
                         {/* Range Input invisible pour contrôle tactile/souris précis sur toute la zone */}
                         <input

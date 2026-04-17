@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
-import type { DisplayTransform, CollageTemplate, ArtisticStyle } from "@/lib/types";
+import type { DisplayTransform, CollageTemplate, PhotoFilter } from "@/lib/types";
 import { getTemplateById } from "@/lib/collage-templates";
 import { LayoutGrid } from "lucide-react";
 import { getPatternStyle } from "./collage-canvas";
@@ -20,7 +20,7 @@ interface CollageRendererProps {
     title: string;
     audioUrl?: string | null;
     interactive?: boolean;
-    artisticStyle?: ArtisticStyle;
+    photoFilter?: PhotoFilter;
 }
 
 const RATIO_PADDING: Record<string, string> = {
@@ -40,7 +40,7 @@ export const CollageRenderer = ({
     title,
     audioUrl,
     interactive = true,
-    artisticStyle,
+    photoFilter,
 }: CollageRendererProps) => {
     const def = getTemplateById(collageTemplate.templateId);
     if (!def) return null;
@@ -121,7 +121,7 @@ export const CollageRenderer = ({
                                     alt={`${title} — photo ${slotDef.slotIndex + 1}`}
                                     width={800}
                                     height={800}
-                                    artisticUrl={slotDef.slotIndex === 0 && artisticStyle ? artisticStyle.artisticUrl : undefined}
+                                    filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
                                 >
                                     <Image
                                         src={photoUrl}
@@ -162,7 +162,7 @@ export const PhotoCollage = ({
     interactive = true,
     onPositionChange,
     collageTemplate,
-    artisticStyle,
+    photoFilter,
 }: {
     photos: string[],
     title: string,
@@ -171,7 +171,7 @@ export const PhotoCollage = ({
     interactive?: boolean,
     onPositionChange?: (index: number, x: number, y: number) => void,
     collageTemplate?: CollageTemplate,
-    artisticStyle?: ArtisticStyle,
+    photoFilter?: PhotoFilter,
 }) => {
     // ── If a collage template is present, use the new renderer ───────────────
     if (collageTemplate && collageTemplate.slots.length > 0) {
@@ -182,7 +182,7 @@ export const PhotoCollage = ({
                     title={title}
                     audioUrl={audioUrl}
                     interactive={interactive}
-                    artisticStyle={artisticStyle}
+                    photoFilter={photoFilter}
                 />
             </div>
         );
@@ -275,7 +275,7 @@ export const PhotoCollage = ({
                 alt={`${title} ${index + 1}`}
                 width={width}
                 height={height}
-                artisticUrl={index === 0 && artisticStyle ? artisticStyle.artisticUrl : undefined}
+                filteredUrl={index === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
             >
                 {content}
             </ImageLightbox>

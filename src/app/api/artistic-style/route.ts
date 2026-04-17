@@ -7,19 +7,25 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 // Filter configurations with Cloudinary transformation strings
+// Enhanced values + noise/grain effects for more distinctive results
 const filterConfigs: Record<string, string> = {
-  // Noir & Blanc pur
-  bw: 'e_grayscale',
-  // Sépia classique
-  sepia: 'e_sepia:80',
-  // Contraste élevé
-  contrast: 'e_contrast:30,e_brightness:5',
-  // Vibrant (saturation boost)
-  vibrant: 'e_saturation:35,e_contrast:10',
-  // Vintage: sépia léger + vignette + teinte chaude
-  vintage: 'e_sepia:50,e_vignette:30,e_brightness:-5,e_contrast:10',
-  // Dramatique: fort contraste + ombres + vignette
-  dramatic: 'e_contrast:40,e_shadows:30,e_vignette:40,e_brightness:-10'
+  // Noir & Blanc: gris pur + contraste boosté pour plus de punch
+  bw: 'e_grayscale,e_contrast:25',
+  
+  // Sépia: teinte vintage maximale
+  sepia: 'e_sepia:100,e_contrast:15',
+  
+  // Contraste++: contraste fort + légère luminosité
+  contrast: 'e_contrast:50,e_brightness:12',
+  
+  // Vibrant: saturation élevée pour couleurs qui pop
+  vibrant: 'e_saturation:65,e_contrast:18,e_brightness:5',
+  
+  // Vintage: sépia fort + vignette marquée + grain de film (noise)
+  vintage: 'e_sepia:80,e_vignette:50,e_brightness:-8,e_contrast:15,e_noise:40',
+  
+  // Dramatique: très fort contraste + ombres profondes + vignette + grain
+  dramatic: 'e_contrast:65,e_shadows:50,e_vignette:55,e_brightness:-15,e_noise:50'
 };
 
 // Human-readable filter names
