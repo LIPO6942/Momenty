@@ -346,7 +346,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index}>
+                            <div key={index} className="overflow-hidden">
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, index === 0 ? "rounded-tl-xl" : "rounded-tr-xl", t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -355,13 +355,13 @@ export const PhotoCollage = ({
             case 3:
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
-                        <div className="col-span-1 row-span-2">
+                        <div className="col-span-1 row-span-2 overflow-hidden">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
-                        <div className="col-span-1 row-span-1">
+                        <div className="col-span-1 row-span-1 overflow-hidden">
                             {renderPhoto(clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 1, "rounded-tr-xl", t.w, Math.round(t.h * 0.66), false)}
                         </div>
-                        <div className="col-span-1 row-span-1">
+                        <div className="col-span-1 row-span-1 overflow-hidden">
                             {renderPhoto(clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 2, "", t.w, Math.round(t.h * 0.66), false)}
                         </div>
                     </div>
@@ -370,7 +370,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index}>
+                            <div key={index} className="overflow-hidden">
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, cn(index === 0 && "rounded-tl-xl", index === 1 && "rounded-tr-xl"), t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -379,13 +379,13 @@ export const PhotoCollage = ({
             default: // 5+ photos
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden relative">
-                        <div className="col-span-1 row-span-2">
+                        <div className="col-span-1 row-span-2 overflow-hidden">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
-                        <div className="col-span-1 row-span-1 relative">
+                        <div className="col-span-1 row-span-1 relative overflow-hidden">
                             {renderPhoto(clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 1, "rounded-tr-xl", t.w, Math.round(t.h * 0.66), false)}
                         </div>
-                        <div className="col-span-1 row-span-1 relative">
+                        <div className="col-span-1 row-span-1 relative overflow-hidden">
                             {renderPhoto(clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 2, "", t.w, Math.round(t.h * 0.66), false)}
                             {photos.length > 3 && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none z-20">

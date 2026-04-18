@@ -7,7 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatInstantDate } from '@/lib/utils';
+import { formatInstantDate, getCity, getCountry, abbreviateCity } from '@/lib/utils';
 import {
     getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
     getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
@@ -477,18 +477,17 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             const dayInstants = groups[dayKey].instants;
             const locations = new Set(dayInstants.map(i => i.location).filter(Boolean));
 
-            // Deduplicate location parts (e.g., "Moscou, Russie, Moscou, Russie" -> "Moscou, Russie")
-            const allLocationParts = new Set<string>();
-            locations.forEach(location => {
-                // Split by comma, trim whitespace, and add each part to the set
-                location.split(',').forEach(part => {
-                    const trimmed = part.trim();
-                    if (trimmed) allLocationParts.add(trimmed);
-                });
+            const locationStrings = Array.from(locations).map(location => {
+                const city = abbreviateCity(getCity(location));
+                const country = getCountry(location);
+                if (city && country) return `${city}, ${country}`;
+                if (city) return city;
+                if (country) return country;
+                return location;
             });
 
-            const locationString = allLocationParts.size > 0
-                ? Array.from(allLocationParts).join(', ')
+            const locationString = locationStrings.length > 0
+                ? Array.from(new Set(locationStrings)).join(' • ')
                 : 'Journée sans lieu'; // Fallback if no location
 
             const dayDate = parseISO(dayKey);

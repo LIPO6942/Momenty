@@ -128,32 +128,40 @@ export const formatInstantDate = (dateString: string): string => {
   }
 };
 
+const normalizeForAbbreviation = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 // Abbreviate city names for display
 export const abbreviateCity = (city: string): string => {
   if (!city) return '';
 
-  const lower = city.toLowerCase();
+  const normalized = normalizeForAbbreviation(city);
 
-  // Common abbreviations
-  const abbreviations: Record<string, string> = {
+  const exactAbbreviations: Record<string, string> = {
     'saint-petersbourg': 'St-Petersbourg',
     'saint petersbourg': 'St-Petersbourg',
     'saint-petersburg': 'St-Petersbourg',
     'saint petersburg': 'St-Petersbourg',
     'saint-pierre': 'St-Pierre',
     'saint pierre': 'St-Pierre',
+    'monte-carlo': 'Mte Carlo',
+    'monte carlo': 'Mte Carlo',
+  };
+
+  if (exactAbbreviations[normalized]) return exactAbbreviations[normalized];
+
+  const prefixAbbreviations: Record<string, string> = {
     'sainte-': 'Ste-',
     'sainte ': 'Ste-',
     'saint-': 'St-',
     'saint ': 'St-',
   };
 
-  // Check for exact matches first
-  if (abbreviations[lower]) return abbreviations[lower];
-
-  // Check for prefix matches
-  for (const [prefix, abbr] of Object.entries(abbreviations)) {
-    if (lower.startsWith(prefix)) {
+  for (const [prefix, abbr] of Object.entries(prefixAbbreviations)) {
+    if (normalized.startsWith(prefix)) {
       return city.replace(new RegExp(`^${prefix}`, 'i'), abbr);
     }
   }

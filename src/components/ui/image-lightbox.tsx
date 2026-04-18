@@ -344,7 +344,7 @@ export function ImageLightbox({
                     <div className="overflow-hidden w-full h-full" ref={emblaRef}>
                       <div className="flex w-full h-full">
                         {lightboxPhotos.map((photoSrc, idx) => (
-                          <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full flex items-center justify-center p-4">
+                          <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full overflow-hidden flex items-center justify-center p-4">
                             {/* IF Filtered/Artistic version exists for THIS photo (index 0 based on our logic) */}
                             {idx === 0 && effectUrl ? (
                               <div className="relative w-full h-full group/slider select-none touch-none bg-black/20">
