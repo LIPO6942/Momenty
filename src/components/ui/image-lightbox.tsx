@@ -51,6 +51,7 @@ export function ImageLightbox({
   // Magic Reveal Slider state
   const [sliderPosition, setSliderPosition] = useState(0);
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
+  const [autoDirection, setAutoDirection] = useState<'forward' | 'backward'>('forward');
   const [isEffectLoading, setIsEffectLoading] = useState(true);
   const [effectError, setEffectError] = useState(false);
 
@@ -109,6 +110,7 @@ export function ImageLightbox({
 
     if (shouldShowTeaser) {
       setSliderPosition(0);
+      setAutoDirection('forward');
       setIsAutoSwiping(true);
       setIsEffectLoading(true);
       setEffectError(false);
@@ -126,11 +128,19 @@ export function ImageLightbox({
 
     const interval = window.setInterval(() => {
       setSliderPosition((current) => {
-        const next = Math.min(current + 1, 100);
-        if (next >= 100) {
-          setIsAutoSwiping(false);
-          window.clearInterval(interval);
+        const direction = autoDirection === 'forward' ? 1 : -1;
+        const next = current + direction;
+
+        if (autoDirection === 'forward' && next >= 100) {
+          setAutoDirection('backward');
+          return 100;
         }
+
+        if (autoDirection === 'backward' && next <= 0) {
+          setIsAutoSwiping(false);
+          return 0;
+        }
+
         return next;
       });
     }, 25);
@@ -138,7 +148,7 @@ export function ImageLightbox({
     return () => {
       window.clearInterval(interval);
     };
-  }, [isAutoSwiping, effectUrl]);
+  }, [isAutoSwiping, effectUrl, autoDirection]);
 
   useEffect(() => {
     const audio = audioRef.current;
