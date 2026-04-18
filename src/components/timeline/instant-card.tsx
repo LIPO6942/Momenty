@@ -114,7 +114,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
                     )}>
-                        <h3 className="font-bold text-lg text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date) || instant.title}</h3>
+                        <h3 className="font-bold text-lg text-gradient-blue break-words">{instant.title}</h3>
                         {instant.description && (
                             <div className={getDescriptionContainerClass(instant.descriptionStyle)}>
                                 <p className={getDescriptionTextClass(instant.descriptionStyle)}>{instant.description}</p>
@@ -247,10 +247,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             style={{ color: `hsl(${hue}, 70%, 45%)` }}
                         />
                         <span className="font-semibold text-sm text-foreground truncate">
-                            {getCity(instant.location)}, {getCountry(instant.location)}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate ml-2">
-                            • {format(parseISO(instant.date), "d MMM yyyy", { locale: fr })}
+                            {formatInstantTitle(instant.location, instant.date) || instant.title}
                         </span>
                     </div>
                     <div className="flex gap-2 flex-wrap mt-3">

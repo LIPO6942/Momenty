@@ -426,7 +426,10 @@ export function ImageLightbox({
                                 src={photoSrc}
                                 alt={`${alt} ${idx + 1}`}
                                 fill
-                                className="object-contain"
+                                className={cn(
+                                  "object-contain",
+                                  kenBurnsEnabled && "momenty-kenburns"
+                                )}
                                 quality={100}
                                 priority={idx === currentIndex}
                               />

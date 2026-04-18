@@ -121,7 +121,8 @@ export const getPhotoFilterCss = (filter?: string): string | undefined => {
 export const formatInstantDate = (dateString: string): string => {
   try {
     const date = parseISO(dateString);
-    return format(date, 'd MMM yy', { locale: fr }).replace('.', '');
+    const text = format(date, 'd MMM yy', { locale: fr }).replace('.', '');
+    return text.replace(/\b([a-z])/g, (_, char) => char.toUpperCase());
   } catch {
     return '';
   }
