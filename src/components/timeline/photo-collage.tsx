@@ -346,12 +346,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index} className="relative">
-                                {index === 0 && (
-                                    <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
-                                        <KenBurnsToggle />
-                                    </div>
-                                )}
+                            <div key={index}>
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, index === 0 ? "rounded-tl-xl" : "rounded-tr-xl", t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -360,10 +355,7 @@ export const PhotoCollage = ({
             case 3:
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
-                        <div className="col-span-1 row-span-2 relative">
-                            <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
-                                <KenBurnsToggle />
-                            </div>
+                        <div className="col-span-1 row-span-2">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
                         <div className="col-span-1 row-span-1">
@@ -378,12 +370,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index} className={index === 0 ? "relative" : ""}>
-                                {index === 0 && (
-                                    <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
-                                        <KenBurnsToggle />
-                                    </div>
-                                )}
+                            <div key={index}>
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, cn(index === 0 && "rounded-tl-xl", index === 1 && "rounded-tr-xl"), t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -392,10 +379,7 @@ export const PhotoCollage = ({
             default: // 5+ photos
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden relative">
-                        <div className="col-span-1 row-span-2 relative">
-                            <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
-                                <KenBurnsToggle />
-                            </div>
+                        <div className="col-span-1 row-span-2">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
                         <div className="col-span-1 row-span-1 relative">
@@ -417,6 +401,9 @@ export const PhotoCollage = ({
     return (
         <div className="w-full relative">
             {renderGrid()}
+            <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
+                <KenBurnsToggle />
+            </div>
         </div>
     );
 }

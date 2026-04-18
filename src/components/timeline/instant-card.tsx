@@ -196,7 +196,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                            <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date) || instant.title}</p>
+                            <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue break-words">{instant.title}</p>
                             {instant.audio && (
                                 <div className="h-5 w-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shrink-0" title="Contient du son">
                                     <Volume2 className="h-3 w-3" />
