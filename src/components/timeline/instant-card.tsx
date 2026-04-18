@@ -114,7 +114,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                         "p-4 space-y-3 transition-transform duration-300 ease-in-out",
                         isTextVisible ? "translate-y-0" : "translate-y-full"
                     )}>
-                        <h3 className="font-bold text-lg text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date)}</h3>
+                        <h3 className="font-bold text-lg text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date) || instant.title}</h3>
                         {instant.description && (
                             <div className={getDescriptionContainerClass(instant.descriptionStyle)}>
                                 <p className={getDescriptionTextClass(instant.descriptionStyle)}>{instant.description}</p>
@@ -196,7 +196,7 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                            <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date)}</p>
+                            <p className="font-bold text-lg text-foreground leading-tight text-gradient-blue break-words">{formatInstantTitle(instant.location, instant.date) || instant.title}</p>
                             {instant.audio && (
                                 <div className="h-5 w-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shrink-0" title="Contient du son">
                                     <Volume2 className="h-3 w-3" />
