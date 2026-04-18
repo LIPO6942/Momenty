@@ -356,7 +356,7 @@ export function ImageLightbox({
                                     fill
                                     className={cn(
                                       "object-contain pointer-events-none",
-                                      kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
+                                      kenBurnsEnabled && "momenty-kenburns"
                                     )}
                                     quality={100}
                                     priority={idx === currentIndex}
@@ -377,7 +377,7 @@ export function ImageLightbox({
                                         className={cn(
                                           "object-contain pointer-events-none transition-opacity duration-500",
                                           isEffectLoading ? "opacity-0" : "opacity-100",
-                                          kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
+                                          kenBurnsEnabled && "momenty-kenburns"
                                         )}
                                         style={filteredFilter ? { filter: getPhotoFilterCss(filteredFilter) } : undefined}
                                         unoptimized
