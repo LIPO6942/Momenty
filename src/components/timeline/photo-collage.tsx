@@ -99,7 +99,15 @@ export const CollageRenderer = ({
     const ratio = collageTemplate?.ratio ?? '1:1';
     const slots = collageTemplate?.slots ?? [];
     const allPhotos = slots.map(s => s.photoUrl).filter(Boolean) as string[];
-    const kenBurnsEnabled = isKenBurnsEnabled();
+    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => isKenBurnsEnabled());
+
+    React.useEffect(() => {
+        const handler = () => setKenBurnsEnabled(isKenBurnsEnabled());
+        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        return () => {
+            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        };
+    }, []);
 
     const columns = Math.min(3, Math.max(1, slots.length));
     const gridStyle: React.CSSProperties = {
@@ -225,6 +233,17 @@ export const PhotoCollage = ({
         }
         return false;
     });
+
+    React.useEffect(() => {
+        const handler = () => {
+            const raw = localStorage.getItem('momenty:kenBurnsEnabled');
+            setKenBurnsEnabled(raw === '1' || raw === 'true');
+        };
+        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        return () => {
+            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        };
+    }, []);
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         if (interactive || !onPositionChange) return;
