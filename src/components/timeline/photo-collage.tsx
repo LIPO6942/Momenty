@@ -140,6 +140,7 @@ export const CollageRenderer = ({
                                     width={800}
                                     height={800}
                                     filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
+                                    filteredFilter={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filter : undefined}
                                 >
                                     <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
                                         <Image
@@ -307,6 +308,7 @@ export const PhotoCollage = ({
                 width={width}
                 height={height}
                 filteredUrl={index === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
+                filteredFilter={index === 0 && photoFilter ? photoFilter.filter : undefined}
             >
                 {content}
             </ImageLightbox>
