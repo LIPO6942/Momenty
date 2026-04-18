@@ -7,6 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { formatInstantDate } from '@/lib/utils';
 import {
     getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
     getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
@@ -491,7 +492,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                 : 'Journée sans lieu'; // Fallback if no location
 
             const dayDate = parseISO(dayKey);
-            groups[dayKey].title = `${locationString} (${format(dayDate, 'd MMMM yyyy', { locale: fr })})`;
+            const formattedDay = formatInstantDate(dayKey) || format(dayDate, 'd MMM yy', { locale: fr }).replace(/\./g, '');
+            groups[dayKey].title = `${locationString} (${formattedDay})`;
         });
 
         return groups;
