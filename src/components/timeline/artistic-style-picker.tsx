@@ -13,9 +13,9 @@ import { getPhotoFilterCss } from "@/lib/utils";
 export const photoFilters: { key: PhotoFilterType; label: string; icon: string; description: string; transform: string }[] = [
   { key: 'bw',       label: 'Noir & Blanc', icon: '◐', description: 'Niveaux de gris', transform: 'e_grayscale,e_contrast:30' },
   { key: 'sepia',    label: 'Sépia',        icon: '🟤', description: 'Teinte sépia', transform: 'e_sepia,e_contrast:12' },
-    { key: 'fisheye',  label: 'Fisheye',      icon: '🐟', description: 'Simulation fisheye (vignette)', transform: 'e_vignette:80,e_saturation:30' },
-    { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:120,e_contrast:12' },
-{ key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia profond, grain et vignette', transform: 'e_sepia:70,e_vignette:70,e_contrast:30,e_saturation:-25,e_grain:25' },
+  { key: 'grain',    label: 'Grain',        icon: '🎞️', description: 'Grain film vintage', transform: 'e_grain:60,e_blur:1,e_vignette:40,e_saturation:-20,e_contrast:15' },
+  { key: 'vibrant',  label: 'Vibrant',      icon: '🎨', description: 'Saturation boost', transform: 'e_saturation:120,e_contrast:12' },
+  { key: 'vintage',  label: 'Vintage',      icon: '📷', description: 'Sépia authentique, grain et vignette', transform: 'e_sepia:85,e_vignette:80,e_grain:40,e_contrast:35,e_saturation:-30' },
   { key: 'cinema',   label: 'Cinéma',       icon: '🎬', description: 'Contraste chaud et vibrant', transform: 'e_sepia:25,e_contrast:22,e_brightness:8,e_vignette:45,e_saturation:110' },
 ];
 

@@ -105,11 +105,11 @@ export const getPhotoFilterCss = (filter?: string): string | undefined => {
     case 'vibrant':
       return 'saturate(1.4) contrast(1.1)';
     case 'vintage':
-      return 'sepia(0.75) contrast(1.15) saturate(0.8) brightness(0.95)';
+      return 'sepia(0.85) contrast(1.25) saturate(0.7) brightness(0.9)';
     case 'cinema':
       return 'sepia(0.25) contrast(1.2) brightness(1.08) saturate(1.1)';
-    case 'fisheye':
-      return 'contrast(1.1) saturate(1.1)';
+    case 'grain':
+      return 'contrast(1.1) saturate(0.85) brightness(0.95)';
     default:
       return undefined;
   }

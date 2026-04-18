@@ -16,14 +16,14 @@ const filterConfigs: Record<string, string> = {
 
   sepia: 'e_sepia,e_contrast:12',
   
-  // Fisheye: simulate with strong vignette and mild saturation
-  fisheye: 'e_vignette:80,e_saturation:30',
+  // Grain: film effect with grain, slight blur, vignette and desaturation
+  grain: 'e_grain:60,e_blur:1,e_vignette:40,e_saturation:-20,e_contrast:15',
   
   // Vibrant: maximum saturation
   vibrant: 'e_saturation:120,e_contrast:12',
   
-  // Vintage: warm sepia, stronger vignette, subtle grain, and softer saturation for an aged feel
-  vintage: 'e_sepia:70,e_vignette:70,e_contrast:30,e_saturation:-25,e_grain:25',
+  // Vintage: deep sepia, strong vignette, visible grain, high contrast, low saturation for authentic aged feel
+  vintage: 'e_sepia:85,e_vignette:80,e_grain:40,e_contrast:35,e_saturation:-30',
   
   // Cinéma: warm orange/cool blue illusion with punchy contrast, brightness, and vignette
   cinema: 'e_sepia:25,e_contrast:22,e_brightness:8,e_vignette:45,e_saturation:110'
@@ -33,7 +33,7 @@ const filterConfigs: Record<string, string> = {
 const filterNames: Record<string, string> = {
   bw: 'Noir & Blanc',
   sepia: 'Sépia',
-  fisheye: 'Fisheye',
+  grain: 'Grain',
   vibrant: 'Vibrant',
   vintage: 'Vintage',
   cinema: 'Cinéma'
