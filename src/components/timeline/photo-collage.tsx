@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, getPhotoFilterCss } from "@/lib/utils";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
@@ -148,6 +148,7 @@ export const CollageRenderer = ({
                                             fill
                                             className="object-cover w-full h-full"
                                             sizes="(max-width: 640px) 50vw, 400px"
+                                            style={photoFilter?.filter ? { filter: getPhotoFilterCss(photoFilter.filter) } : undefined}
                                         />
                                     </ParallaxContainer>
                                 </ImageLightbox>
@@ -158,7 +159,7 @@ export const CollageRenderer = ({
                                     fill
                                     className="object-cover w-full h-full"
                                     sizes="(max-width: 640px) 50vw, 400px"
-                                    style={photoFilter?.filter === 'bw' ? { filter: 'grayscale(1)' } : undefined}
+                                    style={photoFilter?.filter ? { filter: getPhotoFilterCss(photoFilter.filter) } : undefined}
                                 />
                             )}
                         </div>

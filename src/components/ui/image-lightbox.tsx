@@ -8,7 +8,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
-import { cn } from "@/lib/utils";
+import { cn, getPhotoFilterCss } from "@/lib/utils";
 
 interface ImageLightboxProps {
   src?: string;
@@ -23,6 +23,7 @@ interface ImageLightboxProps {
   showAudioIcon?: boolean;
   artisticUrl?: string | null; // Legacy: URL de la version artistique
   filteredUrl?: string | null; // New: URL de la version avec filtre photo
+  filteredFilter?: string | null;
 }
 
 export function ImageLightbox({
@@ -37,7 +38,8 @@ export function ImageLightbox({
   children,
   showAudioIcon = true,
   artisticUrl,
-  filteredUrl
+  filteredUrl,
+  filteredFilter
 }: ImageLightboxProps) {
   // Support both legacy artisticUrl and new filteredUrl
   const effectUrl = filteredUrl || artisticUrl;
@@ -377,6 +379,7 @@ export function ImageLightbox({
                                           isEffectLoading ? "opacity-0" : "opacity-100",
                                           kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
                                         )}
+                                        style={filteredFilter ? { filter: getPhotoFilterCss(filteredFilter) } : undefined}
                                         unoptimized
                                         quality={100}
                                         onLoad={() => setIsEffectLoading(false)}
@@ -491,6 +494,7 @@ export function ImageLightbox({
                               isEffectLoading ? "opacity-0" : "opacity-100",
                               kenBurnsEnabled && "momenty-kenburns"
                             )}
+                            style={filteredFilter ? { filter: getPhotoFilterCss(filteredFilter) } : undefined}
                             unoptimized
                             quality={100}
                             onLoad={() => setIsEffectLoading(false)}
