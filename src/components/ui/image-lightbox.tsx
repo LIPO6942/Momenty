@@ -106,10 +106,10 @@ export function ImageLightbox({
 
   useEffect(() => {
     const shouldShowTeaser = isOpen && effectUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
-    
+
     if (shouldShowTeaser) {
-      setSliderPosition(100);
-      setIsAutoSwiping(false);
+      setSliderPosition(0);
+      setIsAutoSwiping(true);
       setIsEffectLoading(true);
       setEffectError(false);
       return;
@@ -120,6 +120,25 @@ export function ImageLightbox({
       setIsAutoSwiping(false);
     }
   }, [isOpen, effectUrl, lightboxPhotos.length, currentIndex]);
+
+  useEffect(() => {
+    if (!isAutoSwiping || !effectUrl) return;
+
+    const interval = window.setInterval(() => {
+      setSliderPosition((current) => {
+        const next = Math.min(current + 1, 100);
+        if (next >= 100) {
+          setIsAutoSwiping(false);
+          window.clearInterval(interval);
+        }
+        return next;
+      });
+    }, 25);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [isAutoSwiping, effectUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -134,7 +153,7 @@ export function ImageLightbox({
 
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isAutoSwiping) return;
+    setIsAutoSwiping(false);
     setSliderPosition(Number(e.target.value));
   };
 
