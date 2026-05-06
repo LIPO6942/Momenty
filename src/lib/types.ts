@@ -58,7 +58,7 @@ export interface CollageTemplate {
     slots: CollageSlot[];
 }
 
-export type PhotoFilterType = 'bw' | 'sepia' | 'fisheye' | 'vibrant' | 'vintage' | 'cinema';
+export type PhotoFilterType = 'bw' | 'sepia' | 'grain' | 'vibrant' | 'vintage' | 'cinema';
 
 export interface PhotoFilter {
     filter: PhotoFilterType;

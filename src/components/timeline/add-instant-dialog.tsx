@@ -832,7 +832,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     {photos.length > 0 && !isCollageMode && (
                                         <div className="space-y-2">
                                             <div className="relative group">
-                                                <Image src={photos[0]} alt="Aperçu principal" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
+                                                <Image
+                                                    src={photos[0]}
+                                                    alt="Aperçu principal"
+                                                    width={400}
+                                                    height={800}
+                                                    className="rounded-md object-cover w-full h-auto max-h-[30vh]"
+                                                />
                                                 <div className="absolute top-2 right-2 flex gap-2">
                                                     <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
                                                         {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}

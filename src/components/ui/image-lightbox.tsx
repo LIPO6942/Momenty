@@ -8,7 +8,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
-import { cn } from "@/lib/utils";
+import { cn, getPhotoFilterCss } from "@/lib/utils";
 
 interface ImageLightboxProps {
   src?: string;
@@ -23,6 +23,7 @@ interface ImageLightboxProps {
   showAudioIcon?: boolean;
   artisticUrl?: string | null; // Legacy: URL de la version artistique
   filteredUrl?: string | null; // New: URL de la version avec filtre photo
+  filteredFilter?: string | null;
 }
 
 export function ImageLightbox({
@@ -37,7 +38,8 @@ export function ImageLightbox({
   children,
   showAudioIcon = true,
   artisticUrl,
-  filteredUrl
+  filteredUrl,
+  filteredFilter
 }: ImageLightboxProps) {
   // Support both legacy artisticUrl and new filteredUrl
   const effectUrl = filteredUrl || artisticUrl;
@@ -51,6 +53,7 @@ export function ImageLightbox({
   // Magic Reveal Slider state
   const [sliderPosition, setSliderPosition] = useState(0);
   const [isAutoSwiping, setIsAutoSwiping] = useState(false);
+  const [autoDirection, setAutoDirection] = useState<'forward' | 'backward'>('forward');
   const [isEffectLoading, setIsEffectLoading] = useState(true);
   const [effectError, setEffectError] = useState(false);
 
@@ -65,12 +68,23 @@ export function ImageLightbox({
 
   // 3. EFFECTS
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
-      if (raw === '1' || raw === 'true') setKenBurnsEnabled(true);
-    } catch {
-      // ignore
-    }
+    const syncKenBurnsFromStorage = () => {
+      try {
+        const raw = window.localStorage.getItem('momenty:kenBurnsEnabled');
+        setKenBurnsEnabled(raw === '1' || raw === 'true');
+      } catch {
+        // ignore
+      }
+    };
+
+    syncKenBurnsFromStorage();
+    window.addEventListener('storage', syncKenBurnsFromStorage);
+    window.addEventListener('momenty:kenBurnsChanged', syncKenBurnsFromStorage as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', syncKenBurnsFromStorage);
+      window.removeEventListener('momenty:kenBurnsChanged', syncKenBurnsFromStorage as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -95,44 +109,48 @@ export function ImageLightbox({
 
   useEffect(() => {
     const shouldShowTeaser = isOpen && effectUrl && (lightboxPhotos.length === 1 || currentIndex === 0);
-    
+
     if (shouldShowTeaser) {
       setSliderPosition(0);
+      setAutoDirection('forward');
       setIsAutoSwiping(true);
       setIsEffectLoading(true);
       setEffectError(false);
-      
-      const startTimer = setTimeout(() => {
-        let pos = 0; // Start at Original (Filtered hidden)
-        let direction = 1; // Going towards Filtered (100)
-        
-        const interval = setInterval(() => {
-          pos += direction * 0.37; // Adjusted for ~12s total animation
-          
-          if (direction === 1 && pos >= 100) {
-            pos = 100;
-            direction = -1; // Return to Original
-          } else if (direction === -1 && pos <= 0) {
-            pos = 0;
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsAutoSwiping(false); 
-              setSliderPosition(0); // Keep Original
-            }, 1200); // Extended final pause
-          }
-          
-          setSliderPosition(pos);
-        }, 16);
-      }, 3000); // Extended initial delay
-      
-      return () => clearTimeout(startTimer);
-    } else {
-      if (lightboxPhotos.length > 1 && currentIndex !== 0) {
-        setSliderPosition(50);
-        setIsAutoSwiping(false);
-      }
+      return;
+    }
+
+    if (lightboxPhotos.length > 1 && currentIndex !== 0) {
+      setSliderPosition(50);
+      setIsAutoSwiping(false);
     }
   }, [isOpen, effectUrl, lightboxPhotos.length, currentIndex]);
+
+  useEffect(() => {
+    if (!isAutoSwiping || !effectUrl) return;
+
+    const interval = window.setInterval(() => {
+      setSliderPosition((current) => {
+        const direction = autoDirection === 'forward' ? 1 : -1;
+        const next = current + direction;
+
+        if (autoDirection === 'forward' && next >= 100) {
+          setAutoDirection('backward');
+          return 100;
+        }
+
+        if (autoDirection === 'backward' && next <= 0) {
+          setIsAutoSwiping(false);
+          return 0;
+        }
+
+        return next;
+      });
+    }, 25);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [isAutoSwiping, effectUrl, autoDirection]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -147,7 +165,7 @@ export function ImageLightbox({
 
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isAutoSwiping) return;
+    setIsAutoSwiping(false);
     setSliderPosition(Number(e.target.value));
   };
 
@@ -326,7 +344,7 @@ export function ImageLightbox({
                     <div className="overflow-hidden w-full h-full" ref={emblaRef}>
                       <div className="flex w-full h-full">
                         {lightboxPhotos.map((photoSrc, idx) => (
-                          <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full flex items-center justify-center p-4">
+                          <div key={idx} className="flex-[0_0_100%] min-w-0 relative w-full h-full overflow-hidden flex items-center justify-center p-4">
                             {/* IF Filtered/Artistic version exists for THIS photo (index 0 based on our logic) */}
                             {idx === 0 && effectUrl ? (
                               <div className="relative w-full h-full group/slider select-none touch-none bg-black/20">
@@ -338,7 +356,7 @@ export function ImageLightbox({
                                     fill
                                     className={cn(
                                       "object-contain pointer-events-none",
-                                      kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
+                                      kenBurnsEnabled && "momenty-kenburns"
                                     )}
                                     quality={100}
                                     priority={idx === currentIndex}
@@ -359,8 +377,9 @@ export function ImageLightbox({
                                         className={cn(
                                           "object-contain pointer-events-none transition-opacity duration-500",
                                           isEffectLoading ? "opacity-0" : "opacity-100",
-                                          kenBurnsEnabled && idx === currentIndex && "momenty-kenburns"
+                                          kenBurnsEnabled && "momenty-kenburns"
                                         )}
+                                        style={filteredFilter ? { filter: getPhotoFilterCss(filteredFilter) } : undefined}
                                         unoptimized
                                         quality={100}
                                         onLoad={() => setIsEffectLoading(false)}
@@ -407,7 +426,10 @@ export function ImageLightbox({
                                 src={photoSrc}
                                 alt={`${alt} ${idx + 1}`}
                                 fill
-                                className="object-contain"
+                                className={cn(
+                                  "object-contain",
+                                  kenBurnsEnabled && "momenty-kenburns"
+                                )}
                                 quality={100}
                                 priority={idx === currentIndex}
                               />
@@ -475,6 +497,7 @@ export function ImageLightbox({
                               isEffectLoading ? "opacity-0" : "opacity-100",
                               kenBurnsEnabled && "momenty-kenburns"
                             )}
+                            style={filteredFilter ? { filter: getPhotoFilterCss(filteredFilter) } : undefined}
                             unoptimized
                             quality={100}
                             onLoad={() => setIsEffectLoading(false)}

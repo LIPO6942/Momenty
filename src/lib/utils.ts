@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -92,4 +94,89 @@ export const getCity = (loc: string) => {
   if (aliases[lower]) return aliases[lower];
 
   return rawCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+};
+
+export const getPhotoFilterCss = (filter?: string): string | undefined => {
+  if (!filter) return undefined;
+
+  switch (filter) {
+    case 'bw':
+      return 'grayscale(1) contrast(1.15)';
+    case 'sepia':
+      return 'sepia(1) contrast(1.1)';
+    case 'vibrant':
+      return 'saturate(1.4) contrast(1.1)';
+    case 'vintage':
+      return 'sepia(0.85) contrast(1.25) saturate(0.7) brightness(0.9)';
+    case 'cinema':
+      return 'sepia(0.25) contrast(1.2) brightness(1.08) saturate(1.1)';
+    case 'grain':
+      return 'contrast(1.1) saturate(0.85) brightness(0.95)';
+    default:
+      return undefined;
+  }
+};
+
+// Format date for instant title: "15 Sept 25"
+export const formatInstantDate = (dateString: string): string => {
+  try {
+    const date = parseISO(dateString);
+    const text = format(date, 'd MMM yy', { locale: fr }).replace(/\./g, '');
+    return text.replace(/\b([a-z])/g, (_, char) => char.toUpperCase());
+  } catch {
+    return '';
+  }
+};
+
+const normalizeForAbbreviation = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+// Abbreviate city names for display
+export const abbreviateCity = (city: string): string => {
+  if (!city) return '';
+
+  const normalized = normalizeForAbbreviation(city);
+
+  const exactAbbreviations: Record<string, string> = {
+    'saint-petersbourg': 'St-Petersbourg',
+    'saint petersbourg': 'St-Petersbourg',
+    'saint-petersburg': 'St-Petersbourg',
+    'saint petersburg': 'St-Petersbourg',
+    'saint-pierre': 'St-Pierre',
+    'saint pierre': 'St-Pierre',
+    'monte-carlo': 'Mte Carlo',
+    'monte carlo': 'Mte Carlo',
+  };
+
+  if (exactAbbreviations[normalized]) return exactAbbreviations[normalized];
+
+  const prefixAbbreviations: Record<string, string> = {
+    'sainte-': 'Ste-',
+    'sainte ': 'Ste-',
+    'saint-': 'St-',
+    'saint ': 'St-',
+  };
+
+  for (const [prefix, abbr] of Object.entries(prefixAbbreviations)) {
+    if (normalized.startsWith(prefix)) {
+      return city.replace(new RegExp(`^${prefix}`, 'i'), abbr);
+    }
+  }
+
+  return city;
+};
+
+// Format instant title: "ville, pays (date)"
+export const formatInstantTitle = (location: string, dateString: string): string => {
+  const city = abbreviateCity(getCity(location));
+  const country = getCountry(location);
+  const date = formatInstantDate(dateString);
+
+  if (!city && !country) return '';
+  if (!date) return `${city}${city && country ? ', ' : ''}${country}`;
+
+  return `${city}${city && country ? ', ' : ''}${country} (${date})`;
 };

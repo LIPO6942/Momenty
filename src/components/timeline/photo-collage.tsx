@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, getPhotoFilterCss } from "@/lib/utils";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
@@ -96,14 +96,21 @@ export const CollageRenderer = ({
     interactive = true,
     photoFilter,
 }: CollageRendererProps) => {
-    const def = getTemplateById(collageTemplate.templateId);
-    const slots = collageTemplate.slots;
-    const ratio = collageTemplate.aspectRatio ?? '1:1';
-    const borderRadius = collageTemplate.borderRadius ?? 0;
-    const photoTilt = collageTemplate.photoTilt ?? false;
-    const photoFrame = collageTemplate.photoFrame ?? 'none';
-    const patternStyle = collageTemplate.pattern ? getPatternStyle(collageTemplate.pattern) : {};
-    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(isKenBurnsEnabled);
+    const def = collageTemplate.templateId ? getTemplateById(collageTemplate.templateId) : undefined;
+    const slots = collageTemplate.slots ?? [];
+    // Handle both ratio and aspectRatio to be safe
+    const ratio = (collageTemplate as any).aspectRatio ?? collageTemplate.ratio ?? '1:1';
+    const borderRadius = (collageTemplate as any).borderRadius ?? 0;
+    const photoTilt = (collageTemplate as any).photoTilt ?? false;
+    const photoFrame = (collageTemplate as any).photoFrame ?? 'none';
+    const patternStyle = (collageTemplate as any).pattern ? getPatternStyle((collageTemplate as any).pattern) : {};
+    
+    const allPhotos = slots
+        .filter(s => !!s.photoUrl)
+        .sort((a, b) => a.slotIndex - b.slotIndex)
+        .map(s => s.photoUrl!);
+
+    const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => isKenBurnsEnabled());
 
     React.useEffect(() => {
         const handler = () => setKenBurnsEnabled(isKenBurnsEnabled());
@@ -115,18 +122,12 @@ export const CollageRenderer = ({
         };
     }, []);
 
-    if (!def) return null;
-
-    const allPhotos = slots
-        .filter(s => !!s.photoUrl)
-        .sort((a, b) => a.slotIndex - b.slotIndex)
-        .map(s => s.photoUrl!);
-
     const gap = collageTemplate.gap ?? 2;
+    const columns = Math.min(3, Math.max(1, slots.length));
     const gridStyle: React.CSSProperties = {
         display: 'grid',
-        gridTemplateColumns: def.gridTemplateColumns,
-        gridTemplateRows: def.gridTemplateRows,
+        gridTemplateColumns: def ? def.gridTemplateColumns : `repeat(${columns}, 1fr)`,
+        gridTemplateRows: def ? def.gridTemplateRows : undefined,
         gap: `${gap}px`,
         width: '100%',
         height: '100%',
@@ -137,20 +138,16 @@ export const CollageRenderer = ({
 
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
-            {/* Ken Burns toggle (visible on timeline) - stateful */}
             <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
                 <KenBurnsToggle />
             </div>
-            {/* Collage grid icon overlay */}
             <div className="absolute top-2 left-2 z-20 bg-black/40 backdrop-blur-sm rounded-md p-1" title="Collage">
                 <LayoutGrid className="h-3 w-3 text-white/80" />
             </div>
 
             <div style={gridStyle}>
-                {def.slots.map(slotDef => {
-                    const slotData = slots.find(s => s.slotIndex === slotDef.slotIndex);
-                    const photoUrl = slotData?.photoUrl;
-
+                {slots.map((slotDef) => {
+                    const photoUrl = slotDef.photoUrl;
                     if (!photoUrl) return null;
 
                     const tilt = photoTilt && photoUrl ? (slotDef.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
@@ -167,19 +164,10 @@ export const CollageRenderer = ({
                         frameStyle = { border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' };
                     }
 
-                    const photo = (
-                        <div
-                            key={slotDef.slotIndex}
-                            style={{
-                                gridColumn: slotDef.gridColumn,
-                                gridRow: slotDef.gridRow,
-                                borderRadius: `${borderRadius}px`,
-                                overflow: 'hidden',
-                                position: 'relative',
-                                transform: `rotate(${tilt})`,
-                                ...frameStyle
-                            }}
-                        >
+                    const displaySrc = slotDef.slotIndex === 0 && photoFilter ? (photoFilter.filteredUrl || photoUrl) : photoUrl;
+
+                    return (
+                        <div key={slotDef.slotIndex} style={{ position: 'relative', overflow: 'hidden', borderRadius: `${borderRadius}px`, transform: `rotate(${tilt})`, ...frameStyle }}>
                             {interactive ? (
                                 <ImageLightbox
                                     src={photoUrl}
@@ -191,34 +179,31 @@ export const CollageRenderer = ({
                                     width={800}
                                     height={800}
                                     filteredUrl={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
+                                    filteredFilter={slotDef.slotIndex === 0 && photoFilter ? photoFilter.filter : undefined}
                                 >
                                     <ParallaxContainer speed={0.03} active={interactive && kenBurnsEnabled} className="w-full h-full">
                                         <Image
-                                            src={photoUrl}
+                                            src={displaySrc}
                                             alt={`${title} ${slotDef.slotIndex + 1}`}
                                             fill
                                             className="object-cover w-full h-full"
                                             sizes="(max-width: 640px) 50vw, 400px"
+                                            style={photoFilter?.filter ? { filter: getPhotoFilterCss(photoFilter.filter) } : undefined}
                                         />
                                     </ParallaxContainer>
                                 </ImageLightbox>
-                            ) : (() => {
-                                // Non-interactive preview (e.g. edit dialog) should show filtered image when available
-                                const displaySrc = slotDef.slotIndex === 0 && photoFilter ? photoFilter.filteredUrl : photoUrl;
-                                return (
-                                    <Image
-                                        src={displaySrc}
-                                        alt={`${title} ${slotDef.slotIndex + 1}`}
-                                        fill
-                                        className="object-cover w-full h-full"
-                                        sizes="(max-width: 640px) 50vw, 400px"
-                                    />
-                                );
-                            })()}
+                            ) : (
+                                <Image
+                                    src={displaySrc}
+                                    alt={`${title} ${slotDef.slotIndex + 1}`}
+                                    fill
+                                    className="object-cover w-full h-full"
+                                    sizes="(max-width: 640px) 50vw, 400px"
+                                    style={photoFilter?.filter && slotDef.slotIndex === 0 ? { filter: getPhotoFilterCss(photoFilter.filter) } : undefined}
+                                />
+                            )}
                         </div>
                     );
-
-                    return photo;
                 })}
             </div>
         </div>
@@ -280,6 +265,17 @@ export const PhotoCollage = ({
         return false;
     });
 
+    React.useEffect(() => {
+        const handler = () => {
+            const raw = localStorage.getItem('momenty:kenBurnsEnabled');
+            setKenBurnsEnabled(raw === '1' || raw === 'true');
+        };
+        window.addEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        return () => {
+            window.removeEventListener('momenty:kenBurnsChanged', handler as EventListener);
+        };
+    }, []);
+
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         if (interactive || !onPositionChange) return;
         setIsDragging(true);
@@ -327,7 +323,7 @@ export const PhotoCollage = ({
             ? `${displayTransform.positionX ?? 50}% ${displayTransform.positionY ?? 50}%`
             : undefined;
 
-        const displaySrc = (photoFilter && index === 0) ? photoFilter.filteredUrl : src;
+        const displaySrc = src;
 
         const content = (
             <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full" active={interactive && kenBurnsEnabled}>
@@ -362,6 +358,7 @@ export const PhotoCollage = ({
                 width={width}
                 height={height}
                 filteredUrl={index === 0 && photoFilter ? photoFilter.filteredUrl : undefined}
+                filteredFilter={index === 0 && photoFilter ? photoFilter.filter : undefined}
             >
                 {content}
             </ImageLightbox>
@@ -380,7 +377,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index}>
+                            <div key={index} className="overflow-hidden">
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, index === 0 ? "rounded-tl-xl" : "rounded-tr-xl", t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -389,13 +386,13 @@ export const PhotoCollage = ({
             case 3:
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
-                        <div className="col-span-1 row-span-2">
+                        <div className="col-span-1 row-span-2 overflow-hidden">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
-                        <div className="col-span-1 row-span-1">
+                        <div className="col-span-1 row-span-1 overflow-hidden">
                             {renderPhoto(clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 1, "rounded-tr-xl", t.w, Math.round(t.h * 0.66), false)}
                         </div>
-                        <div className="col-span-1 row-span-1">
+                        <div className="col-span-1 row-span-1 overflow-hidden">
                             {renderPhoto(clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 2, "", t.w, Math.round(t.h * 0.66), false)}
                         </div>
                     </div>
@@ -404,7 +401,7 @@ export const PhotoCollage = ({
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden">
                         {photos.map((photo, index) => (
-                            <div key={index}>
+                            <div key={index} className="overflow-hidden">
                                 {renderPhoto(clTransform(photo, { w: t.w, h: t.h, c: t.c, g: t.g }), index, cn(index === 0 && "rounded-tl-xl", index === 1 && "rounded-tr-xl"), t.w, t.h, index === 0)}
                             </div>
                         ))}
@@ -413,13 +410,13 @@ export const PhotoCollage = ({
             default: // 5+ photos
                 return (
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 h-[450px] w-full bg-black/5 overflow-hidden relative">
-                        <div className="col-span-1 row-span-2">
+                        <div className="col-span-1 row-span-2 overflow-hidden">
                             {renderPhoto(clTransform(photos[0], { w: t.w, h: t.h, c: t.c, g: t.g }), 0, "rounded-tl-xl", t.w, t.h, true)}
                         </div>
-                        <div className="col-span-1 row-span-1 relative">
+                        <div className="col-span-1 row-span-1 relative overflow-hidden">
                             {renderPhoto(clTransform(photos[1], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 1, "rounded-tr-xl", t.w, Math.round(t.h * 0.66), false)}
                         </div>
-                        <div className="col-span-1 row-span-1 relative">
+                        <div className="col-span-1 row-span-1 relative overflow-hidden">
                             {renderPhoto(clTransform(photos[2], { w: t.w, h: Math.round(t.h * 0.66), c: t.c, g: t.g }), 2, "", t.w, Math.round(t.h * 0.66), false)}
                             {photos.length > 3 && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none z-20">
