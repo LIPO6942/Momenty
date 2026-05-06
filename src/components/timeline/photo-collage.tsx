@@ -103,7 +103,7 @@ export const CollageRenderer = ({
     const borderRadius = (collageTemplate as any).borderRadius ?? 0;
     const photoTilt = (collageTemplate as any).photoTilt ?? false;
     const photoFrame = (collageTemplate as any).photoFrame ?? 'none';
-    const patternStyle = (collageTemplate as any).pattern ? getPatternStyle((collageTemplate as any).pattern) : {};
+    const patternStyle = getPatternStyle((collageTemplate as any).pattern ?? collageTemplate.bgPattern, collageTemplate.bgColor ?? '#000000');
     
     const allPhotos = slots
         .filter(s => !!s.photoUrl)
@@ -136,6 +136,19 @@ export const CollageRenderer = ({
         ...patternStyle,
     };
 
+    // Build a map from slotIndex → def slot (for gridColumn / gridRow)
+    const defSlotMap = React.useMemo(() => {
+        const map = new Map<number, { gridColumn: string; gridRow: string }>();
+        def?.slots.forEach(s => map.set(s.slotIndex, { gridColumn: s.gridColumn, gridRow: s.gridRow }));
+        return map;
+    }, [def]);
+
+    // Sort slots by slotIndex so they render in predictable order
+    const sortedSlots = React.useMemo(
+        () => [...slots].sort((a, b) => a.slotIndex - b.slotIndex),
+        [slots]
+    );
+
     return (
         <div className={cn("relative w-full", RATIO_PADDING[ratio] ?? 'pb-[100%]')}>
             <div className="absolute bottom-2 left-2 z-50 pointer-events-auto">
@@ -146,9 +159,14 @@ export const CollageRenderer = ({
             </div>
 
             <div style={gridStyle}>
-                {slots.map((slotDef) => {
+                {sortedSlots.map((slotDef) => {
                     const photoUrl = slotDef.photoUrl;
                     if (!photoUrl) return null;
+
+                    // Look up grid position from the template def
+                    const defSlot = defSlotMap.get(slotDef.slotIndex);
+                    const gridColumn = defSlot?.gridColumn;
+                    const gridRow = defSlot?.gridRow;
 
                     const tilt = photoTilt && photoUrl ? (slotDef.slotIndex % 2 === 0 ? '-2deg' : '2deg') : '0deg';
                     let frameStyle: React.CSSProperties = {};
@@ -167,7 +185,18 @@ export const CollageRenderer = ({
                     const displaySrc = slotDef.slotIndex === 0 && photoFilter ? (photoFilter.filteredUrl || photoUrl) : photoUrl;
 
                     return (
-                        <div key={slotDef.slotIndex} style={{ position: 'relative', overflow: 'hidden', borderRadius: `${borderRadius}px`, transform: `rotate(${tilt})`, ...frameStyle }}>
+                        <div
+                            key={slotDef.slotIndex}
+                            style={{
+                                gridColumn,
+                                gridRow,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                borderRadius: `${borderRadius}px`,
+                                transform: `rotate(${tilt})`,
+                                ...frameStyle,
+                            }}
+                        >
                             {interactive ? (
                                 <ImageLightbox
                                     src={photoUrl}

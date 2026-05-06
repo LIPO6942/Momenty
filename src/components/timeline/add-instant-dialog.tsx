@@ -502,9 +502,16 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
             let uploadedPhotoUrls: string[] = [];
             const isOnline = typeof window !== 'undefined' ? navigator.onLine : true;
 
-            if (photos.length > 0) {
+            // Collect ALL unique data URLs: from photos[] AND from collage slot assignments
+            // (slots may contain photos added directly in the canvas, not via the main import)
+            const allSlotDataUrls = slotAssignment.filter((u): u is string => !!u && u.startsWith('data:'));
+            const allDataUrlsToUpload = Array.from(new Set([...photos, ...allSlotDataUrls]));
+            // Map: dataUrl -> cloudinary URL (populated after upload)
+            const uploadedUrlMap = new Map<string, string>();
+
+            if (allDataUrlsToUpload.length > 0) {
                 if (isOnline) {
-                    const uploadPromises = photos.map(async (photoDataUrl) => {
+                    const uploadPromises = allDataUrlsToUpload.map(async (photoDataUrl) => {
                         const formData = new FormData();
                         const blob = await (await fetch(photoDataUrl)).blob();
                         formData.append('file', blob);
@@ -518,11 +525,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                             throw new Error(`Échec du téléversement d'une image.`);
                         }
                         const result = await response.json();
+                        uploadedUrlMap.set(photoDataUrl, result.secure_url);
                         return result.secure_url;
                     });
-                    uploadedPhotoUrls = await Promise.all(uploadPromises);
+                    const allUploaded = await Promise.all(uploadPromises);
+                    // uploadedPhotoUrls = only the ones from photos[] in original order
+                    uploadedPhotoUrls = photos.map(p => uploadedUrlMap.get(p) ?? p);
                 } else {
                     // Offline: keep data URLs as placeholders
+                    allDataUrlsToUpload.forEach(u => uploadedUrlMap.set(u, u));
                     uploadedPhotoUrls = [...photos];
                     toast({ 
                         title: "Hors-ligne : photos enregistrées localement", 
@@ -679,18 +690,22 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     const slots = slotAssignment
                         .map((photoDataUrl, slotIndex) => {
                             if (!photoDataUrl) return null;
-                            // Map data URL to uploaded Cloudinary URL
-                            const originalIndex = photos.indexOf(photoDataUrl);
-                            const uploadedUrl = originalIndex >= 0 ? uploadedPhotoUrls[originalIndex] : photoDataUrl;
+                            // Resolve to Cloudinary URL via the upload map (covers both
+                            // photos[] and any photos added directly in the collage canvas)
+                            const uploadedUrl = uploadedUrlMap.get(photoDataUrl) ?? photoDataUrl;
+                            // Only accept valid uploaded URLs (not raw data: URIs)
+                            if (!uploadedUrl || uploadedUrl.startsWith('data:')) return null;
                             return { slotIndex, photoUrl: uploadedUrl };
                         })
                         .filter((s): s is { slotIndex: number; photoUrl: string } => s !== null && !!s.photoUrl);
 
-                    builtCollageTemplate = {
-                        templateId: selectedTemplateDef.id,
-                        ...collageSettings,
-                        slots,
-                    };
+                    if (slots.length > 0) {
+                        builtCollageTemplate = {
+                            templateId: selectedTemplateDef.id,
+                            ...collageSettings,
+                            slots,
+                        };
+                    }
                 }
 
                 const newInstant = {
