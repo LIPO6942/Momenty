@@ -107,7 +107,33 @@ function PlatsContent() {
                                 {dish.photo ? (
                                     <>
                                         {(() => {
-                                            const t = buildTransformFromDisplay(dish.displayTransform); return (
+                                            const t = buildTransformFromDisplay(dish.displayTransform);
+                                            return dish.photo2 ? (
+                                                /* Two photos: side by side grid */
+                                                <div className="grid grid-cols-2 gap-0.5">
+                                                    <ImageLightbox src={clTransform(dish.photo, { w: t.w, h: t.h, c: t.c, g: t.g })} alt={`Photo 1 de ${dish.name}`} width={t.w} height={t.h}>
+                                                        <Image
+                                                            src={clTransform(dish.photo, { w: t.w, h: t.h, c: 'fill', g: 'auto' })}
+                                                            alt={`Photo 1 de ${dish.name}`}
+                                                            width={400}
+                                                            height={400}
+                                                            className="w-full h-[280px] object-cover"
+                                                            data-ai-hint="food dish"
+                                                        />
+                                                    </ImageLightbox>
+                                                    <ImageLightbox src={clTransform(dish.photo2, { w: t.w, h: t.h, c: t.c, g: t.g })} alt={`Photo 2 de ${dish.name}`} width={t.w} height={t.h}>
+                                                        <Image
+                                                            src={clTransform(dish.photo2, { w: t.w, h: t.h, c: 'fill', g: 'auto' })}
+                                                            alt={`Photo 2 de ${dish.name}`}
+                                                            width={400}
+                                                            height={400}
+                                                            className="w-full h-[280px] object-cover"
+                                                            data-ai-hint="food dish"
+                                                        />
+                                                    </ImageLightbox>
+                                                </div>
+                                            ) : (
+                                                /* Single photo: full width */
                                                 <ImageLightbox
                                                     src={clTransform(dish.photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
                                                     alt={`Photo de ${dish.name}`}
@@ -123,7 +149,7 @@ function PlatsContent() {
                                                         data-ai-hint="food dish"
                                                     />
                                                 </ImageLightbox>
-                                            )
+                                            );
                                         })()}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 

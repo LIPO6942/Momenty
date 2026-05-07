@@ -63,15 +63,35 @@ export default function EncountersPage() {
         <div className="grid md:grid-cols-1 gap-8">
           {encounters.map((encounter) => (
             <Card key={encounter.id} className="overflow-hidden">
-                 {encounter.photo && (() => { const t = buildTransformFromDisplay(encounter.displayTransform); return (
-                    <Image
-                        src={clTransform(encounter.photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
-                        alt={`Photo liée à ${encounter.name}`}
-                        width={t.w}
-                        height={t.h}
-                        className="w-full h-48 object-cover"
-                        data-ai-hint="person portrait"
-                    />)})()}
+                 {encounter.photo && (() => {
+                    const t = buildTransformFromDisplay(encounter.displayTransform);
+                    return encounter.photo2 ? (
+                        <div className="grid grid-cols-2 gap-0.5">
+                            <Image
+                                src={clTransform(encounter.photo, { w: t.w, h: t.h, c: 'fill', g: 'auto' })}
+                                alt={`Photo 1 de ${encounter.name}`}
+                                width={400} height={400}
+                                className="w-full h-[200px] object-cover"
+                                data-ai-hint="person portrait"
+                            />
+                            <Image
+                                src={clTransform(encounter.photo2, { w: t.w, h: t.h, c: 'fill', g: 'auto' })}
+                                alt={`Photo 2 de ${encounter.name}`}
+                                width={400} height={400}
+                                className="w-full h-[200px] object-cover"
+                                data-ai-hint="person portrait"
+                            />
+                        </div>
+                    ) : (
+                        <Image
+                            src={clTransform(encounter.photo, { w: t.w, h: t.h, c: t.c, g: t.g })}
+                            alt={`Photo liée à ${encounter.name}`}
+                            width={t.w} height={t.h}
+                            className="w-full h-48 object-cover"
+                            data-ai-hint="person portrait"
+                        />
+                    );
+                 })()}
                  <CardHeader className="flex flex-row items-center gap-4">
                     <Avatar className="h-16 w-16">
                         {encounter.photo && <AvatarImage src={clTransform(encounter.photo, { w: 160, h: 160, c: 'fill', g: 'auto' })} alt={encounter.name} />}

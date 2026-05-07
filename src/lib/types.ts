@@ -92,6 +92,7 @@ export interface Encounter {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    photo2?: string | null; // Second photo (optional)
     audio?: string | null; // Cloudinary URL for audio memory
     displayTransform?: DisplayTransform; // Optional persisted display settings
 }
@@ -105,6 +106,7 @@ export interface Dish {
     city?: string; // Zone/City name
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    photo2?: string | null; // Second photo (optional)
     audio?: string | null; // Cloudinary URL for audio memory
     displayTransform?: DisplayTransform; // Optional persisted display settings
 }
@@ -117,6 +119,7 @@ export interface Accommodation {
     location: string;
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
+    photo2?: string | null; // Second photo (optional)
     audio?: string | null; // Cloudinary URL for audio memory
     displayTransform?: DisplayTransform; // Optional persisted display settings
 }

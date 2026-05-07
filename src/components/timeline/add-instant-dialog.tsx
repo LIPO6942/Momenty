@@ -339,10 +339,23 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        // Limit to 2 photos for dish/encounter/accommodation
+        const isLimited = isDish || isEncounter || isAccommodation;
+        const maxPhotos = isLimited ? 2 : 99;
+
         setIsConverting(true);
         toast({ title: `Traitement de ${files.length} photo(s)...` });
 
         for (const file of Array.from(files)) {
+            // Check limit before each file
+            const currentCount = await new Promise<number>(resolve => {
+                setPhotos(prev => { resolve(prev.length); return prev; });
+            });
+            if (currentCount >= maxPhotos) {
+                toast({ variant: "destructive", title: `Maximum ${maxPhotos} photo(s) en mode ${isDish ? 'plat' : isEncounter ? 'rencontre' : 'logement'}.` });
+                break;
+            }
+
             let processingFile: File | Blob = file;
 
             if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
@@ -364,7 +377,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
             try {
                 const compressedDataUrl = await compressImage(processingFile);
-                setPhotos(prev => [...prev, compressedDataUrl]);
+                setPhotos(prev => {
+                    if (prev.length >= maxPhotos) return prev; // double-check
+                    return [...prev, compressedDataUrl];
+                });
             } catch (error) {
                 console.error(`Erreur de traitement du fichier: ${file.name}`, error);
                 toast({
@@ -410,9 +426,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayCrop("fit");
         setDisplayGravity("auto");
         setDescriptionStyle("classique-italique");
-        // Artistic style cleanup
-        setSelectedArtisticStyle(null);
-        setArtisticUrl(null);
+        // Photo filter cleanup
+        setSelectedFilter(null);
+        setFilteredUrl(null);
         // Collage cleanup
         setIsCollageMode(false);
         setCollageStep(0);
@@ -553,6 +569,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
             }
 
             const mainPhoto = uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls[0] : null;
+            const secondPhoto = (isDish || isEncounter || isAccommodation) && uploadedPhotoUrls.length > 1 ? uploadedPhotoUrls[1] : null;
             let finalAudioUrl = audioUrl;
 
             // If audio was selected and we're offline, we might need a placeholder or just handle it in sync
@@ -576,6 +593,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    photo2: secondPhoto,
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
                 const newId = await addEncounter(newEncounter);
@@ -604,6 +622,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     city,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    photo2: secondPhoto,
                     audio: audioUrl,
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
@@ -665,6 +684,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
+                    photo2: secondPhoto,
                     audio: audioUrl,
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                 };
@@ -857,6 +877,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                                     {photos.length > 0 && !isCollageMode && (
                                         <div className="space-y-2">
+                                            {/* Main photo */}
                                             <div className="relative group">
                                                 <Image
                                                     src={photos[0]}
@@ -874,7 +895,27 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                     </Button>
                                                 </div>
                                             </div>
-                                            {photos.length > 1 && (
+
+                                            {/* Second photo in dish/encounter/accommodation mode — full size preview */}
+                                            {(isDish || isEncounter || isAccommodation) && photos[1] && (
+                                                <div className="relative group">
+                                                    <Image
+                                                        src={photos[1]}
+                                                        alt="2e photo"
+                                                        width={400}
+                                                        height={800}
+                                                        className="rounded-md object-cover w-full h-auto max-h-[30vh]"
+                                                    />
+                                                    <div className="absolute top-2 right-2">
+                                                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(1)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Additional photos (instants only) — shown as thumbnails */}
+                                            {!(isDish || isEncounter || isAccommodation) && photos.length > 1 && (
                                                 <div className="flex flex-wrap gap-2">
                                                     {photos.slice(1).map((photo, index) => (
                                                         <div key={index} className="relative group">
@@ -886,7 +927,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                     ))}
                                                 </div>
                                             )}
-                                            {photos.length >= 2 && getCompatibleTemplates(photos.length).length > 0 && (
+
+                                            {/* Collage button — instants only */}
+                                            {!(isDish || isEncounter || isAccommodation) && photos.length >= 2 && getCompatibleTemplates(photos.length).length > 0 && (
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -1309,11 +1352,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     )}
 
-                                    {photos.length > 0 && (
+                                    {photos.length > 0 && !(isDish || isEncounter || isAccommodation) && (
                                         <>
                                             <Separator />
                                             <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />
-                                            {/* Photo filter picker - only for single photos */}
+                                            {/* Photo filter picker - only for single photos on instants */}
                                             {photos.length === 1 && (
                                                 <ArtisticStylePicker
                                                     photoUrl={photos[0]}

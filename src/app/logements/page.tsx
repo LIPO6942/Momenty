@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn, getCity, getCountry } from "@/lib/utils";
 import type { Accommodation } from "@/lib/types";
 import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
+import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 
 export default function AccommodationsPage() {
     const { accommodations, deleteAccommodation } = useContext(TimelineContext);
@@ -70,14 +71,35 @@ export default function AccommodationsPage() {
                             <Card key={accommodation.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                                 {accommodation.photo ? (
                                     <>
-                                        <Image
-                                            src={accommodation.photo}
-                                            alt={`Photo de ${accommodation.name}`}
-                                            width={600}
-                                            height={400}
-                                            className="w-full h-[400px] object-cover"
-                                            data-ai-hint="hotel room interior design"
-                                        />
+                                        {accommodation.photo2 ? (
+                                            /* Two photos: side by side */
+                                            <div className="grid grid-cols-2 gap-0.5">
+                                                <Image
+                                                    src={clTransform(accommodation.photo, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                    alt={`Photo 1 de ${accommodation.name}`}
+                                                    width={400} height={400}
+                                                    className="w-full h-[280px] object-cover"
+                                                    data-ai-hint="hotel room interior design"
+                                                />
+                                                <Image
+                                                    src={clTransform(accommodation.photo2, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                    alt={`Photo 2 de ${accommodation.name}`}
+                                                    width={400} height={400}
+                                                    className="w-full h-[280px] object-cover"
+                                                    data-ai-hint="hotel room interior design"
+                                                />
+                                            </div>
+                                        ) : (
+                                            /* Single photo: full width */
+                                            <Image
+                                                src={accommodation.photo}
+                                                alt={`Photo de ${accommodation.name}`}
+                                                width={600}
+                                                height={400}
+                                                className="w-full h-[400px] object-cover"
+                                                data-ai-hint="hotel room interior design"
+                                            />
+                                        )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
                                         <div className="absolute top-2 right-2 flex gap-2">
