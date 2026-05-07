@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Allow large photo uploads via API routes (App Router body size limit)
+  experimental: {
+    serverBodySizeLimit: '20mb',
+  },
   images: {
     remotePatterns: [
       {

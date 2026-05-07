@@ -122,8 +122,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         bgColor: '#ffffff',
         ratio: '1:1',
         bgPattern: 'none',
-        photoFrame: 'none',
+        photoFrame: 'clean',
         photoTilt: false,
+        layoutStyle: 'smart',
     });
 
     // Kol Youm API State
@@ -522,7 +523,16 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         });
 
                         if (!response.ok) {
-                            throw new Error(`Échec du téléversement d'une image.`);
+                            let errMsg = `Échec du téléversement (erreur ${response.status}).`;
+                            if (response.status === 413) {
+                                errMsg = "Image trop volumineuse. Veuillez en choisir une plus petite.";
+                            } else {
+                                try {
+                                    const errBody = await response.json();
+                                    errMsg = errBody?.message || errMsg;
+                                } catch {}
+                            }
+                            throw new Error(errMsg);
                         }
                         const result = await response.json();
                         uploadedUrlMap.set(photoDataUrl, result.secure_url);
@@ -758,9 +768,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
             onOpenChange(false);
             cleanup();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submission failed", error);
-            toast({ variant: "destructive", title: "La publication a échoué", description: "Veuillez réessayer." });
+            const errDescription = error?.message || "Veuillez réessayer.";
+            toast({ variant: "destructive", title: "La publication a échoué", description: errDescription });
         } finally {
             setIsSubmitting(false);
         }

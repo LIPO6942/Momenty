@@ -9,14 +9,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Increase the body size limit for this specific API route
-export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: '10mb',
-        },
-    },
-};
+// Next.js App Router: set max execution time (body size limit is handled by the runtime)
+export const maxDuration = 60;
 
 async function buffer(readable: NodeJS.ReadableStream) {
     const chunks = [];
@@ -56,6 +50,7 @@ export async function POST(request: Request) {
           options,
           (error, result) => {
             if (error) {
+              console.error('Cloudinary upload error:', error);
               return reject(error);
             }
             resolve(result);
@@ -70,8 +65,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(stream);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload Error:', error);
-    return NextResponse.json({ message: 'Upload failed' }, { status: 500 });
+    const message = error?.message || 'Upload failed';
+    return NextResponse.json({ message, error: String(error) }, { status: 500 });
   }
 }
