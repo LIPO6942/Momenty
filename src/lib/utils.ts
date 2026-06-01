@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { countries } from "./countries";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -180,3 +181,63 @@ export const formatInstantTitle = (location: string, dateString: string): string
 
   return `${city}${city && country ? ', ' : ''}${country} (${date})`;
 };
+
+// Convert ISO 2-letter country code to emoji flag
+export function getFlagEmojiByCode(countryCode: string): string {
+  if (!countryCode) return "";
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map(char => 127397 + char.charCodeAt(0));
+  try {
+    return String.fromCodePoint(...codePoints);
+  } catch (e) {
+    return "";
+  }
+}
+
+// Get flag emoji from country name
+export function getFlagEmoji(countryName: string): string {
+  if (!countryName) return "";
+  const normalized = getCountry(countryName).trim().toLowerCase();
+  
+  // Search in countries database
+  const match = countries.find(
+    c => c.label.toLowerCase() === normalized || 
+         c.enLabel.toLowerCase() === normalized ||
+         c.value.toLowerCase() === normalized
+  );
+  
+  if (match) {
+    return getFlagEmojiByCode(match.value);
+  }
+  
+  // Hardcoded fallback for common names just in case
+  const commonFallbacks: Record<string, string> = {
+    "france": "FR",
+    "maroc": "MA",
+    "algérie": "DZ",
+    "tunisie": "TN",
+    "espagne": "ES",
+    "italie": "IT",
+    "allemagne": "DE",
+    "royaume-uni": "GB",
+    "états-unis": "US",
+    "usa": "US",
+    "canada": "CA",
+    "belgique": "BE",
+    "suisse": "CH",
+    "japon": "JP",
+    "chine": "CN",
+    "brésil": "BR",
+    "pays-bas": "NL"
+  };
+  
+  const code = commonFallbacks[normalized];
+  if (code) {
+    return getFlagEmojiByCode(code);
+  }
+  
+  return "";
+}
+

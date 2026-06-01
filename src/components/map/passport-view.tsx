@@ -34,7 +34,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { parseISO, getHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn, getCountry, getCity } from "@/lib/utils";
+import { cn, getCountry, getCity, getFlagEmoji } from "@/lib/utils";
 import { Instant, Dish, Encounter, Accommodation } from "@/lib/types";
 
 interface PassportViewProps {
@@ -52,11 +52,13 @@ interface VisaData {
   type: 'country' | 'city';
   continent?: string;
   visitsCount?: number;
+  countryName?: string;
 }
 
 const VisaCard = ({ visa, index }: { visa: VisaData, index: number }) => {
   const rotation = (index % 2 === 0 ? -2 : 2) + (index % 3);
   const shapeIdx = index % 3;
+  const flag = visa.type === 'country' ? getFlagEmoji(visa.name) : getFlagEmoji(visa.countryName || "");
   
   const getContinentColor = (continent?: string) => {
     switch (continent?.toLowerCase()) {
@@ -110,7 +112,13 @@ const VisaCard = ({ visa, index }: { visa: VisaData, index: number }) => {
 
       <div className="relative z-10 flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          {visa.type === 'country' ? <Globe className="h-4 w-4 text-emerald-600" /> : <MapPin className="h-4 w-4 text-blue-600" />}
+          {flag ? (
+            <span className="text-xl sm:text-2xl leading-none shrink-0" role="img" aria-label={visa.name}>
+              {flag}
+            </span>
+          ) : (
+            visa.type === 'country' ? <Globe className="h-4 w-4 text-emerald-600" /> : <MapPin className="h-4 w-4 text-blue-600" />
+          )}
           <h4 className="font-serif font-black text-lg text-slate-800 leading-tight truncate">{visa.name}</h4>
         </div>
         
@@ -199,7 +207,7 @@ export const PassportView = ({
   }, [instants, manualLocations]);
 
   const cityVisas = useMemo(() => {
-    const locationsMap = new Map<string, { name: string; continent: string, dates: string[] }>();
+    const locationsMap = new Map<string, { name: string; countryName: string; continent: string, dates: string[] }>();
     
     instants.forEach(i => {
       const cityName = getCity(i.location);
@@ -209,7 +217,7 @@ export const PassportView = ({
       const normalizedC = countryName.trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
       if (!locationsMap.has(key)) {
-        locationsMap.set(key, { name: cityName, continent, dates: [i.date] });
+        locationsMap.set(key, { name: cityName, countryName, continent, dates: [i.date] });
       } else {
         const item = locationsMap.get(key)!;
         if (i.date) item.dates.push(i.date);
@@ -225,7 +233,7 @@ export const PassportView = ({
       const normalizedC = countryName.trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
       if (!locationsMap.has(key)) {
-        locationsMap.set(key, { name: cityName, continent, dates: [mDate] });
+        locationsMap.set(key, { name: cityName, countryName, continent, dates: [mDate] });
       } else {
         locationsMap.get(key)!.dates.push(mDate);
       }
@@ -255,7 +263,8 @@ export const PassportView = ({
           firstVisit,
           type: 'city',
           continent: entry.continent,
-          visitsCount
+          visitsCount,
+          countryName: entry.countryName
         } as VisaData;
       });
   }, [instants, manualLocations]);

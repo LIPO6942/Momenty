@@ -39,7 +39,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { countries } from "@/lib/countries";
-import { cn, getCountry, getCity } from "@/lib/utils";
+import { cn, getCountry, getCity, getFlagEmoji } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Accordion,
@@ -1024,7 +1024,12 @@ export default function MapPage() {
                         {Object.entries(locationsByCountry).map(([country, locations]) => (
                             <AccordionItem key={country} value={country} className={cn("border-none rounded-xl shadow-md shadow-slate-200/80", getContinentColor(country))}>
                                 <AccordionTrigger className="text-xl font-bold text-foreground p-4 hover:no-underline">
-                                    {country}
+                                    <span className="flex items-center gap-2.5">
+                                        <span className="text-2xl leading-none">
+                                            {getFlagEmoji(country) || "🌍"}
+                                        </span>
+                                        <span>{country}</span>
+                                    </span>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-4 pt-0">
                                     <div className="space-y-4 pt-2">
