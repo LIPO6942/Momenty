@@ -81,8 +81,8 @@ function TimelineContent() {
 
   useEffect(() => {
     if (instants.length > 0 && !hasSetInitialFilter) {
-      const instantId = searchParams.get('instant');
-      const locationSearch = searchParams.get('locationSearch');
+      const instantId = searchParams.get('instant') || searchParams.get('id');
+      const locationSearch = searchParams.get('locationSearch') || searchParams.get('location') || searchParams.get('place');
       const souvenir = searchParams.get('souvenir');
 
       let targetInstant = null;
@@ -146,21 +146,26 @@ function TimelineContent() {
       // If we have a target instant from URL, set filter to its date
       if (targetInstant) {
         const date = parseISO(targetInstant.date);
+        const dayKey = format(date, 'yyyy-MM-dd');
         setSelectedYear(getYear(date));
-        setSelectedMonth(-1); // "Voir tout" to make sure it's visible or handle specific month if preferred
+        setSelectedMonth(-1); // "Voir tout" to make sure it's visible
+        setOpenDays(prev => Array.from(new Set([...prev, dayKey])));
         setHasSetInitialFilter(true);
 
-        // Wait for render then scroll
-        setTimeout(() => {
+        // Wait for render then scroll & highlight
+        const tryScroll = (attempts = 0) => {
           const element = document.getElementById(`instant-${targetInstant.id}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            element.classList.add('ring-4', 'ring-pink-500', 'ring-offset-4', 'shadow-2xl', 'scale-[1.01]', 'transition-all', 'duration-500');
             setTimeout(() => {
-              element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-            }, 3000);
+              element.classList.remove('ring-4', 'ring-pink-500', 'ring-offset-4', 'shadow-2xl', 'scale-[1.01]');
+            }, 4500);
+          } else if (attempts < 5) {
+            setTimeout(() => tryScroll(attempts + 1), 300);
           }
-        }, 500); // Small delay to ensure Accordion is expanded and rendered
+        };
+        setTimeout(() => tryScroll(0), 400);
       } else if (!hasSetInitialFilter) {
         // Default behavior if no instant matched (and we haven't set filter yet)
         const mostRecentInstantDate = parseISO(instants[0].date);

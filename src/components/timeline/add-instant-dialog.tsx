@@ -825,7 +825,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                 category: 'Kharjet',
                                 dishName: cleanTags.length > 0 ? cleanTags.join(', ') : undefined,
                                 date: new Date().getTime(),
-                                postUrl: `https://momenty-ten.vercel.app/timeline?id=${newId}`,
+                                postUrl: `https://momenty-ten.vercel.app/?instant=${newId}`,
                                 momentyImageUrl: uploadedPhotoUrls[0] || null
                             })
                         });
