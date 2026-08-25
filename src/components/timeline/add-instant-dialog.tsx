@@ -4,6 +4,7 @@
 import { useState, ReactNode, useContext, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -829,6 +830,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
     const isLoading = isLocating || isAnalyzing || isImprovingText || isConverting || isSubmitting;
 
+    const handleToggleKharjet = () => {
+        setIsKharjet(!isKharjet);
+        if (!isKharjet) {
+            setIsDish(false);
+            setIsEncounter(false);
+            setIsAccommodation(false);
+        }
+    }
+
     const handleToggleEncounter = () => {
         setIsEncounter(!isEncounter);
         if (!isEncounter) {
@@ -1087,7 +1097,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                                     <div className="space-y-2">
                                         <Label htmlFor="description" className="flex items-center justify-between">
-                                            <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : isKharjet ? 'Racontez cette sortie Kharjet...' : 'Qu\'avez-vous en tête ?'}</span>
+                                            <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : 'Qu\'avez-vous en tête ?'}</span>
                                             <div className="flex items-center">
                                                 <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-blue-900", isAccommodation && "bg-blue-900/20")} onClick={handleToggleAccommodation} disabled={isLoading}>
                                                     <Home className="h-4 w-4" />
@@ -1097,10 +1107,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                     <Utensils className="h-4 w-4" />
                                                     <span className="sr-only">Marquer comme plat</span>
                                                 </Button>
-                                                <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-blue-900", isEncounter && "bg-blue-900/20")} onClick={handleToggleEncounter} disabled={isLoading}>
+                                                <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-blue-900", isEncounter && "bg-blue-900/20")} onClick={handleToggleEncounter} disabled={isLoading} title="Rencontre">
                                                     <Users className="h-4 w-4" />
                                                     <span className="sr-only">Marquer comme rencontre</span>
                                                 </Button>
+                                                
                                                 <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-blue-900" onClick={handleImproveDescription} disabled={isLoading || !description}>
                                                     {isImprovingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                                                     <span className="sr-only">Améliorer la description</span>
@@ -1128,39 +1139,83 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     </div>
 
-                                    {isKharjet && (
-                                        <div className="space-y-2.5 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 animate-in fade-in duration-200">
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                                                <Compass className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                                <span>Sortie Kharjet (Synchronisée avec Kol Youm)</span>
+                                    {/* Option Enregistrer dans Kharjet (Kol Youm) */}
+                                    {!(isDish || isEncounter || isAccommodation) && (
+                                        <div className={cn(
+                                            "p-3 rounded-xl border transition-all duration-200",
+                                            isKharjet
+                                                ? "border-emerald-500/40 bg-emerald-500/5 shadow-xs"
+                                                : "border-border/60 bg-muted/20 hover:border-emerald-500/30 hover:bg-muted/30"
+                                        )}>
+                                            <div className="flex items-center justify-between">
+                                                <div
+                                                    className="flex items-center gap-2.5 cursor-pointer flex-1 select-none"
+                                                    onClick={() => setIsKharjet(!isKharjet)}
+                                                >
+                                                    <img
+                                                        src="/icons/kol-youm-logo.png"
+                                                        alt="Kol Youm"
+                                                        className="w-5 h-5 rounded-md object-contain border border-emerald-500/30 shrink-0 shadow-xs"
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Enregistrer dans Kharjet (Kol Youm)
+                                                            </span>
+                                                            {isKharjet && (
+                                                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                                                    Actif
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-muted-foreground">
+                                                            Ajoute cette sortie directement dans vos statistiques Kharjet Kol Youm
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Switch
+                                                    checked={isKharjet}
+                                                    onCheckedChange={setIsKharjet}
+                                                    className="data-[state=checked]:bg-emerald-600 scale-90 ml-2"
+                                                />
                                             </div>
 
-                                            <div className="space-y-1">
-                                                <Label className="text-xs text-muted-foreground">Tags & Activités (Optionnel)</Label>
-                                                <div className="flex flex-wrap gap-1.5 pt-0.5">
-                                                    {["🏖️ Baignade", "🍦 Glace", "🌅 Soirée", "🌲 Nature", "🎯 Activité", "🥾 Randonnée", "☕ Pause Café", "🍹 Rooftop"].map((tag) => (
-                                                        <Badge
-                                                            key={tag}
-                                                            variant={selectedKharjetTags.includes(tag) ? "default" : "outline"}
-                                                            className={cn(
-                                                                "cursor-pointer text-[11px] py-0.5 px-2 transition-colors",
-                                                                selectedKharjetTags.includes(tag)
-                                                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                                                    : "hover:bg-emerald-50 text-emerald-900 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700"
-                                                            )}
-                                                            onClick={() => {
-                                                                setSelectedKharjetTags(prev =>
-                                                                    prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-                                                                );
-                                                            }}
-                                                        >
-                                                            {tag}
-                                                        </Badge>
-                                                    ))}
+                                            {/* Si activé: sélection des tags rapides Kharjet */}
+                                            {isKharjet && (
+                                                <div className="mt-3 pt-2.5 border-t border-emerald-500/20 space-y-2 animate-in fade-in duration-200">
+                                                    <Label className="text-[11px] font-medium text-emerald-900/80 dark:text-emerald-200/80">
+                                                        Tags & Activités de la sortie (Optionnel) :
+                                                    </Label>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {["🏖️ Baignade", "🍦 Glace", "🌅 Soirée", "🌲 Nature", "🎯 Activité", "🥾 Randonnée", "☕ Pause Café", "🍹 Rooftop"].map((tag) => (
+                                                            <Badge
+                                                                key={tag}
+                                                                variant={selectedKharjetTags.includes(tag) ? "default" : "outline"}
+                                                                className={cn(
+                                                                    "cursor-pointer text-[10px] py-0.5 px-2 transition-all select-none",
+                                                                    selectedKharjetTags.includes(tag)
+                                                                        ? "bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-xs"
+                                                                        : "bg-background hover:bg-emerald-50 text-foreground border-emerald-500/30"
+                                                                )}
+                                                                onClick={() => {
+                                                                    setSelectedKharjetTags(prev =>
+                                                                        prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {tag}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     )}
+
+                                    
 
                                     {!(isEncounter || isDish || isAccommodation || isKharjet) && (
                                         <div className="space-y-2">
