@@ -354,6 +354,38 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         setInstants(prevInstants => prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
         ));
+
+        // Auto-sync edits with Kol Youm if this instant is a Kharjet outing or has location/date
+        const isKharjetInstant = updatedInstant.category?.includes('Kharjet') ||
+                                 originalInstant.category?.includes('Kharjet') ||
+                                 updatedInstant.title?.includes('Kharjet') ||
+                                 originalInstant.title?.includes('Kharjet') ||
+                                 (updatedInstant.location && updatedInstant.location.length > 0);
+
+        if (isKharjetInstant && user?.email && isOnline) {
+            try {
+                const locParts = (updatedInstant.location || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+                const place = locParts[0] || updatedInstant.title || 'Sortie Kharjet';
+                const zone = locParts[1] || 'La Marsa';
+                const dateTimestamp = new Date(updatedInstant.date).getTime();
+
+                fetch('/api/sync-kol-youm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userEmail: user.email,
+                        placeName: place,
+                        cityName: zone,
+                        category: 'Kharjet',
+                        date: dateTimestamp,
+                        postUrl: `https://momenty-ten.vercel.app/?instant=${id}`,
+                        momentyImageUrl: updatedInstant.photos?.[0] || null
+                    })
+                }).catch(e => console.error('[Kol Youm Auto-Sync Update Error]', e));
+            } catch (syncErr) {
+                console.error('[Kol Youm Auto-Sync Error]', syncErr);
+            }
+        }
     }
 
     const deleteCloudinaryResources = async (resources: { url: string; type: 'image' | 'video' }[]) => {
