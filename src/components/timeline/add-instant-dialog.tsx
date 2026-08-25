@@ -104,6 +104,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [isAccommodation, setIsAccommodation] = useState(false);
     const [accommodationName, setAccommodationName] = useState("");
     const [isKharjet, setIsKharjet] = useState(false);
+    const [isCreatingNewZone, setIsCreatingNewZone] = useState(false);
+    const [newCustomZone, setNewCustomZone] = useState("");
     const [kharjetSpotName, setKharjetSpotName] = useState("");
     const [selectedKharjetTags, setSelectedKharjetTags] = useState<string[]>([]);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -756,15 +758,22 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     }
                 }
 
+                const effectiveZone = isCreatingNewZone ? (newCustomZone.trim() || 'La Marsa') : (city.trim() || 'La Marsa');
+                const effectivePlace = location.trim() || (isKharjet ? "Sortie Kharjet" : "");
+                const instantLocation = (effectivePlace && effectiveZone) ? `${effectivePlace}, ${effectiveZone}` : (effectivePlace || effectiveZone || "Lieu inconnu");
+                const instantTitle = isKharjet
+                    ? (effectivePlace ? `${effectivePlace} (${effectiveZone})` : `Sortie Kharjet (${effectiveZone})`)
+                    : (finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''));
+
                 const newInstant = {
                     type: photos.length > 0 ? "photo" as const : "note" as const,
-                    title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
+                    title: instantTitle,
                     description: finalDescription,
                     date: new Date().toISOString(),
-                    location: location || "Lieu inconnu",
+                    location: instantLocation,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photos: uploadedPhotoUrls,
-                    category: ['Note'],
+                    category: isKharjet ? ['Kharjet'] : ['Note'],
                     audio: audioUrl,
                     displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
                     descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
@@ -776,7 +785,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         }
                     } : {}),
                 };
-                                const newId = await addInstant(newInstant);
+                const newId = await addInstant(newInstant);
                 
                 // --- Queue for Offline Sync if needed ---
                 if (!isOnline) {
@@ -803,7 +812,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 }
 
                 // Sync with Kol Youm Kharjet
-                if (isKharjet && isOnline && location) {
+                if (isKharjet && isOnline && (location || effectivePlace)) {
                     try {
                         const cleanTags = selectedKharjetTags.map(t => t.replace(/^[^\w\s\u0600-\u06FF]+/u, '').trim());
                         const syncResponse = await fetch('/api/sync-kol-youm', {
@@ -811,8 +820,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userEmail: user?.email,
-                                placeName: location,
-                                cityName: city || 'La Marsa',
+                                placeName: effectivePlace,
+                                cityName: effectiveZone,
                                 category: 'Kharjet',
                                 dishName: cleanTags.length > 0 ? cleanTags.join(', ') : undefined,
                                 date: new Date().getTime(),
@@ -1196,39 +1205,114 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 />
                                             </div>
 
-                                            {/* Si activé: sélection des tags rapides Kharjet */}
+                                            {/* Si activé: sélection de la zone et des tags */}
                                             {isKharjet && (
-                                                <div className="mt-3 pt-2.5 border-t border-emerald-500/20 space-y-2 animate-in fade-in duration-200">
-                                                    <Label className="text-[11px] font-medium text-emerald-900/80 dark:text-emerald-200/80">
-                                                        Tags & Activités de la sortie (Optionnel) :
-                                                    </Label>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {["🏖️ Baignade", "🍦 Glace", "🌅 Soirée", "🌲 Nature", "🎯 Activité", "🥾 Randonnée", "☕ Pause Café", "🍹 Rooftop"].map((tag) => (
-                                                            <Badge
-                                                                key={tag}
-                                                                variant={selectedKharjetTags.includes(tag) ? "default" : "outline"}
-                                                                className={cn(
-                                                                    "cursor-pointer text-[10px] py-0.5 px-2 transition-all select-none",
-                                                                    selectedKharjetTags.includes(tag)
-                                                                        ? "bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-xs"
-                                                                        : "bg-background hover:bg-emerald-50 text-foreground border-emerald-500/30"
-                                                                )}
-                                                                onClick={() => {
-                                                                    setSelectedKharjetTags(prev =>
-                                                                        prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-                                                                    );
+                                                <div className="mt-3 pt-2.5 border-t border-emerald-500/20 space-y-3 animate-in fade-in duration-200">
+                                                    {/* Zone Selector */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label htmlFor="kharjet-zone-select" className="text-[11px] font-semibold text-emerald-900/90 dark:text-emerald-200/90 flex items-center gap-1">
+                                                                <MapPin className="h-3 w-3 text-emerald-600" />
+                                                                <span>Zone / Ville de la sortie :</span>
+                                                            </Label>
+                                                            {!isCreatingNewZone ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="text-[10px] text-emerald-700 dark:text-emerald-300 hover:underline font-semibold"
+                                                                    onClick={() => {
+                                                                        setIsCreatingNewZone(true);
+                                                                        setCity("");
+                                                                    }}
+                                                                >
+                                                                    ✨ + Nouvelle zone
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    className="text-[10px] text-muted-foreground hover:underline"
+                                                                    onClick={() => {
+                                                                        setIsCreatingNewZone(false);
+                                                                        setNewCustomZone("");
+                                                                    }}
+                                                                >
+                                                                    Choisir existante
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {isCreatingNewZone ? (
+                                                            <div className="space-y-1 animate-in fade-in duration-150">
+                                                                <Input
+                                                                    placeholder="Nom de la nouvelle zone (ex: Ghar El Melh, Korbous, Zaghouan...)"
+                                                                    value={newCustomZone}
+                                                                    onChange={(e) => {
+                                                                        setNewCustomZone(e.target.value);
+                                                                        setCity(e.target.value);
+                                                                    }}
+                                                                    className="h-8 text-xs border-emerald-500/40 focus-visible:ring-emerald-500 bg-background"
+                                                                    autoFocus
+                                                                />
+                                                                <p className="text-[9px] text-emerald-700 dark:text-emerald-400">
+                                                                    ✨ Cette zone sera créée spécialement pour Kharjet dans Kol Youm
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <select
+                                                                id="kharjet-zone-select"
+                                                                className="w-full border border-emerald-500/30 rounded-lg h-8 px-2 text-xs bg-background text-foreground focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                                                                value={city || ""}
+                                                                onChange={(e) => {
+                                                                    if (e.target.value === '__NEW_CUSTOM_ZONE__') {
+                                                                        setIsCreatingNewZone(true);
+                                                                        setCity("");
+                                                                    } else {
+                                                                        setCity(e.target.value);
+                                                                        setIsCreatingNewZone(false);
+                                                                    }
                                                                 }}
                                                             >
-                                                                {tag}
-                                                            </Badge>
-                                                        ))}
+                                                                <option value="">Sélectionnez la zone (ex: La Marsa, Gammarth, Sidi Bou Said...)</option>
+                                                                {availableZones.map((z) => (
+                                                                    <option key={z} value={z}>{z}</option>
+                                                                ))}
+                                                                <option value="__NEW_CUSTOM_ZONE__" className="text-emerald-700 dark:text-emerald-300 font-bold">
+                                                                    ✨ + Ajouter une nouvelle zone...
+                                                                </option>
+                                                            </select>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Tags & Activités */}
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-[11px] font-medium text-emerald-900/80 dark:text-emerald-200/80">
+                                                            Tags & Activités de la sortie (Optionnel) :
+                                                        </Label>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {["🏖️ Baignade", "🍦 Glace", "🌅 Soirée", "🌲 Nature", "🎯 Activité", "🥾 Randonnée", "☕ Pause Café", "🍹 Rooftop"].map((tag) => (
+                                                                <Badge
+                                                                    key={tag}
+                                                                    variant={selectedKharjetTags.includes(tag) ? "default" : "outline"}
+                                                                    className={cn(
+                                                                        "cursor-pointer text-[10px] py-0.5 px-2 transition-all select-none",
+                                                                        selectedKharjetTags.includes(tag)
+                                                                            ? "bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-xs"
+                                                                            : "bg-background hover:bg-emerald-50 text-foreground border-emerald-500/30"
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        setSelectedKharjetTags(prev =>
+                                                                            prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    {tag}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
                                     )}
-
-                                    
 
                                     {!(isEncounter || isDish || isAccommodation) && (
                                         <div className="space-y-2">
