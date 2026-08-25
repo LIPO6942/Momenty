@@ -18,7 +18,8 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight, Compass } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { CollageTemplatePicker } from "@/components/timeline/collage-template-picker";
 import { CollageCanvas } from "@/components/timeline/collage-canvas";
 import { CollageCustomizer } from "@/components/timeline/collage-customizer";
@@ -101,6 +102,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [dishName, setDishName] = useState("");
     const [isAccommodation, setIsAccommodation] = useState(false);
     const [accommodationName, setAccommodationName] = useState("");
+    const [isKharjet, setIsKharjet] = useState(false);
+    const [kharjetSpotName, setKharjetSpotName] = useState("");
+    const [selectedKharjetTags, setSelectedKharjetTags] = useState<string[]>([]);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
@@ -165,7 +169,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
             const finalLocation = city && country ? `${city}, ${country}` : (city || country);
             setLocation(finalLocation);
         }
-    }, [activeContext, city, country, isDish]);
+    }, [activeContext, city, country, isDish, isKharjet]);
 
     // Fetch places from local API proxy (bypasses CORS)
     useEffect(() => {
@@ -216,7 +220,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         }
     };
 
-    const showPlacesCombobox = isDish && (places.length > 0 || isFetchingPlaces);
+    const showPlacesCombobox = (isDish || isKharjet) && (places.length > 0 || isFetchingPlaces);
 
 
     useEffect(() => {
@@ -758,7 +762,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         }
                     } : {}),
                 };
-                const newId = await addInstant(newInstant);
+                                const newId = await addInstant(newInstant);
                 
                 // --- Queue for Offline Sync if needed ---
                 if (!isOnline) {
@@ -783,7 +787,33 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         });
                     }
                 }
-                toast({ title: "Nouvel instant ajouté !" });
+
+                // Sync with Kol Youm Kharjet
+                if (isKharjet && isOnline && location) {
+                    try {
+                        const cleanTags = selectedKharjetTags.map(t => t.replace(/^[^\w\s\u0600-\u06FF]+/u, '').trim());
+                        const syncResponse = await fetch('/api/sync-kol-youm', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userEmail: user?.email,
+                                placeName: location,
+                                cityName: city || 'Tunis',
+                                category: 'Kharjet',
+                                dishName: cleanTags.length > 0 ? cleanTags.join(', ') : undefined,
+                                date: new Date().getTime(),
+                                postUrl: `https://momenty-ten.vercel.app/timeline?id=${newId}`,
+                                momentyImageUrl: uploadedPhotoUrls[0] || null
+                            })
+                        });
+                        const syncResult = await syncResponse.json();
+                        console.log('[Kol Youm Kharjet Sync]', syncResult);
+                    } catch (e) {
+                        console.error('[Kol Youm Kharjet Sync Error]', e);
+                    }
+                }
+
+                toast({ title: isKharjet ? "Instant et sortie Kharjet enregistrés !" : "Nouvel instant ajouté !" });
             }
 
             onOpenChange(false);
@@ -1057,7 +1087,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                                     <div className="space-y-2">
                                         <Label htmlFor="description" className="flex items-center justify-between">
-                                            <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : 'Qu\'avez-vous en tête ?'}</span>
+                                            <span>{isEncounter ? 'Racontez la rencontre...' : isDish ? 'Décrivez ce plat...' : isAccommodation ? 'Décrivez le logement...' : isKharjet ? 'Racontez cette sortie Kharjet...' : 'Qu\'avez-vous en tête ?'}</span>
                                             <div className="flex items-center">
                                                 <Button type="button" variant="ghost" size="icon" className={cn("h-7 w-7 text-blue-900", isAccommodation && "bg-blue-900/20")} onClick={handleToggleAccommodation} disabled={isLoading}>
                                                     <Home className="h-4 w-4" />
@@ -1098,7 +1128,41 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     </div>
 
-                                    {!(isEncounter || isDish || isAccommodation) && (
+                                    {isKharjet && (
+                                        <div className="space-y-2.5 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 animate-in fade-in duration-200">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                                <Compass className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                <span>Sortie Kharjet (Synchronisée avec Kol Youm)</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label className="text-xs text-muted-foreground">Tags & Activités (Optionnel)</Label>
+                                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                                    {["🏖️ Baignade", "🍦 Glace", "🌅 Soirée", "🌲 Nature", "🎯 Activité", "🥾 Randonnée", "☕ Pause Café", "🍹 Rooftop"].map((tag) => (
+                                                        <Badge
+                                                            key={tag}
+                                                            variant={selectedKharjetTags.includes(tag) ? "default" : "outline"}
+                                                            className={cn(
+                                                                "cursor-pointer text-[11px] py-0.5 px-2 transition-colors",
+                                                                selectedKharjetTags.includes(tag)
+                                                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                                                    : "hover:bg-emerald-50 text-emerald-900 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700"
+                                                            )}
+                                                            onClick={() => {
+                                                                setSelectedKharjetTags(prev =>
+                                                                    prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                                                                );
+                                                            }}
+                                                        >
+                                                            {tag}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!(isEncounter || isDish || isAccommodation || isKharjet) && (
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Mémoire Sonore</Label>
                                             <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
@@ -1172,7 +1236,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     )}
                                     {/* Location Section */}
-                                    {isDish ? (
+                                    {(isDish || isKharjet) ? (
                                         /* DISH MODE: Show restaurant autocomplete with zone */
                                         <div className="space-y-2">
                                             <Label htmlFor="location" className="flex items-center gap-2">
@@ -1188,7 +1252,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                             <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
                                                             <Input
                                                                 id="restaurant-search"
-                                                                placeholder="Tapez le nom du restaurant..."
+                                                                placeholder={isKharjet ? "Tapez le nom du spot (ex: Plage, Café, Rooftop...)" : "Tapez le nom du restaurant..."}
                                                                 className="border-0 focus-visible:ring-0 flex-grow"
                                                                 value={location}
                                                                 onChange={(e) => {
@@ -1263,7 +1327,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         className="h-auto p-0 text-xs text-muted-foreground self-start"
                                                         onClick={() => setPlaces([])}
                                                     >
-                                                        Je ne trouve pas mon restaurant (Saisie manuelle)
+                                                        {isKharjet ? "Je ne trouve pas mon spot (Saisie manuelle)" : "Je ne trouve pas mon restaurant (Saisie manuelle)"}
                                                     </Button>
                                                 </div>
                                             ) : (
@@ -1352,7 +1416,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         </div>
                                     )}
 
-                                    {photos.length > 0 && !(isDish || isEncounter || isAccommodation) && (
+                                    {photos.length > 0 && !(isDish || isEncounter || isAccommodation || isKharjet) && (
                                         <>
                                             <Separator />
                                             <DescriptionStylePicker value={descriptionStyle} onChange={setDescriptionStyle} />

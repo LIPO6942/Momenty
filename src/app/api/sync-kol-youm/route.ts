@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
@@ -15,20 +15,16 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { userEmail, placeName, category, cityName, dishName, date, postUrl, momentyImageUrl } = body;
         const cleanEmail = userEmail?.trim().toLowerCase();
+        const finalCategory = category || 'restaurants';
 
-        // Validation
-        if (!cleanEmail || !placeName || !cityName || !dishName) {
-            console.error('[Sync Kol Youm] Validation failed:', { cleanEmail, placeName, cityName, dishName });
+        // Validation (dishName is optional for Kharjet)
+        if (!cleanEmail || !placeName || !cityName || (!dishName && finalCategory !== 'Kharjet')) {
+            console.error('[Sync Kol Youm] Validation failed:', { cleanEmail, placeName, cityName, dishName, finalCategory });
             return NextResponse.json(
                 { success: false, error: 'Missing required fields' },
                 { status: 400 }
             );
         }
-
-        // Determine category: explicitly handle empty/null as 'restaurants'
-        // If the user didn't select a place from the list (manual entry), it defaults to 'restaurants'
-        // unless they manually selected another type (which we don't have UI for in Dish mode yet besides implicit)
-        const finalCategory = category || 'restaurants';
 
         console.log(`[Sync Kol Youm] Processing request for: ${placeName} (${finalCategory})`);
 
@@ -37,7 +33,7 @@ export async function POST(request: Request) {
             placeName,
             category: finalCategory,
             cityName,
-            dishName,
+            dishName: dishName || null,
             date: date || Date.now(),
             source: 'momenty',
             postUrl: postUrl || null,
