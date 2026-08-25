@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, ReactNode, useContext, useRef, useEffect } from "react";
+import { useState, useMemo, ReactNode, useContext, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -134,6 +134,19 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
     // Kol Youm API State
     const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
+    
+    // Compute available zones from loaded places and defaults
+    const availableZones = useMemo(() => {
+        const defaultZones = [
+            "La Marsa", "Gammarth", "Sidi Bou Said", "Carthage",
+            "Les Berges du Lac 1", "Les Berges du Lac 2",
+            "Centre Ville", "El Menzah", "El Manar", "Ennasr",
+            "Ariana", "Ain Zaghouan Nord", "El Aouina", "L'Aouina",
+            "Ghar El Melh", "Hammamet", "Bizerte", "Zaghouan", "Nabeul", "Sousse", "Kélibia", "Haouaria"
+        ];
+        const dbZones = places.map(p => p.zone).filter(Boolean);
+        return Array.from(new Set([...defaultZones, ...dbZones])).sort((a, b) => a.localeCompare(b, 'fr'));
+    }, [places]);
     const [isFetchingPlaces, setIsFetchingPlaces] = useState(false);
     const [openCombobox, setOpenCombobox] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -799,7 +812,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                             body: JSON.stringify({
                                 userEmail: user?.email,
                                 placeName: location,
-                                cityName: city || 'Tunis',
+                                cityName: city || 'La Marsa',
                                 category: 'Kharjet',
                                 dishName: cleanTags.length > 0 ? cleanTags.join(', ') : undefined,
                                 date: new Date().getTime(),
@@ -1217,7 +1230,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                                     
 
-                                    {!(isEncounter || isDish || isAccommodation || isKharjet) && (
+                                    {!(isEncounter || isDish || isAccommodation) && (
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Mémoire Sonore</Label>
                                             <AudioPicker value={audioUrl || ''} onChange={setAudioUrl} />
@@ -1361,20 +1374,23 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         )}
                                                     </div>
 
-                                                    {city && (
-                                                        <div className="flex items-center gap-1 border rounded-md bg-muted/50">
-                                                            <Building className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            <Input
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-1 border rounded-md bg-background">
+                                                            <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                                                            <select
                                                                 id="city"
                                                                 name="city"
-                                                                placeholder="Ville (Zone)"
-                                                                className="border-0 focus-visible:ring-0 flex-grow bg-transparent"
-                                                                value={city}
-                                                                readOnly
-                                                                disabled
-                                                            />
+                                                                className="w-full bg-transparent border-0 h-9 px-2 text-xs focus:outline-hidden cursor-pointer"
+                                                                value={city || ""}
+                                                                onChange={(e) => setCity(e.target.value)}
+                                                            >
+                                                                <option value="">Sélectionnez la zone / ville...</option>
+                                                                {availableZones.map((z) => (
+                                                                    <option key={z} value={z}>{z}</option>
+                                                                ))}
+                                                            </select>
                                                         </div>
-                                                    )}
+                                                    </div>
 
                                                     <Button
                                                         type="button"
