@@ -2,68 +2,6 @@
 
 export const runtime = 'nodejs';
 
-async function callGroq(description: string): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error('GROQ_API_KEY manquant');
-
-  const model = process.env.GROQ_MODEL || 'llama3-8b-8192';
-
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            "Tu es un ecrivain de voyage. Recris le texte en francais pour le rendre plus evocateur, immersif et personnel, en 1 a 3 phrases. Reponds uniquement avec le texte recrit.",
-        },
-        { role: 'user', content: description },
-      ],
-      temperature: 0.7,
-      max_tokens: 300,
-      stream: false,
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`Groq error ${res.status}: ${t}`);
-  }
-
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content ?? '';
-  if (!text) throw new Error('Reponse vide de Groq');
-  return text.trim();
-}
-
-function localFallbackImprove(description: string): string {
-  const trimmed = description.trim();
-  const openers = [
-    "Un moment suspendu dans le temps \u2014",
-    "Je me souviens de chaque detail :",
-    "Grave dans ma memoire pour toujours \u2014",
-    "Une parenthese que le temps n'effacera pas \u2014",
-    "Ces instants ont quelque chose de magique.",
-  ];
-  const closers = [
-    " Un souvenir a jamais precieux.",
-    " Ces instants-la, on ne les oublie pas.",
-    " La vie, dans toute sa beaute.",
-    " Un bonheur simple et parfait.",
-  ];
-
-  const opener = openers[Math.floor(Math.random() * openers.length)];
-  const closer = closers[Math.floor(Math.random() * closers.length)];
-  const body = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-  const ending = body.endsWith('.') || body.endsWith('!') || body.endsWith('?') ? '' : '.';
-  return `${opener} ${body}${ending}${closer}`;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { description } = await req.json();
@@ -72,23 +10,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Description manquante.' }, { status: 400 });
     }
 
-    let improvedDescription: string;
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Cl\u00e9 API Groq non configur\u00e9e. Veuillez d\u00e9finir GROQ_API_KEY." },
+        { status: 503 }
+      );
+    }
 
-    if (process.env.GROQ_API_KEY) {
-      try {
-        improvedDescription = await callGroq(description);
-      } catch (groqErr) {
-        console.error('[improve-description] Groq failed, fallback:', groqErr);
-        improvedDescription = localFallbackImprove(description);
-      }
-    } else {
-      console.warn('[improve-description] No GROQ_API_KEY, using local fallback.');
-      improvedDescription = localFallbackImprove(description);
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              "Tu es un \u00e9crivain de voyage. R\u00e9\u00e9cris le texte fourni en fran\u00e7ais pour le rendre plus \u00e9vocateur, immersif et personnel, en 1 \u00e0 3 phrases maximum. Pr\u00e9serve le sens d'origine. R\u00e9ponds uniquement avec le texte r\u00e9\u00e9crit, sans pr\u00e9fixe ni commentaire.",
+          },
+          { role: 'user', content: description },
+        ],
+        temperature: 0.7,
+        max_tokens: 300,
+        stream: false,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      console.error(`[improve-description] Groq error ${res.status}:`, errText);
+      return NextResponse.json(
+        { error: `Groq error ${res.status}` },
+        { status: 502 }
+      );
+    }
+
+    const data = await res.json();
+    const improvedDescription = (data?.choices?.[0]?.message?.content ?? '').trim();
+
+    if (!improvedDescription) {
+      return NextResponse.json({ error: 'R\u00e9ponse vide du mod\u00e8le.' }, { status: 502 });
     }
 
     return NextResponse.json({ improvedDescription });
   } catch (err: any) {
-    console.error('[improve-description] Error:', err);
+    console.error('[improve-description] Unexpected error:', err);
     return NextResponse.json({ error: err?.message || 'Erreur interne.' }, { status: 500 });
   }
 }
