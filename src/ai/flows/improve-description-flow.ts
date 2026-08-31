@@ -39,7 +39,7 @@ async function callOllama(prompt: string, model = 'llama3.1:8b'): Promise<string
   return (data.response ?? '').toString();
 }
 
-async function callGroq(prompt: string, model = 'llama-3.1-8b-instant'): Promise<string> {
+async function callGroq(prompt: string, model = 'llama3-8b-8192'): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY; if (!apiKey) throw new Error('GROQ_API_KEY manquant.');
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -54,7 +54,7 @@ export async function improveDescription(input: ImproveDescriptionInput): Promis
   ImproveDescriptionInputSchema.parse(input);
   const prompt = renderPrompt(input);
   const useGroq = !!process.env.GROQ_API_KEY;
-  const model = useGroq ? (process.env.GROQ_MODEL || 'llama-3.1-8b-instant') : 'llama3.1:8b';
+  const model = useGroq ? (process.env.GROQ_MODEL || 'llama3-8b-8192') : 'llama3.1:8b';
   const raw = useGroq ? await callGroq(prompt, model) : await callOllama(prompt, model);
   const improvedDescription = raw.trim();
   return { improvedDescription };

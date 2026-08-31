@@ -25,7 +25,7 @@ import { Separator } from "../ui/separator";
 import { PhotoCollage } from "@/components/timeline/photo-collage";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
-import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
+
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -164,9 +164,15 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     }
     setIsImprovingText(true);
     try {
-      const result = await improveTextDescription({ description });
-      if (result.improvedDescription) {
-        setDescription(result.improvedDescription);
+      const res = await fetch('/api/improve-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Erreur serveur');
+      if (data.improvedDescription) {
+        setDescription(data.improvedDescription);
       }
       toast({ title: "Description améliorée par l'IA." });
     } catch (e) {

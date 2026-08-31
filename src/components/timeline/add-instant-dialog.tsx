@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/popover"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
-import { improveDescription as improveTextDescription } from "@/ai/flows/improve-description-flow";
+
 import { Separator } from "../ui/separator";
 import type { Encounter, Dish, Accommodation } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -308,9 +308,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         }
         setIsImprovingText(true);
         try {
-            const result = await improveTextDescription({ description });
-            if (result.improvedDescription) {
-                setDescription(result.improvedDescription);
+            const res = await fetch('/api/improve-description', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Erreur serveur');
+            if (data.improvedDescription) {
+                setDescription(data.improvedDescription);
             }
             toast({ title: "Description améliorée par l'IA." });
         } catch (e) {
