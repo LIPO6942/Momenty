@@ -176,6 +176,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     useEffect(() => {
         // Skip this effect when in dish mode - we manage location manually for restaurant selection
         if (isDish) return;
+        // Skip when in Kharjet mode: city = Kol Youm zone, not the Momenty spot location
+        if (isKharjet) return;
 
         if (activeContext) {
             setCountry(activeContext.location || "");

@@ -2,6 +2,41 @@
 
 export const runtime = 'nodejs';
 
+/** Fetch the first available text-generation model from this Groq account. */
+async function getAvailableModel(apiKey: string): Promise<string> {
+  // Prefer these models in order; fall back to whatever the account exposes.
+  const preferred = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-70b-versatile',
+    'llama-3.1-8b-instant',
+    'llama3-70b-8192',
+    'llama3-8b-8192',
+    'gemma2-9b-it',
+    'gemma-7b-it',
+    'mixtral-8x7b-32768',
+  ];
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const ids: string[] = (data?.data ?? []).map((m: any) => m.id as string);
+      for (const p of preferred) {
+        if (ids.includes(p)) return p;
+      }
+      // Pick first text model (exclude whisper/tts)
+      const text = ids.find((id) => !id.includes('whisper') && !id.includes('tts'));
+      if (text) return text;
+    }
+  } catch {
+    // Silently ignore; fall through to env default
+  }
+
+  return process.env.GROQ_MODEL || 'gemma2-9b-it';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { description } = await req.json();
@@ -13,12 +48,13 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Cl\u00e9 API Groq non configur\u00e9e. Veuillez d\u00e9finir GROQ_API_KEY." },
+        { error: "Cl\u00e9 API Groq non configur\u00e9e." },
         { status: 503 }
       );
     }
 
-    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = await getAvailableModel(apiKey);
+    console.log('[improve-description] Using model:', model);
 
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -44,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => res.statusText);
-      console.error(`[improve-description] Groq error ${res.status}:`, errText);
+      console.error(`[improve-description] Groq error ${res.status} (model: ${model}):`, errText);
       return NextResponse.json(
         { error: `Groq error ${res.status}` },
         { status: 502 }
