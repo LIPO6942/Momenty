@@ -155,7 +155,7 @@ export function getTripDatesInfo(itinerary: Itinerary): TripDatesInfo {
         if (effectiveStart && effectiveEnd) {
             if (effectiveStart.getFullYear() === effectiveEnd.getFullYear()) {
                 if (effectiveStart.getMonth() === effectiveEnd.getMonth()) {
-                    dateLabel = `Du ${safeFormatDate(effectiveStart, 'd')} au ${safeFormatDate(effectiveEnd, 'd MMMM yyyy')}`;
+                    dateLabel = `Du ${safeFormatDate(effectiveStart, 'd')} au ${safeFormatDate(effectiveEnd, 'd MMM yyyy')}`;
                 } else {
                     dateLabel = `Du ${safeFormatDate(effectiveStart, 'd MMM')} au ${safeFormatDate(effectiveEnd, 'd MMM yyyy')}`;
                 }
@@ -184,7 +184,7 @@ export function getTripDatesInfo(itinerary: Itinerary): TripDatesInfo {
                 countdownText = "Voyage mémorable";
             }
         } else if (effectiveStart) {
-            dateLabel = `À partir du ${safeFormatDate(effectiveStart, 'd MMMM yyyy')}`;
+            dateLabel = `À partir du ${safeFormatDate(effectiveStart, 'd MMM yyyy')}`;
         } else if (dayPlans.length > 0 && dayPlans[0]?.date && !dayPlans[0].date.toLowerCase().startsWith('jour')) {
             const first = dayPlans[0].date;
             const last = dayPlans[dayPlans.length - 1]?.date;
@@ -1212,109 +1212,70 @@ function SavedItinerariesContent() {
                         <AccordionItem 
                             key={itinerary.id || idx} 
                             value={itinerary.id || String(idx)} 
-                            className="group relative border border-border/75 bg-card rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden w-full max-w-full"
+                            className="group relative border border-border/75 bg-card rounded-2xl shadow-xs hover:shadow-md data-[state=open]:shadow-md data-[state=open]:border-primary/40 transition-all duration-300 overflow-hidden w-full max-w-full"
                         >
                             {/* Cliché landmark photo watermark softly blended on the right side of the card */}
                             <div 
-                                className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/3 bg-cover bg-center opacity-20 dark:opacity-25 group-hover:opacity-30 transition-all duration-500 pointer-events-none rounded-r-2xl select-none"
+                                className="absolute right-0 top-0 bottom-0 w-1/3 sm:w-1/3 bg-cover bg-center opacity-15 dark:opacity-20 group-hover:opacity-25 group-data-[state=open]:opacity-20 transition-all duration-500 pointer-events-none rounded-r-2xl select-none"
                                 style={{ 
                                     backgroundImage: `url('${backdropPhoto}')`,
-                                    maskImage: 'linear-gradient(to right, transparent 0%, black 80%)',
-                                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 80%)'
+                                    maskImage: 'linear-gradient(to right, transparent 0%, black 90%)',
+                                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 90%)'
                                 }}
                             />
 
-                           <div className="relative z-10 flex items-start sm:items-center justify-between p-3.5 sm:p-5 w-full max-w-full min-w-0 gap-2 sm:gap-3">
-                                <AccordionTrigger className="flex-1 min-w-0 p-0 hover:no-underline text-left">
-                                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0 pr-1">
-                                        {/* High-res Country Flag Badge */}
-                                        <div className="flex-shrink-0 flex items-center justify-center w-10 h-7 sm:w-12 sm:h-8 rounded-lg overflow-hidden bg-muted border border-border shadow-xs mt-0.5 sm:mt-0">
-                                            <img 
-                                                src={flagUrl} 
-                                                alt={countryName}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    (e.target as HTMLElement).style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-
-                                        {/* Text Info */}
-                                        <div className="flex flex-col text-left min-w-0 flex-1 space-y-1">
-                                            {/* Top badges: Country, Status, Landmark */}
-                                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                                                <span className="font-bold text-foreground flex items-center gap-1">
-                                                    {countryName}
-                                                </span>
-                                                
-                                                {datesInfo.status === 'upcoming' && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-500/20 flex items-center gap-1">
-                                                        <span>🚀</span> {datesInfo.countdownText}
-                                                    </span>
-                                                )}
-                                                {datesInfo.status === 'ongoing' && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 font-semibold text-[11px] border border-teal-500/20 flex items-center gap-1 animate-pulse">
-                                                        <span>🌴</span> {datesInfo.countdownText}
-                                                    </span>
-                                                )}
-                                                {datesInfo.status === 'past' && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 font-medium text-[11px] border border-purple-500/20">
-                                                        ✨ Souvenir
-                                                    </span>
-                                                )}
-
-                                                <span className="text-muted-foreground/60 hidden sm:inline">•</span>
-                                                <span className="text-[11px] text-muted-foreground italic hidden sm:inline truncate max-w-[220px]">
-                                                    📸 {landmarkName}
-                                                </span>
-                                            </div>
-
-                                            {/* Itinerary Title (Guaranteed no overflow) */}
-                                            <span className="text-base sm:text-lg font-bold leading-snug text-foreground break-words line-clamp-2" title={itinerary.title}>
-                                                {itinerary.title}
-                                            </span>
-
-                                            {/* Trip Dates (du ... au ...) and Duration */}
-                                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-0.5">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-secondary/80 text-foreground/90 font-medium">
-                                                    <Calendar className="h-3 w-3 text-primary" />
-                                                    <span>{datesInfo.dateLabel}</span>
-                                                </span>
-                                                
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 text-muted-foreground font-normal">
-                                                    <Clock className="h-3 w-3" />
-                                                    <span>{datesInfo.totalDays} jours</span>
-                                                </span>
-
-                                                {itinerary.companionType && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[11px]">
-                                                        <Users className="h-3 w-3" />
-                                                        <span>{itinerary.companionName ? `${itinerary.companionType} (${itinerary.companionName})` : itinerary.companionType}</span>
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Visited Cities Route */}
-                                            {uniqueCities.length > 0 && (
-                                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground/80 overflow-hidden pt-0.5 truncate">
-                                                    <MapPin className="h-3 w-3 text-red-500 shrink-0" />
-                                                    <span className="truncate">
-                                                        {uniqueCities.slice(0, 4).join(' ➔ ')}
-                                                        {uniqueCities.length > 4 && ' …'}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                            {/* Tier 1: Header Top Bar (Animated Flag + Destination + Status + Action Buttons) */}
+                            <div className="relative z-10 flex items-center justify-between px-3.5 pt-3.5 pb-1 sm:px-5 sm:pt-4 sm:pb-2 gap-2">
+                                {/* Left: Flag + Country Name + Status Badge */}
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                    {/* Morphing / Scaling Country Flag with smooth modern zoom on open */}
+                                    <div className="relative shrink-0 flex items-center justify-center w-10 h-7 sm:w-11 sm:h-7.5 rounded-lg overflow-hidden bg-muted border border-border/80 shadow-xs transition-all duration-500 ease-out origin-left group-data-[state=open]:scale-125 group-data-[state=open]:shadow-md group-data-[state=open]:ring-2 group-data-[state=open]:ring-primary/50 group-data-[state=open]:rounded-xl">
+                                        <img 
+                                            src={flagUrl} 
+                                            alt={countryName}
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            onError={(e) => {
+                                                (e.target as HTMLElement).style.display = 'none';
+                                            }}
+                                        />
                                     </div>
-                                </AccordionTrigger>
 
-                                {/* Action Buttons outside trigger */}
-                                <div className="flex items-center shrink-0 gap-0.5 sm:gap-1 pt-1 sm:pt-0">
+                                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                        <span className="font-bold text-sm sm:text-base text-foreground tracking-tight truncate">
+                                            {countryName}
+                                        </span>
+
+                                        {datesInfo.status === 'upcoming' && (
+                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-500/20 inline-flex items-center gap-1 shrink-0">
+                                                <span>🚀</span> {datesInfo.countdownText}
+                                            </span>
+                                        )}
+                                        {datesInfo.status === 'ongoing' && (
+                                            <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 font-semibold text-[11px] border border-teal-500/20 inline-flex items-center gap-1 animate-pulse shrink-0">
+                                                <span>🌴</span> {datesInfo.countdownText}
+                                            </span>
+                                        )}
+                                        {datesInfo.status === 'past' && (
+                                            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 font-medium text-[11px] border border-purple-500/20 shrink-0">
+                                                ✨ Souvenir
+                                            </span>
+                                        )}
+
+                                        {landmarkName && (
+                                            <span className="text-[11px] text-muted-foreground italic hidden md:inline truncate max-w-[180px]">
+                                                • 📸 {landmarkName}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right: Actions */}
+                                <div className="flex items-center shrink-0 gap-0.5 sm:gap-1">
                                     <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                             title="Renommer l'itinéraire"
                                             onClick={(e) => e.stopPropagation()}
                                         >
@@ -1325,10 +1286,11 @@ function SavedItinerariesContent() {
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors"
+                                            className="h-8 w-8 text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors"
                                             title="Voir sur la carte"
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                                            <MapPin className="h-4 w-4" />
                                         </Button>
                                     </ItineraryMapDialog>
                                     <DropdownMenu modal={false}>
@@ -1336,10 +1298,11 @@ function SavedItinerariesContent() {
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
-                                                className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground"
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="Plus d'actions"
+                                                onClick={(e) => e.stopPropagation()}
                                             >
-                                                <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
@@ -1398,6 +1361,54 @@ function SavedItinerariesContent() {
                                 </div>
                             </div>
 
+                            {/* Tier 2: Accordion Trigger (Full Width Title + Horizontal Info Chips + Expand Chevron) */}
+                            <AccordionTrigger className="relative z-10 px-3.5 pt-1 pb-3.5 sm:px-5 sm:pt-1.5 sm:pb-4 hover:no-underline text-left w-full block">
+                                <div className="space-y-2 pr-2">
+                                    {/* Itinerary Title (Full Width, never truncated prematurely) */}
+                                    <h3 className="text-base sm:text-lg font-bold leading-snug text-foreground text-left break-words line-clamp-2 transition-colors group-hover:text-primary" title={itinerary.title}>
+                                        {itinerary.title}
+                                    </h3>
+
+                                    {/* Horizontal Travel Info Chips */}
+                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/80 text-foreground font-medium text-[11px] sm:text-xs shrink-0 border border-border/40 shadow-2xs whitespace-nowrap">
+                                            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                                            <span>{datesInfo.dateLabel}</span>
+                                        </span>
+                                        
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary/60 text-muted-foreground font-normal text-[11px] sm:text-xs shrink-0 border border-border/30 whitespace-nowrap">
+                                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                                            <span>{datesInfo.totalDays} jours</span>
+                                        </span>
+
+                                        {itinerary.companionType && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[11px] sm:text-xs shrink-0 border border-pink-500/20 max-w-[180px] truncate whitespace-nowrap">
+                                                <Users className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">{itinerary.companionName ? `${itinerary.companionType} (${itinerary.companionName})` : itinerary.companionType}</span>
+                                            </span>
+                                        )}
+
+                                        {landmarkName && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted text-muted-foreground text-[11px] shrink-0 border border-border/30 hidden xs:inline-flex">
+                                                <span>📸</span>
+                                                <span className="truncate max-w-[130px]">{landmarkName}</span>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Visited Cities Route Line */}
+                                    {uniqueCities.length > 0 && (
+                                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground/80 pt-0.5 truncate">
+                                            <MapPin className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                            <span className="truncate font-medium">
+                                                {uniqueCities.slice(0, 4).join(' ➔ ')}
+                                                {uniqueCities.length > 4 && ' …'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </AccordionTrigger>
+
                             {/* Accordion Content with High-Res Cliché Panorama Banner & Watermark */}
                             <AccordionContent className="p-3 sm:p-5 pt-0">
                                 <div className="relative rounded-2xl overflow-hidden border border-border/75 bg-card/75 backdrop-blur-md p-4 sm:p-6 my-2 shadow-inner">
@@ -1439,15 +1450,10 @@ function SavedItinerariesContent() {
                                             </div>
                                         </div>
 
-                                        {/* Metadata & Status Bar */}
+                                        {/* Metadata & Status Bar (NO DUPLICATE FLAG) */}
                                         <div className="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-border/50">
-                                            <div className="flex items-center gap-2.5">
-                                                <img 
-                                                    src={flagUrl} 
-                                                    alt={countryName} 
-                                                    className="w-6 h-4 object-cover rounded shadow-xs border border-white/20"
-                                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                                />
+                                            <div className="flex items-center gap-2">
+                                                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
                                                 <p className="text-sm font-semibold text-foreground">
                                                     {countryName}
                                                     <span className="text-xs text-muted-foreground font-normal italic ml-2">
