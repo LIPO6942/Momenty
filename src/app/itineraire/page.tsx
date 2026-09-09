@@ -211,7 +211,7 @@ export default function ItineraryPage() {
 
 
     return (
-        <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+        <div className="container mx-auto max-w-2xl px-3 sm:px-4 py-8 min-h-screen overflow-x-hidden">
             <div className="py-16 space-y-2">
                 <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                     <Route className="h-8 w-8 text-primary"/>
@@ -316,15 +316,15 @@ export default function ItineraryPage() {
                                 </div>
 
                                 {/* Title with Rename pencil button */}
-                                <div className="flex items-center justify-center gap-2 max-w-xl group">
-                                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                                <div className="flex items-center justify-center gap-2 max-w-full w-full px-1 group">
+                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground break-words text-center min-w-0">
                                         {itinerary.title}
                                     </h2>
                                     <EditTitleDialog currentTitle={itinerary.title} onSave={handleRenameItinerary}>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
                                             title="Renommer l'itinéraire"
                                         >
                                             <Edit3 className="h-4 w-4" />

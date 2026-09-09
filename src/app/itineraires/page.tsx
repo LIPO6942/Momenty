@@ -698,7 +698,7 @@ function SavedItinerariesContent() {
     );
 
     return (
-        <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
+        <div className="container mx-auto max-w-2xl px-3 sm:px-4 py-8 min-h-screen overflow-x-hidden">
             <div className="py-16 space-y-2">
                 <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                     <Bookmark className="h-8 w-8 text-primary"/>
@@ -729,11 +729,11 @@ function SavedItinerariesContent() {
                     {itineraries.map((itinerary, idx) => {
                         const assets = getDestinationAssets(itinerary.location || itinerary.itinerary?.[0]?.city || '');
                         return (
-                        <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
-                           <div className="flex items-center p-4">
-                                <AccordionTrigger className="flex-grow p-0 hover:no-underline text-left">
-                                    <div className="flex items-center gap-3.5 flex-grow min-w-0 pr-2">
-                                        <div className="flex-shrink-0 flex items-center justify-center w-10 h-7 rounded-md overflow-hidden bg-muted border border-border shadow-xs">
+                        <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80 overflow-hidden w-full max-w-full">
+                           <div className="flex items-center justify-between p-3 sm:p-4 w-full max-w-full min-w-0">
+                                <AccordionTrigger className="flex-1 min-w-0 p-0 hover:no-underline text-left mr-1 sm:mr-2">
+                                    <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-1">
+                                        <div className="flex-shrink-0 flex items-center justify-center w-8 h-6 sm:w-10 sm:h-7 rounded-md overflow-hidden bg-muted border border-border shadow-xs">
                                             <img 
                                                 src={itinerary.countryFlagUrl || assets.flagUrl} 
                                                 alt={assets.countryName}
@@ -743,9 +743,11 @@ function SavedItinerariesContent() {
                                                 }}
                                             />
                                         </div>
-                                        <div className="flex flex-col text-left min-w-0">
-                                            <span className="text-lg font-bold truncate leading-snug text-foreground">{itinerary.title}</span>
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-normal">
+                                        <div className="flex flex-col text-left min-w-0 flex-1 overflow-hidden">
+                                            <span className="text-sm sm:text-base md:text-lg font-bold leading-snug text-foreground break-words line-clamp-2" title={itinerary.title}>
+                                                {itinerary.title}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-normal truncate mt-0.5">
                                                 <span className="font-medium text-foreground/85">{assets.countryName}</span>
                                                 <span>•</span>
                                                 <span>{itinerary.itinerary?.length || 0} jours</span>
@@ -753,82 +755,94 @@ function SavedItinerariesContent() {
                                         </div>
                                     </div>
                                 </AccordionTrigger>
-                                 <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-10 w-10 ml-1 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                        title="Renommer l'itinéraire"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <Edit3 className="h-4 w-4" />
-                                    </Button>
-                                 </EditTitleDialog>
-                                 <ItineraryMapDialog itinerary={itinerary}>
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 ml-1 text-red-500 hover:bg-red-500/10 hover:text-red-600">
-                                        <MapPin className="h-5 w-5" />
-                                    </Button>
-                                 </ItineraryMapDialog>
-                                 <DropdownMenu modal={false}>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 ml-1">
-                                            <MoreVertical className="h-5 w-5" />
+                                <div className="flex items-center shrink-0 gap-0.5 sm:gap-1">
+                                    <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                            title="Renommer l'itinéraire"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Edit3 className="h-4 w-4" />
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                <span>Renommer</span>
-                                            </DropdownMenuItem>
-                                        </EditTitleDialog>
-                                        <DropdownMenuSeparator />
-                                        {itinerary.shareEnabled && itinerary.shareToken ? (
-                                            <>
-                                                <DropdownMenuItem onSelect={async (e) => { e.preventDefault(); try { await navigator.clipboard.writeText(`${window.location.origin}/share/itinerary/${itinerary.shareToken}`); toast({ title: 'Lien copié' }); } catch {} }}>
+                                    </EditTitleDialog>
+                                    <ItineraryMapDialog itinerary={itinerary}>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                                            title="Voir sur la carte"
+                                        >
+                                            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        </Button>
+                                    </ItineraryMapDialog>
+                                    <DropdownMenu modal={false}>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground"
+                                                title="Plus d'actions"
+                                            >
+                                                <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    <span>Renommer</span>
+                                                </DropdownMenuItem>
+                                            </EditTitleDialog>
+                                            <DropdownMenuSeparator />
+                                            {itinerary.shareEnabled && itinerary.shareToken ? (
+                                                <>
+                                                    <DropdownMenuItem onSelect={async (e) => { e.preventDefault(); try { await navigator.clipboard.writeText(`${window.location.origin}/share/itinerary/${itinerary.shareToken}`); toast({ title: 'Lien copié' }); } catch {} }}>
+                                                        <Sparkles className="mr-2 h-4 w-4" />
+                                                        <span>Copier le lien</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleUnshare(itinerary); }} className="text-destructive focus:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <span>{shareLoading[itinerary.id!] ? 'Révocation…' : 'Révoquer le partage'}</span>
+                                                    </DropdownMenuItem>
+                                                </>
+                                            ) : (
+                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleShare(itinerary); }}>
                                                     <Sparkles className="mr-2 h-4 w-4" />
-                                                    <span>Copier le lien</span>
+                                                    <span>{shareLoading[itinerary.id!] ? 'Génération…' : 'Partager (générer le lien)'}</span>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleUnshare(itinerary); }} className="text-destructive focus:text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    <span>{shareLoading[itinerary.id!] ? 'Révocation…' : 'Révoquer le partage'}</span>
-                                                </DropdownMenuItem>
-                                            </>
-                                        ) : (
-                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleShare(itinerary); }}>
-                                                <Sparkles className="mr-2 h-4 w-4" />
-                                                <span>{shareLoading[itinerary.id!] ? 'Génération…' : 'Partager (générer le lien)'}</span>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onSelect={() => { 
+                                                // Delay dialog rendering to let Radix Dropdown clean up its body lock first
+                                                setTimeout(() => setItineraryToSend(itinerary), 150); 
+                                            }}>
+                                                <Send className="mr-2 h-4 w-4" />
+                                                <span>Envoyer à un utilisateur</span>
                                             </DropdownMenuItem>
-                                        )}
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={() => { 
-                                            // Delay dialog rendering to let Radix Dropdown clean up its body lock first
-                                            setTimeout(() => setItineraryToSend(itinerary), 150); 
-                                        }}>
-                                            <Send className="mr-2 h-4 w-4" />
-                                            <span>Envoyer à un utilisateur</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                     <Trash2 className="mr-2 h-4 w-4" />
-                                                     <span>Supprimer l'itinéraire</span>
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
-                                                    <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>Confirmer</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                            <DropdownMenuSeparator />
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                         <Trash2 className="mr-2 h-4 w-4" />
+                                                         <span>Supprimer l'itinéraire</span>
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Supprimer cet itinéraire ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteItinerary(itinerary.id!)}>Confirmer</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
                             <AccordionContent className="p-4 pt-0">
                                 <div className="relative rounded-2xl overflow-hidden border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-6 my-2 shadow-inner">
