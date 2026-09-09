@@ -35,6 +35,10 @@ export interface DayPlan {
 export interface ItineraryOutput {
     title: string;
     itinerary: DayPlan[];
+    countryCode?: string;
+    countryFlagUrl?: string;
+    coverImageUrl?: string;
+    landmarkName?: string;
 }
 
 

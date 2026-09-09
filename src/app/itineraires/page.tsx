@@ -8,7 +8,8 @@ import { getItineraries, deleteItinerary, saveItinerary } from "@/lib/firestore"
 import type { Itinerary, DayPlan, Activity } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship, Send, Search } from "lucide-react";
+import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship, Send, Search, Edit3 } from "lucide-react";
+import { getDestinationAssets } from "@/lib/destination-assets";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -383,7 +384,7 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
                      </div>
                      <div className="mt-4 space-y-3">
                         {dayPlan.activities.map((activity, actIndex) => (
-                            <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-all duration-200 bg-card/85 backdrop-blur-sm border-border/70 hover:bg-card/95">
                                  <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                                     <EditActivityDialog
                                         activity={activity}
@@ -725,26 +726,58 @@ function SavedItinerariesContent() {
                 </Card>
             ) : (
                 <Accordion type="single" collapsible className="w-full space-y-4">
-                    {itineraries.map((itinerary, idx) => (
+                    {itineraries.map((itinerary, idx) => {
+                        const assets = getDestinationAssets(itinerary.location || itinerary.itinerary?.[0]?.city || '');
+                        return (
                         <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80">
                            <div className="flex items-center p-4">
                                 <AccordionTrigger className="flex-grow p-0 hover:no-underline text-left">
-                                    <span className="text-xl font-semibold">{itinerary.title}</span>
+                                    <div className="flex items-center gap-3.5 flex-grow min-w-0 pr-2">
+                                        <div className="flex-shrink-0 flex items-center justify-center w-10 h-7 rounded-md overflow-hidden bg-muted border border-border shadow-xs">
+                                            <img 
+                                                src={itinerary.countryFlagUrl || assets.flagUrl} 
+                                                alt={assets.countryName}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLElement).style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col text-left min-w-0">
+                                            <span className="text-lg font-bold truncate leading-snug text-foreground">{itinerary.title}</span>
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-normal">
+                                                <span className="font-medium text-foreground/85">{assets.countryName}</span>
+                                                <span>•</span>
+                                                <span>{itinerary.itinerary?.length || 0} jours</span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </AccordionTrigger>
+                                 <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-10 w-10 ml-1 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                        title="Renommer l'itinéraire"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                 </EditTitleDialog>
                                  <ItineraryMapDialog itinerary={itinerary}>
-                                    <Button variant="ghost" size="icon" className="h-12 w-12 ml-2 text-red-500 hover:bg-red-500/10 hover:text-red-600">
-                                        <MapPin className="h-6 w-6" />
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 ml-1 text-red-500 hover:bg-red-500/10 hover:text-red-600">
+                                        <MapPin className="h-5 w-5" />
                                     </Button>
                                  </ItineraryMapDialog>
                                  <DropdownMenu modal={false}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 ml-2">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 ml-1">
                                             <MoreVertical className="h-5 w-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 <span>Renommer</span>
                                             </DropdownMenuItem>
@@ -798,20 +831,48 @@ function SavedItinerariesContent() {
                                 </DropdownMenu>
                             </div>
                             <AccordionContent className="p-4 pt-0">
-                               <div className="flex justify-between items-center mb-6">
-                                     <p className="text-sm text-muted-foreground">
-                                        Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
-                                    </p>
-                                    {isUpdating[itinerary.id!] && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                               </div>
-                                <ItineraryDisplay 
-                                    itinerary={itinerary} 
-                                    onUpdateItinerary={handleUpdateItinerary}
-                                    onDeleteActivity={handleDeleteActivity}
-                                />
+                                <div className="relative rounded-2xl overflow-hidden border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-6 my-2 shadow-inner">
+                                    {/* Transparent cliché photo backdrop */}
+                                    <div 
+                                        className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-10 dark:opacity-15 select-none"
+                                        style={{ backgroundImage: `url('${itinerary.coverImageUrl || assets.clichePhoto}')` }}
+                                    />
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/75 to-background/95 pointer-events-none" />
+
+                                    <div className="relative z-10">
+                                        <div className="flex flex-wrap justify-between items-center gap-2 mb-6 pb-3 border-b border-border/40">
+                                            <div className="flex items-center gap-2.5">
+                                                <img 
+                                                    src={itinerary.countryFlagUrl || assets.flagUrl} 
+                                                    alt={assets.countryName} 
+                                                    className="w-5 h-3.5 object-cover rounded shadow-xs border border-white/20"
+                                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                                />
+                                                <p className="text-sm font-semibold text-foreground">
+                                                    {assets.countryName}
+                                                    <span className="text-xs text-muted-foreground font-normal italic ml-2">
+                                                        • {itinerary.landmarkName || assets.landmarkName}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
+                                                </p>
+                                                {isUpdating[itinerary.id!] && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                            </div>
+                                        </div>
+                                        <ItineraryDisplay 
+                                            itinerary={itinerary} 
+                                            onUpdateItinerary={handleUpdateItinerary}
+                                            onDeleteActivity={handleDeleteActivity}
+                                        />
+                                    </div>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
-                    ))}
+                    );
+                    })}
                 </Accordion>
             )}
             <SendToUserDialog

@@ -11,6 +11,8 @@ import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+import { getDestinationAssets } from "@/lib/destination-assets";
+
 export default function SharedItineraryPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
@@ -85,36 +87,59 @@ export default function SharedItineraryPage() {
   if (loading) return <div className="container mx-auto max-w-2xl px-4 py-8">Chargement…</div>;
   if (!itinerary) return <div className="container mx-auto max-w-2xl px-4 py-8">Itinéraire introuvable ou lien révoqué.</div>;
 
+  const assets = getDestinationAssets(itinerary.location || itinerary.itinerary?.[0]?.city || '');
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>{itinerary.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="relative rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card/75 backdrop-blur-md p-6 sm:p-8">
+        {/* Transparent cliché photo backdrop */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-15 dark:opacity-20 scale-105 transition-all select-none"
+          style={{ backgroundImage: `url('${itinerary.coverImageUrl || assets.clichePhoto}')` }}
+        />
+        <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/75 to-background/95 pointer-events-none" />
+
+        <div className="relative z-10 space-y-6">
+          <div className="text-center space-y-3 pb-6 border-b border-border/40">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/80 backdrop-blur-md border border-border shadow-xs text-xs">
+              <img 
+                src={itinerary.countryFlagUrl || assets.flagUrl} 
+                alt={assets.countryName} 
+                className="w-5 h-3.5 object-cover rounded shadow-xs" 
+              />
+              <span className="font-semibold">{assets.countryName}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground italic">{itinerary.landmarkName || assets.landmarkName}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{itinerary.title}</h1>
+          </div>
+
           <div className="space-y-4">
             {itinerary.itinerary.map((d) => (
-              <div key={d.day} className="border rounded-md p-3">
-                <div className="font-semibold">Jour {d.day}: {d.city} — {d.theme}</div>
-                <div className="text-sm text-muted-foreground">{d.date}</div>
-                <ul className="list-disc pl-5 mt-2 text-sm">
+              <div key={d.day} className="rounded-xl border border-border/70 bg-card/85 backdrop-blur-sm p-4 shadow-xs">
+                <div className="font-semibold text-foreground">Jour {d.day}: {d.city} — {d.theme}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{d.date}</div>
+                <ul className="list-disc pl-5 mt-3 text-sm space-y-1 text-foreground/90">
                   {d.activities.map((a, i) => (
                     <li key={i}>{a.time} — {a.description}</li>
                   ))}
                 </ul>
                 {d.travelInfo && (
-                  <div className="text-xs italic mt-2">{d.travelInfo.mode}: {d.travelInfo.description}</div>
+                  <div className="text-xs italic mt-2.5 text-muted-foreground bg-secondary/50 p-2 rounded">
+                    {d.travelInfo.mode}: {d.travelInfo.description}
+                  </div>
                 )}
               </div>
             ))}
           </div>
-          <div className="mt-6">
-            <Button onClick={handleSaveToAccount} disabled={!user || saving}>
+
+          <div className="pt-2 text-center">
+            <Button onClick={handleSaveToAccount} disabled={!user || saving} className="w-full sm:w-auto">
               {saving ? "Enregistrement…" : user ? "Enregistrer dans mon compte" : "Connectez-vous pour enregistrer"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

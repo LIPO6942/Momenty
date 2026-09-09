@@ -1,4 +1,5 @@
 import type { Activity, DayPlan, ItineraryOutput, TravelInfo } from '@/lib/types';
+import { getDestinationAssets } from '@/lib/destination-assets';
 
 export const VALID_ACTIVITY_TYPES: Activity['type'][] = [
   'Musée',
@@ -248,8 +249,14 @@ export function sanitizeItinerary(raw: any, defaultCountry: string): ItineraryOu
     };
   });
 
+  const assets = getDestinationAssets(defaultCountry);
+
   return {
     title,
     itinerary,
+    countryCode: assets.countryCode,
+    countryFlagUrl: assets.flagUrl,
+    coverImageUrl: assets.clichePhoto,
+    landmarkName: assets.landmarkName,
   };
 }
