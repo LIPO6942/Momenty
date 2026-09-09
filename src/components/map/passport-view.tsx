@@ -34,7 +34,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { parseISO, getHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn, getCountry, getCity, getFlagEmoji } from "@/lib/utils";
+import { cn, getCountry, getCity, getFlagEmoji, isRecognizedCountry } from "@/lib/utils";
 import { Instant, Dish, Encounter, Accommodation } from "@/lib/types";
 
 interface PassportViewProps {
@@ -162,8 +162,14 @@ export const PassportView = ({
       stats[c.id] = { visited: 0, total: c.totalCountries, icon: c.icon };
     });
     const visitedCountries = new Set<string>();
-    instants.forEach(i => { const c = getCountry(i.location); if (c) visitedCountries.add(c); });
-    manualLocations.forEach(m => { const c = getCountry(m.name); if (c) visitedCountries.add(c); });
+    instants.forEach(i => {
+      const c = getCountry(i.location);
+      if (c && isRecognizedCountry(c)) visitedCountries.add(c);
+    });
+    manualLocations.forEach(m => {
+      const c = getCountry(m.name);
+      if (c && isRecognizedCountry(c)) visitedCountries.add(c);
+    });
     visitedCountries.forEach(country => {
       // Try exact, then try with trimmed whitespace
       const normalizedCountry = country.trim();
@@ -177,8 +183,14 @@ export const PassportView = ({
 
   const countryVisas = useMemo(() => {
     const countries = new Set<string>();
-    instants.forEach(i => { const c = getCountry(i.location); if (c) countries.add(c); });
-    manualLocations.forEach(m => { const c = getCountry(m.name); if (c) countries.add(c); });
+    instants.forEach(i => {
+      const c = getCountry(i.location);
+      if (c && isRecognizedCountry(c)) countries.add(c);
+    });
+    manualLocations.forEach(m => {
+      const c = getCountry(m.name);
+      if (c && isRecognizedCountry(c)) countries.add(c);
+    });
     
     return Array.from(countries).sort().map(name => {
       let firstVisit = new Date().toISOString();
@@ -213,6 +225,9 @@ export const PassportView = ({
       const cityName = getCity(i.location);
       const countryName = getCountry(i.location);
       if (!cityName) return;
+      // Ne pas ajouter comme ville si la valeur correspond en fait au pays souverain
+      if (isRecognizedCountry(cityName) && cityName.toLowerCase() === countryName.toLowerCase()) return;
+
       const key = `${cityName}, ${countryName}`.toLowerCase();
       const normalizedC = countryName.trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
@@ -228,6 +243,8 @@ export const PassportView = ({
       const cityName = getCity(m.name);
       const countryName = getCountry(m.name);
       if (!cityName) return;
+      if (isRecognizedCountry(cityName) && cityName.toLowerCase() === countryName.toLowerCase()) return;
+
       const key = `${cityName}, ${countryName}`.toLowerCase();
       const mDate = m.startDate || new Date().toISOString();
       const normalizedC = countryName.trim();

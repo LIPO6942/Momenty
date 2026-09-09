@@ -768,7 +768,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
                 const effectiveZone = isCreatingNewZone ? (newCustomZone.trim() || 'La Marsa') : (city.trim() || 'La Marsa');
                 const effectivePlace = location.trim() || (isKharjet ? "Sortie Kharjet" : "");
-                const instantLocation = (effectivePlace && effectiveZone) ? `${effectivePlace}, ${effectiveZone}` : (effectivePlace || effectiveZone || "Lieu inconnu");
+                const instantLocation = isKharjet
+                    ? (effectivePlace ? `${effectivePlace}, ${effectiveZone}, Tunisie` : `${effectiveZone}, Tunisie`)
+                    : ((effectivePlace && effectiveZone) ? `${effectivePlace}, ${effectiveZone}` : (effectivePlace || effectiveZone || "Lieu inconnu"));
                 const instantTitle = isKharjet
                     ? (effectivePlace ? `${effectivePlace} (${effectiveZone})` : `Sortie Kharjet (${effectiveZone})`)
                     : (finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''));

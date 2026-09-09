@@ -208,6 +208,10 @@ const CURATED_DESTINATION_PHOTOS: Record<string, { photo: string; landmark: stri
   FI: {
     photo: "https://images.unsplash.com/photo-1508873696983-2df5293cb32f?auto=format&fit=crop&w=1600&q=80",
     landmark: "Laponie & Forêts Finlandaises"
+  },
+  MU: {
+    photo: "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Le Morne Brabant & Lagons de l'Île Maurice"
   }
 };
 
@@ -319,7 +323,15 @@ const COMMON_COUNTRY_ALIASES: Record<string, string> = {
   singapore: "SG",
   "nouvelle-zélande": "NZ",
   "nouvelle-zelande": "NZ",
-  "new zealand": "NZ"
+  "new zealand": "NZ",
+  maurice: "MU",
+  "ile maurice": "MU",
+  "île maurice": "MU",
+  "iles maurice": "MU",
+  "îles maurice": "MU",
+  "iles maurices": "MU",
+  "îles maurices": "MU",
+  mauritius: "MU"
 };
 
 /**

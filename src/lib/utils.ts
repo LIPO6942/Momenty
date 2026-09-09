@@ -8,83 +8,258 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const getCountry = (loc: string) => {
+// Mapping des villes et zones connues vers leur pays souverain
+export const CITY_TO_COUNTRY: Record<string, string> = {
+  // Tunisie (zones Kharjet & villes)
+  "gammarth": "Tunisie",
+  "hammamet": "Tunisie",
+  "la marsa": "Tunisie",
+  "marsa": "Tunisie",
+  "sidi bou said": "Tunisie",
+  "sidi bou saïd": "Tunisie",
+  "carthage": "Tunisie",
+  "tunis": "Tunisie",
+  "sousse": "Tunisie",
+  "djerba": "Tunisie",
+  "bizerte": "Tunisie",
+  "nabeul": "Tunisie",
+  "monastir": "Tunisie",
+  "sfax": "Tunisie",
+  "tozeur": "Tunisie",
+  "kélibia": "Tunisie",
+  "kelibia": "Tunisie",
+  "haouaria": "Tunisie",
+  "el haouaria": "Tunisie",
+  "ghar el melh": "Tunisie",
+  "zaghouan": "Tunisie",
+  "el menzah": "Tunisie",
+  "el manar": "Tunisie",
+  "ennasr": "Tunisie",
+  "ariana": "Tunisie",
+  "ain zaghouan": "Tunisie",
+  "ain zaghouan nord": "Tunisie",
+  "el aouina": "Tunisie",
+  "l'aouina": "Tunisie",
+  "les berges du lac": "Tunisie",
+  "les berges du lac 1": "Tunisie",
+  "les berges du lac 2": "Tunisie",
+  "lac 1": "Tunisie",
+  "lac 2": "Tunisie",
+  "centre ville": "Tunisie",
+  "korbous": "Tunisie",
+  "tabarka": "Tunisie",
+  "mahdia": "Tunisie",
+  "kairouan": "Tunisie",
+  "zarzis": "Tunisie",
+  "douz": "Tunisie",
+  "matmata": "Tunisie",
+  "tataouine": "Tunisie",
+  "gabes": "Tunisie",
+  "gabès": "Tunisie",
+  "béja": "Tunisie",
+  "beja": "Tunisie",
+  "jendouba": "Tunisie",
+  "le kef": "Tunisie",
+  "kef": "Tunisie",
+  "siliana": "Tunisie",
+  "gafsa": "Tunisie",
+  "sidi bouzid": "Tunisie",
+  "kasserine": "Tunisie",
+  "médenine": "Tunisie",
+  "medenine": "Tunisie",
+  "kebili": "Tunisie",
+  "kébili": "Tunisie",
+  "manouba": "Tunisie",
+  "ben arous": "Tunisie",
+  "radès": "Tunisie",
+  "rades": "Tunisie",
+  "ezzahra": "Tunisie",
+  "hammam lif": "Tunisie",
+  "mourouj": "Tunisie",
+  "el mourouj": "Tunisie",
+
+  // Grandes villes mondiales courantes
+  "paris": "France",
+  "lyon": "France",
+  "marseille": "France",
+  "nice": "France",
+  "bordeaux": "France",
+  "strasbourg": "France",
+  "toulouse": "France",
+  "rome": "Italie",
+  "milan": "Italie",
+  "venise": "Italie",
+  "venice": "Italie",
+  "florence": "Italie",
+  "naples": "Italie",
+  "barcelone": "Espagne",
+  "barcelona": "Espagne",
+  "madrid": "Espagne",
+  "séville": "Espagne",
+  "londres": "Royaume-Uni",
+  "london": "Royaume-Uni",
+  "new york": "États-Unis",
+  "los angeles": "États-Unis",
+  "miami": "États-Unis",
+  "dubai": "Émirats arabes unis",
+  "dubaï": "Émirats arabes unis",
+  "istanbul": "Turquie",
+  "tokyo": "Japon",
+  "casablanca": "Maroc",
+  "marrakech": "Maroc",
+  "rabat": "Maroc",
+  "alger": "Algérie",
+  "oran": "Algérie",
+  "le caire": "Égypte",
+  "cairo": "Égypte",
+  "grand baie": "Maurice",
+  "port louis": "Maurice",
+  "flic en flac": "Maurice",
+};
+
+export const COUNTRY_ALIASES: Record<string, string> = {
+  "russia": "Russie",
+  "russie": "Russie",
+  "russian federation": "Russie",
+  "malaysia": "Malaisie",
+  "malaisie": "Malaisie",
+  "tunisia": "Tunisie",
+  "tunisie": "Tunisie",
+  "turkey": "Turquie",
+  "turquie": "Turquie",
+  "turkiye": "Turquie",
+  "indonesia": "Indonésie",
+  "indonesie": "Indonésie",
+  "indonésie": "Indonésie",
+  "thailand": "Thaïlande",
+  "thaïlande": "Thaïlande",
+  "thailande": "Thaïlande",
+  "philippines": "Philippines",
+  "singapore": "Singapour",
+  "singapour": "Singapour",
+  "maroc": "Maroc",
+  "morocco": "Maroc",
+  "algeria": "Algérie",
+  "algérie": "Algérie",
+  "egypt": "Égypte",
+  "égypte": "Égypte",
+  "spain": "Espagne",
+  "espagne": "Espagne",
+  "italy": "Italie",
+  "italie": "Italie",
+  "germany": "Allemagne",
+  "allemagne": "Allemagne",
+  "england": "Royaume-Uni",
+  "uk": "Royaume-Uni",
+  "united kingdom": "Royaume-Uni",
+  "royaume-uni": "Royaume-Uni",
+  "usa": "États-Unis",
+  "united states": "États-Unis",
+  "états-unis": "États-Unis",
+  "suisse": "Suisse",
+  "switzerland": "Suisse",
+  "belgium": "Belgique",
+  "belgique": "Belgique",
+  "china": "Chine",
+  "chine": "Chine",
+  "japan": "Japon",
+  "japon": "Japon",
+  "south korea": "Corée du Sud",
+  "corée du sud": "Corée du Sud",
+  "brazil": "Brésil",
+  "brésil": "Brésil",
+  "mexico": "Mexique",
+  "mexique": "Mexique",
+  "canada": "Canada",
+  "netherlands": "Pays-Bas",
+  "pays-bas": "Pays-Bas",
+  "nederland": "Pays-Bas",
+  "holland": "Pays-Bas",
+  "hollande": "Pays-Bas",
+  "croatie": "Croatie",
+  "croatia": "Croatie",
+  "maurice": "Maurice",
+  "ile maurice": "Maurice",
+  "île maurice": "Maurice",
+  "iles maurice": "Maurice",
+  "îles maurice": "Maurice",
+  "iles maurices": "Maurice",
+  "îles maurices": "Maurice",
+  "mauritius": "Maurice",
+};
+
+/**
+ * Vérifie si un nom correspond bien à un pays reconnu (et non à une ville ou un lieu arbitraire).
+ */
+export const isRecognizedCountry = (countryName: string): boolean => {
+  if (!countryName) return false;
+  const lower = countryName.trim().toLowerCase();
+  if (COUNTRY_ALIASES[lower]) return true;
+  return countries.some(
+    c => c.label.toLowerCase() === lower || 
+         c.enLabel.toLowerCase() === lower || 
+         c.value.toLowerCase() === lower
+  );
+};
+
+export const getCountry = (loc: string): string => {
   if (!loc) return "";
-  const parts = loc.split(",");
-  const rawCountry = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
-  if (!rawCountry) return "";
+  const parts = loc.split(",").map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return "";
 
-  const lower = rawCountry.toLowerCase();
-  const aliases: Record<string, string> = {
-    "russia": "Russie",
-    "russie": "Russie",
-    "russian federation": "Russie",
-    "malaysia": "Malaisie",
-    "malaisie": "Malaisie",
-    "tunisia": "Tunisie",
-    "tunisie": "Tunisie",
-    "turkey": "Turquie",
-    "turquie": "Turquie",
-    "turkiye": "Turquie",
-    "indonesia": "Indonésie",
-    "indonesie": "Indonésie",
-    "indonésie": "Indonésie",
-    "thailand": "Thaïlande",
-    "thaïlande": "Thaïlande",
-    "thailande": "Thaïlande",
-    "philippines": "Philippines",
-    "singapore": "Singapour",
-    "singapour": "Singapour",
-    "maroc": "Maroc",
-    "morocco": "Maroc",
-    "algeria": "Algérie",
-    "algérie": "Algérie",
-    "egypt": "Égypte",
-    "égypte": "Égypte",
-    "spain": "Espagne",
-    "espagne": "Espagne",
-    "italy": "Italie",
-    "italie": "Italie",
-    "germany": "Allemagne",
-    "allemagne": "Allemagne",
-    "england": "Royaume-Uni",
-    "uk": "Royaume-Uni",
-    "united kingdom": "Royaume-Uni",
-    "royaume-uni": "Royaume-Uni",
-    "usa": "États-Unis",
-    "united states": "États-Unis",
-    "états-unis": "États-Unis",
-    "suisse": "Suisse",
-    "switzerland": "Suisse",
-    "belgium": "Belgique",
-    "belgique": "Belgique",
-    "china": "Chine",
-    "chine": "Chine",
-    "japan": "Japon",
-    "japon": "Japon",
-    "south korea": "Corée du Sud",
-    "corée du sud": "Corée du Sud",
-    "brazil": "Brésil",
-    "brésil": "Brésil",
-    "mexico": "Mexique",
-    "mexique": "Mexique",
-    "canada": "Canada",
-    "netherlands": "Pays-Bas",
-    "pays-bas": "Pays-Bas",
-    "nederland": "Pays-Bas",
-    "holland": "Pays-Bas",
-    "hollande": "Pays-Bas"
-  };
+  // 1. Vérifier si l'un des composants de droite à gauche correspond à un pays ou une ville connue
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const partLower = parts[i].toLowerCase();
+    if (COUNTRY_ALIASES[partLower]) return COUNTRY_ALIASES[partLower];
+    if (CITY_TO_COUNTRY[partLower]) return CITY_TO_COUNTRY[partLower];
+    const countryMatch = countries.find(
+      c => c.label.toLowerCase() === partLower || 
+           c.enLabel.toLowerCase() === partLower || 
+           c.value.toLowerCase() === partLower
+    );
+    if (countryMatch) return countryMatch.label;
+  }
 
-  if (aliases[lower]) return aliases[lower];
+  // 2. Vérifier la chaîne complète
+  const fullLower = loc.trim().toLowerCase();
+  if (COUNTRY_ALIASES[fullLower]) return COUNTRY_ALIASES[fullLower];
+  if (CITY_TO_COUNTRY[fullLower]) return CITY_TO_COUNTRY[fullLower];
 
+  // 3. Si plusieurs parties, prendre la dernière partie
+  const rawCountry = parts[parts.length - 1];
   return rawCountry.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-export const getCity = (loc: string) => {
+export const getCity = (loc: string): string => {
   if (!loc) return "";
-  const parts = loc.split(",");
-  const rawCity = parts[0].trim();
+  const parts = loc.split(",").map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return "";
+
+  // Si le format est "Sortie Kharjet, Gammarth", la ville est "Gammarth"
+  if (parts[0].toLowerCase().startsWith("sortie kharjet") && parts.length > 1) {
+    const raw = parts[1];
+    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  // Si format "Spot, Ville, Pays" (3+ composants), la ville est l'avant-dernière
+  if (parts.length >= 3) {
+    const candidate = parts[parts.length - 2];
+    return candidate.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  // Si format "Ville, Pays" où la 2e partie est un pays reconnu
+  if (parts.length === 2 && isRecognizedCountry(parts[1])) {
+    const raw = parts[0];
+    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  // Si format "Spot, Ville" où la 2e partie est une ville connue
+  if (parts.length === 2 && CITY_TO_COUNTRY[parts[1].toLowerCase()]) {
+    const raw = parts[1];
+    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  const rawCity = parts[0];
   const lower = rawCity.toLowerCase();
   
   const aliases: Record<string, string> = {
@@ -229,8 +404,15 @@ export function getFlagEmoji(countryName: string): string {
     "suisse": "CH",
     "japon": "JP",
     "chine": "CN",
-    "brésil": "BR",
-    "pays-bas": "NL"
+    "pays-bas": "NL",
+    "croatie": "HR",
+    "croatia": "HR",
+    "maurice": "MU",
+    "mauritius": "MU",
+    "îles maurice": "MU",
+    "iles maurice": "MU",
+    "îles maurices": "MU",
+    "iles maurices": "MU"
   };
   
   const code = commonFallbacks[normalized];

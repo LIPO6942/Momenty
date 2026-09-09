@@ -24,21 +24,20 @@ let cachedModel: { model: string; timestamp: number } | null = null;
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 const PREFERRED_MODELS = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-70b-versatile',
   'llama-3.1-8b-instant',
-  'gemma2-9b-it',
-  'gemma-7b-it',
+  'llama-3.3-70b-specdec',
   'llama3-70b-8192',
   'llama3-8b-8192',
+  'gemma2-9b-it',
   'mixtral-8x7b-32768',
+  'llama-3.1-70b-versatile',
 ];
 
 /**
  * Récupère le premier modèle textuel actif et performant disponible sur le compte Groq.
  */
 export async function getAvailableGroqModel(apiKey: string): Promise<string> {
-  if (process.env.GROQ_MODEL) {
+  if (process.env.GROQ_MODEL && process.env.GROQ_MODEL !== 'llama-3.3-70b-versatile') {
     return process.env.GROQ_MODEL;
   }
 
@@ -63,9 +62,9 @@ export async function getAvailableGroqModel(apiKey: string): Promise<string> {
         }
       }
 
-      // Sélectionner le premier modèle textuel (exclure whisper/vision spécifique/audio/tts)
+      // Sélectionner le premier modèle textuel (exclure whisper/vision spécifique/audio/tts/guard)
       const textModel = ids.find(
-        (id) => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision')
+        (id) => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision') && !id.includes('guard') && id !== 'llama-3.3-70b-versatile'
       );
       if (textModel) {
         cachedModel = { model: textModel, timestamp: now };
@@ -76,7 +75,7 @@ export async function getAvailableGroqModel(apiKey: string): Promise<string> {
     console.warn('[groq] Impossible de lister les modèles Groq, utilisation du modèle par défaut:', e);
   }
 
-  return 'llama-3.3-70b-versatile';
+  return 'llama-3.1-8b-instant';
 }
 
 /**
@@ -89,15 +88,16 @@ export async function callGroqChat(options: GroqChatOptions): Promise<string> {
   }
 
   const primaryModel = await getAvailableGroqModel(apiKey);
-  const modelsToTry = [primaryModel];
-
-  // Si le premier modèle échoue avec une erreur 404/400 (décommissionné ou non supporté), prévoir un fallback
-  if (primaryModel !== 'llama-3.1-8b-instant') {
-    modelsToTry.push('llama-3.1-8b-instant');
-  }
-  if (primaryModel !== 'llama-3.3-70b-versatile') {
-    modelsToTry.push('llama-3.3-70b-versatile');
-  }
+  const candidateModels = [
+    primaryModel,
+    'llama-3.1-8b-instant',
+    'llama-3.3-70b-specdec',
+    'llama3-70b-8192',
+    'llama3-8b-8192',
+    'gemma2-9b-it',
+    'mixtral-8x7b-32768',
+  ];
+  const modelsToTry = Array.from(new Set(candidateModels.filter(m => m && m !== 'llama-3.3-70b-versatile')));
 
   let lastError: Error | null = null;
 
@@ -111,7 +111,8 @@ export async function callGroqChat(options: GroqChatOptions): Promise<string> {
       };
 
       if (options.max_tokens) {
-        body.max_tokens = options.max_tokens;
+        // Groq déprécie max_tokens au profit de max_completion_tokens (évite l'erreur 400)
+        body.max_completion_tokens = options.max_tokens;
       }
 
       if (options.jsonMode) {
@@ -129,10 +130,11 @@ export async function callGroqChat(options: GroqChatOptions): Promise<string> {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText);
-        console.error(`[groq] Erreur ${res.status} avec le modèle ${model}:`, errText);
+        console.warn(`[groq] Échec ${res.status} avec le modèle ${model}:`, errText);
 
-        // Si le modèle n'existe pas ou erreur spécifique au modèle, tenter le modèle suivant
-        if (res.status === 404 || res.status === 400) {
+        // Si le modèle n'existe pas ou erreur de paramètre, invalider le cache et tenter le modèle suivant
+        if (res.status === 404 || res.status === 400 || res.status === 422) {
+          cachedModel = null;
           lastError = new Error(`Groq ${res.status} (${model}): ${errText}`);
           continue;
         }
@@ -142,8 +144,12 @@ export async function callGroqChat(options: GroqChatOptions): Promise<string> {
 
       const data = await res.json();
       const content = data?.choices?.[0]?.message?.content ?? '';
+      
+      // Mémoriser le modèle fonctionnel dans le cache
+      cachedModel = { model, timestamp: Date.now() };
       return content.trim();
     } catch (err: any) {
+      cachedModel = null;
       lastError = err;
       if (modelsToTry.indexOf(model) === modelsToTry.length - 1) {
         throw err;
