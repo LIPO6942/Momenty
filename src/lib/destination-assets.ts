@@ -531,12 +531,9 @@ const COMMON_COUNTRY_ALIASES: Record<string, string> = {
  * Normalise un nom de lieu ou pays pour obtenir le code pays ISO et les actifs associés.
  */
 export function getDestinationAssets(countryOrLocation: string): DestinationAssets {
-  const cleanCountry = countryOrLocation ? getCountry(countryOrLocation).trim() : "";
-  const normalized = cleanCountry.toLowerCase().replace(/['\s-]/g, "");
-
   const emptyResult: DestinationAssets = {
     countryCode: "UN",
-    countryName: cleanCountry || "Destination",
+    countryName: (typeof countryOrLocation === "string" ? countryOrLocation.trim() : "") || "Destination",
     flagUrl: "https://flagcdn.com/w160/un.png",
     flagSvgUrl: "https://flagcdn.com/un.svg",
     flagEmoji: "🌍",
@@ -548,79 +545,90 @@ export function getDestinationAssets(countryOrLocation: string): DestinationAsse
     return emptyResult;
   }
 
-  // 0. Si le paramètre est déjà un code ISO 2 lettres
-  const trimmed = countryOrLocation.trim();
-  if (trimmed.length === 2 && /^[a-zA-Z]{2}$/.test(trimmed)) {
-    code = trimmed.toUpperCase();
-  }
+  try {
+    const cleanCountry = countryOrLocation ? getCountry(countryOrLocation).trim() : "";
+    const normalized = cleanCountry.toLowerCase().replace(/['\s-]/g, "");
+    emptyResult.countryName = cleanCountry || countryOrLocation.trim() || "Destination";
 
-  // 1. Recherche par alias rapide
-  if (!code) {
-    code = COMMON_COUNTRY_ALIASES[cleanCountry.toLowerCase()] || COMMON_COUNTRY_ALIASES[normalized];
-  }
+    let code = "";
 
-  // 2. Recherche par correspondance de sous-chaîne dans le texte complet
-  if (!code) {
-    const rawLower = countryOrLocation.toLowerCase();
-    for (const [alias, iso] of Object.entries(COMMON_COUNTRY_ALIASES)) {
-      if (alias.length >= 3 && rawLower.includes(alias)) {
-        code = iso;
-        break;
+    // 0. Si le paramètre est déjà un code ISO 2 lettres
+    const trimmed = countryOrLocation.trim();
+    if (trimmed.length === 2 && /^[a-zA-Z]{2}$/.test(trimmed)) {
+      code = trimmed.toUpperCase();
+    }
+
+    // 1. Recherche par alias rapide
+    if (!code) {
+      code = COMMON_COUNTRY_ALIASES[cleanCountry.toLowerCase()] || COMMON_COUNTRY_ALIASES[normalized];
+    }
+
+    // 2. Recherche par correspondance de sous-chaîne dans le texte complet
+    if (!code) {
+      const rawLower = countryOrLocation.toLowerCase();
+      for (const [alias, iso] of Object.entries(COMMON_COUNTRY_ALIASES)) {
+        if (alias.length >= 3 && rawLower.includes(alias)) {
+          code = iso;
+          break;
+        }
       }
     }
-  }
 
-  // 3. Recherche dans le référentiel complet countries
-  if (!code) {
-    const rawLower = cleanCountry.toLowerCase();
-    const match = countries.find(
-      (c) =>
-        c.label.toLowerCase() === rawLower ||
-        c.enLabel.toLowerCase() === rawLower ||
-        c.value.toLowerCase() === rawLower ||
-        c.label.toLowerCase().replace(/['\s-]/g, "") === normalized ||
-        c.enLabel.toLowerCase().replace(/['\s-]/g, "") === normalized
-    );
-    if (match) {
-      code = match.value;
+    // 3. Recherche dans le référentiel complet countries
+    if (!code) {
+      const rawLower = cleanCountry.toLowerCase();
+      const match = countries.find(
+        (c) =>
+          c.label.toLowerCase() === rawLower ||
+          c.enLabel.toLowerCase() === rawLower ||
+          c.value.toLowerCase() === rawLower ||
+          c.label.toLowerCase().replace(/['\s-]/g, "") === normalized ||
+          c.enLabel.toLowerCase().replace(/['\s-]/g, "") === normalized
+      );
+      if (match) {
+        code = match.value;
+      }
     }
-  }
 
-  // 4. Si toujours pas trouvé, vérifie si les 2 premières lettres de cleanCountry forment un code ISO
-  if (!code) {
-    if (cleanCountry.length === 2 && /^[a-zA-Z]{2}$/.test(cleanCountry)) {
-      code = cleanCountry.toUpperCase();
-    } else {
-      return emptyResult;
+    // 4. Si toujours pas trouvé, vérifie si les 2 premières lettres de cleanCountry forment un code ISO
+    if (!code) {
+      if (cleanCountry.length === 2 && /^[a-zA-Z]{2}$/.test(cleanCountry)) {
+        code = cleanCountry.toUpperCase();
+      } else {
+        return emptyResult;
+      }
     }
+
+    const upperCode = code.toUpperCase();
+    const lowerCode = code.toLowerCase();
+
+    // Nom lisible du pays
+    const countryObj = countries.find((c) => c.value === upperCode);
+    const countryName = countryObj ? countryObj.label : cleanCountry || upperCode;
+
+    // Drapeau officiel FlagCDN
+    const flagUrl = `https://flagcdn.com/w160/${lowerCode}.png`;
+    const flagSvgUrl = `https://flagcdn.com/${lowerCode}.svg`;
+    const flagEmoji = getFlagEmojiByCode(upperCode) || "🌍";
+
+    // Photo cliché incontournable
+    const curated = CURATED_DESTINATION_PHOTOS[upperCode];
+    const clichePhoto = curated ? curated.photo : DEFAULT_FALLBACK_PHOTO;
+    const landmarkName = curated ? curated.landmark : `${countryName} - Découverte`;
+
+    return {
+      countryCode: upperCode,
+      countryName,
+      flagUrl,
+      flagSvgUrl,
+      flagEmoji,
+      clichePhoto,
+      landmarkName
+    };
+  } catch (err) {
+    console.error("getDestinationAssets error:", err);
+    return emptyResult;
   }
-
-  const upperCode = code.toUpperCase();
-  const lowerCode = code.toLowerCase();
-
-  // Nom lisible du pays
-  const countryObj = countries.find((c) => c.value === upperCode);
-  const countryName = countryObj ? countryObj.label : cleanCountry || upperCode;
-
-  // Drapeau officiel FlagCDN
-  const flagUrl = `https://flagcdn.com/w160/${lowerCode}.png`;
-  const flagSvgUrl = `https://flagcdn.com/${lowerCode}.svg`;
-  const flagEmoji = getFlagEmojiByCode(upperCode) || "🌍";
-
-  // Photo cliché incontournable
-  const curated = CURATED_DESTINATION_PHOTOS[upperCode];
-  const clichePhoto = curated ? curated.photo : DEFAULT_FALLBACK_PHOTO;
-  const landmarkName = curated ? curated.landmark : `${countryName} - Découverte`;
-
-  return {
-    countryCode: upperCode,
-    countryName,
-    flagUrl,
-    flagSvgUrl,
-    flagEmoji,
-    clichePhoto,
-    landmarkName
-  };
 }
 
 /**

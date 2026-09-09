@@ -80,104 +80,141 @@ export interface TripDatesInfo {
     countdownText: string;
 }
 
+export function parseAnyDate(val: any): Date | null {
+    if (!val) return null;
+    try {
+        if (val instanceof Date && !isNaN(val.getTime())) return val;
+        if (typeof val === 'object') {
+            if (typeof val.toDate === 'function') {
+                const d = val.toDate();
+                if (!isNaN(d.getTime())) return d;
+            }
+            if (typeof val.seconds === 'number') {
+                const d = new Date(val.seconds * 1000);
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+        if (typeof val === 'number') {
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) return d;
+        }
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (!trimmed) return null;
+            try {
+                const d = parseISO(trimmed);
+                if (!isNaN(d.getTime())) return d;
+            } catch {}
+            const d2 = new Date(trimmed);
+            if (!isNaN(d2.getTime())) return d2;
+        }
+    } catch {}
+    return null;
+}
+
+export function safeFormatDate(date: Date | null, fmt: string): string {
+    if (!date || isNaN(date.getTime())) return '';
+    try {
+        return format(date, fmt, { locale: fr });
+    } catch {
+        return '';
+    }
+}
+
 export function getTripDatesInfo(itinerary: Itinerary): TripDatesInfo {
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
+    try {
+        const startDate = parseAnyDate(itinerary?.startDate);
+        const endDate = parseAnyDate(itinerary?.endDate);
 
-    if (itinerary.startDate) {
-        try {
-            const d = parseISO(itinerary.startDate);
-            if (!isNaN(d.getTime())) startDate = d;
-        } catch {}
-    }
+        const dayPlans = Array.isArray(itinerary?.itinerary) ? itinerary.itinerary : [];
+        let effectiveStart = startDate;
+        let effectiveEnd = endDate;
 
-    if (itinerary.endDate) {
-        try {
-            const d = parseISO(itinerary.endDate);
-            if (!isNaN(d.getTime())) endDate = d;
-        } catch {}
-    }
-
-    // Fallback: check if dayPlan.date in itinerary.itinerary contains parseable dates
-    if (!startDate && itinerary.itinerary && itinerary.itinerary.length > 0) {
-        const first = itinerary.itinerary[0]?.date;
-        if (first && !first.toLowerCase().startsWith('jour')) {
-            try {
-                const d = new Date(first);
-                if (!isNaN(d.getTime())) startDate = d;
-            } catch {}
-        }
-    }
-
-    if (!endDate && itinerary.itinerary && itinerary.itinerary.length > 0) {
-        const last = itinerary.itinerary[itinerary.itinerary.length - 1]?.date;
-        if (last && !last.toLowerCase().startsWith('jour')) {
-            try {
-                const d = new Date(last);
-                if (!isNaN(d.getTime())) endDate = d;
-            } catch {}
-        }
-    }
-
-    const totalDays = itinerary.itinerary?.length || 0;
-    const now = new Date();
-    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let status: 'upcoming' | 'ongoing' | 'past' | 'flexible' = 'flexible';
-    let countdownText = '';
-    let dateLabel = '';
-
-    if (startDate && endDate) {
-        if (startDate.getFullYear() === endDate.getFullYear()) {
-            if (startDate.getMonth() === endDate.getMonth()) {
-                dateLabel = `Du ${format(startDate, 'd', { locale: fr })} au ${format(endDate, 'd MMMM yyyy', { locale: fr })}`;
-            } else {
-                dateLabel = `Du ${format(startDate, 'd MMM', { locale: fr })} au ${format(endDate, 'd MMM yyyy', { locale: fr })}`;
+        if (!effectiveStart && dayPlans.length > 0) {
+            const first = dayPlans[0]?.date;
+            if (first && !first.toLowerCase().startsWith('jour')) {
+                effectiveStart = parseAnyDate(first);
             }
-        } else {
-            dateLabel = `Du ${format(startDate, 'd MMM yyyy', { locale: fr })} au ${format(endDate, 'd MMM yyyy', { locale: fr })}`;
         }
 
-        const startMid = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-        const endMid = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-        if (todayMid < startMid) {
-            status = 'upcoming';
-            const diffDays = Math.round((startMid.getTime() - todayMid.getTime()) / (1000 * 60 * 60 * 24));
-            if (diffDays === 0) {
-                countdownText = "Départ aujourd'hui !";
-            } else if (diffDays === 1) {
-                countdownText = "Départ demain !";
-            } else {
-                countdownText = `Départ dans ${diffDays} j`;
+        if (!effectiveEnd && dayPlans.length > 0) {
+            const last = dayPlans[dayPlans.length - 1]?.date;
+            if (last && !last.toLowerCase().startsWith('jour')) {
+                effectiveEnd = parseAnyDate(last);
             }
-        } else if (todayMid >= startMid && todayMid <= endMid) {
-            status = 'ongoing';
-            countdownText = "Voyage en cours";
-        } else {
-            status = 'past';
-            countdownText = "Voyage mémorable";
         }
-    } else if (startDate) {
-        dateLabel = `À partir du ${format(startDate, 'd MMMM yyyy', { locale: fr })}`;
-    } else if (itinerary.itinerary?.[0]?.date && !itinerary.itinerary[0].date.toLowerCase().startsWith('jour')) {
-        const first = itinerary.itinerary[0].date;
-        const last = itinerary.itinerary[itinerary.itinerary.length - 1]?.date;
-        dateLabel = first === last ? first : `Du ${first} au ${last}`;
-    } else if (itinerary.createdAt) {
-        dateLabel = `Créé le ${format(parseISO(itinerary.createdAt), 'd MMM yyyy', { locale: fr })}`;
-    } else {
-        dateLabel = "Dates à définir";
-    }
 
-    return {
-        startDate,
-        endDate,
-        dateLabel,
-        totalDays: totalDays || (startDate && endDate ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) : 1),
-        status,
-        countdownText
-    };
+        const totalDays = dayPlans.length || (effectiveStart && effectiveEnd ? Math.max(1, Math.round((effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1) : 1);
+        const now = new Date();
+        const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        let status: 'upcoming' | 'ongoing' | 'past' | 'flexible' = 'flexible';
+        let countdownText = '';
+        let dateLabel = '';
+
+        if (effectiveStart && effectiveEnd) {
+            if (effectiveStart.getFullYear() === effectiveEnd.getFullYear()) {
+                if (effectiveStart.getMonth() === effectiveEnd.getMonth()) {
+                    dateLabel = `Du ${safeFormatDate(effectiveStart, 'd')} au ${safeFormatDate(effectiveEnd, 'd MMMM yyyy')}`;
+                } else {
+                    dateLabel = `Du ${safeFormatDate(effectiveStart, 'd MMM')} au ${safeFormatDate(effectiveEnd, 'd MMM yyyy')}`;
+                }
+            } else {
+                dateLabel = `Du ${safeFormatDate(effectiveStart, 'd MMM yyyy')} au ${safeFormatDate(effectiveEnd, 'd MMM yyyy')}`;
+            }
+
+            const startMid = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), effectiveStart.getDate());
+            const endMid = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth(), effectiveEnd.getDate());
+
+            if (todayMid < startMid) {
+                status = 'upcoming';
+                const diffDays = Math.round((startMid.getTime() - todayMid.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays === 0) {
+                    countdownText = "Départ aujourd'hui !";
+                } else if (diffDays === 1) {
+                    countdownText = "Départ demain !";
+                } else {
+                    countdownText = `Départ dans ${diffDays} j`;
+                }
+            } else if (todayMid >= startMid && todayMid <= endMid) {
+                status = 'ongoing';
+                countdownText = "Voyage en cours";
+            } else {
+                status = 'past';
+                countdownText = "Voyage mémorable";
+            }
+        } else if (effectiveStart) {
+            dateLabel = `À partir du ${safeFormatDate(effectiveStart, 'd MMMM yyyy')}`;
+        } else if (dayPlans.length > 0 && dayPlans[0]?.date && !dayPlans[0].date.toLowerCase().startsWith('jour')) {
+            const first = dayPlans[0].date;
+            const last = dayPlans[dayPlans.length - 1]?.date;
+            dateLabel = first === last ? first : `Du ${first} au ${last}`;
+        } else if (itinerary?.createdAt) {
+            const created = parseAnyDate(itinerary.createdAt);
+            dateLabel = created ? `Créé le ${safeFormatDate(created, 'd MMM yyyy')}` : "Dates flexibles";
+        } else {
+            dateLabel = "Dates flexibles";
+        }
+
+        return {
+            startDate: effectiveStart,
+            endDate: effectiveEnd,
+            dateLabel: dateLabel || "Dates flexibles",
+            totalDays: totalDays || 1,
+            status,
+            countdownText
+        };
+    } catch (err) {
+        console.error("getTripDatesInfo error:", err);
+        return {
+            startDate: null,
+            endDate: null,
+            dateLabel: "Dates flexibles",
+            totalDays: 1,
+            status: 'flexible',
+            countdownText: ''
+        };
+    }
 }
 
 
@@ -214,14 +251,15 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
             setIsLoading(true);
 
             // Get unique cities from itinerary
-            const cityNames = itinerary.itinerary.map(day => day.city);
+            const dayPlans = Array.isArray(itinerary?.itinerary) ? itinerary.itinerary : [];
+            const cityNames = dayPlans.map(day => day?.city).filter(Boolean);
             const uniqueCities = [...new Set(cityNames)];
 
             const coordsCache: { [key: string]: [number, number] } = JSON.parse(localStorage.getItem('coordsCache') || '{}');
             const newCoords: LocationWithCoords[] = [];
 
             for (const city of uniqueCities) {
-                const locationKey = city.toLowerCase();
+                const locationKey = (city || '').toLowerCase();
                 if (coordsCache[locationKey]) {
                     newCoords.push({ name: city, coords: coordsCache[locationKey], count: 0, isManual: false });
                 } else {
@@ -242,12 +280,12 @@ const ItineraryMapDialog = ({ itinerary, children }: { itinerary: Itinerary; chi
 
             // Create travel segments for the polyline
             const segments: {start: [number, number], end: [number, number], mode: TravelInfo['mode']}[] = [];
-            for (let i = 0; i < itinerary.itinerary.length; i++) {
-                const day = itinerary.itinerary[i];
-                if (day.travelInfo && i + 1 < itinerary.itinerary.length) {
-                    const nextDay = itinerary.itinerary[i + 1];
+            for (let i = 0; i < dayPlans.length; i++) {
+                const day = dayPlans[i];
+                if (day?.travelInfo && i + 1 < dayPlans.length) {
+                    const nextDay = dayPlans[i + 1];
                     const startCity = newCoords.find(c => c.name === day.city);
-                    const endCity = newCoords.find(c => c.name === nextDay.city);
+                    const endCity = newCoords.find(c => c.name === nextDay?.city);
                     if (startCity && endCity && startCity.name !== endCity.name) {
                         segments.push({
                             start: startCity.coords,
@@ -431,29 +469,30 @@ const SendToUserDialog = ({ itinerary, onSent, open, onOpenChange }: { itinerary
     );
 };
 
-
 const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { itinerary: Itinerary, onUpdateItinerary: (updatedItinerary: Itinerary) => void, onDeleteActivity: (itineraryId: string, dayIndex: number, activityIndex: number) => void }) => {
+    const days = useMemo(() => Array.isArray(itinerary?.itinerary) ? itinerary.itinerary : [], [itinerary]);
 
     const cityColors = useMemo(() => {
-        const uniqueCities = [...new Set(itinerary.itinerary.map(day => day.city))];
+        const uniqueCities = [...new Set(days.map(day => day?.city).filter(Boolean))];
         const colors = ["bg-[hsl(var(--chart-1))]", "bg-[hsl(var(--chart-2))]", "bg-[hsl(var(--chart-3))]", "bg-[hsl(var(--chart-4))]", "bg-[hsl(var(--chart-5))]"];
         const cityColorMap: { [city: string]: string } = {};
         
         uniqueCities.forEach((city, index) => {
-            cityColorMap[city] = colors[index % colors.length];
+            if (city) cityColorMap[city] = colors[index % colors.length];
         });
         return cityColorMap;
-    }, [itinerary]);
+    }, [days]);
 
     const handleUpdateDayPlan = (dayIndex: number, updatedDayPlan: DayPlan) => {
-        const newDayPlans = [...itinerary.itinerary];
+        const newDayPlans = [...days];
         newDayPlans[dayIndex] = updatedDayPlan;
         onUpdateItinerary({ ...itinerary, itinerary: newDayPlans });
     };
 
     const handleUpdateActivity = (dayIndex: number, activityIndex: number | null, activity: Activity) => {
-        const newDayPlans = [...itinerary.itinerary];
-        const newActivities = [...newDayPlans[dayIndex].activities];
+        const newDayPlans = [...days];
+        const currentActivities = Array.isArray(newDayPlans[dayIndex]?.activities) ? newDayPlans[dayIndex].activities : [];
+        const newActivities = [...currentActivities];
 
         if (activityIndex !== null) {
             newActivities[activityIndex] = activity;
@@ -465,91 +504,104 @@ const ItineraryDisplay = ({ itinerary, onUpdateItinerary, onDeleteActivity }: { 
         onUpdateItinerary({ ...itinerary, itinerary: newDayPlans });
     };
 
+    if (days.length === 0) {
+        return (
+            <div className="py-6 text-center text-xs text-muted-foreground italic">
+                Aucune étape définie pour cet itinéraire.
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8">
-            {itinerary.itinerary.map((dayPlan, dayIndex) => (
-                <div key={dayPlan.day} className="relative pl-8 sm:pl-10">
-                     <div className="absolute left-0 h-full w-0.5 bg-border/70"></div>
-                     <div className={cn(
-                        "absolute -left-2.5 sm:-left-3.5 top-1 font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
-                        cityColors[dayPlan.city] || 'bg-primary'
-                     )}>
-                        {dayPlan.day}
-                    </div>
-                     <div className="flex justify-between items-start group">
-                        <div className="space-y-1">
-                            <h4 className="font-semibold text-lg">{dayPlan.theme}</h4>
-                            <p className="text-sm text-muted-foreground">{dayPlan.date} - {dayPlan.city}</p>
+            {days.map((dayPlan, dayIndex) => {
+                const activities = Array.isArray(dayPlan?.activities) ? dayPlan.activities : [];
+                return (
+                    <div key={dayPlan?.day || dayIndex} className="relative pl-8 sm:pl-10">
+                        <div className="absolute left-0 h-full w-0.5 bg-border/70"></div>
+                        <div className={cn(
+                            "absolute -left-2.5 sm:-left-3.5 top-1 font-bold text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm",
+                            dayPlan?.city && cityColors[dayPlan.city] ? cityColors[dayPlan.city] : 'bg-primary'
+                        )}>
+                            {dayPlan?.day || (dayIndex + 1)}
                         </div>
-                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <EditDayPlanDialog 
-                                dayPlan={dayPlan} 
-                                onSave={(updatedDayPlan) => handleUpdateDayPlan(dayIndex, updatedDayPlan)}
-                            >
-                                <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                            </EditDayPlanDialog>
-                             <EditActivityDialog
-                                onSave={(newActivity) => handleUpdateActivity(dayIndex, null, newActivity)}
-                                trigger={
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <PlusCircle className="h-4 w-4" />
-                                    </Button>
-                                }
+                        <div className="flex justify-between items-start group">
+                            <div className="space-y-1">
+                                <h4 className="font-semibold text-lg">{dayPlan?.theme || `Jour ${dayIndex + 1}`}</h4>
+                                <p className="text-sm text-muted-foreground">{dayPlan?.date || ''} {dayPlan?.city ? `- ${dayPlan.city}` : ''}</p>
+                            </div>
+                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <EditDayPlanDialog 
+                                    dayPlan={dayPlan} 
+                                    onSave={(updatedDayPlan) => handleUpdateDayPlan(dayIndex, updatedDayPlan)}
+                                >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                </EditDayPlanDialog>
+                                <EditActivityDialog
+                                    onSave={(newActivity) => handleUpdateActivity(dayIndex, null, newActivity)}
+                                    trigger={
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <PlusCircle className="h-4 w-4" />
+                                        </Button>
+                                    }
                                 />
+                            </div>
                         </div>
-                     </div>
-                     <div className="mt-4 space-y-3">
-                        {dayPlan.activities.map((activity, actIndex) => (
-                            <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-all duration-200 bg-card/85 backdrop-blur-sm border-border/70 hover:bg-card/95">
-                                 <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                                    <EditActivityDialog
-                                        activity={activity}
-                                        onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
-                                        trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
-                                    />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                                <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Supprimer cette activité ?</AlertDialogTitle>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
-                                                    Supprimer
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
+                        <div className="mt-4 space-y-3">
+                            {activities.map((activity, actIndex) => (
+                                <Card key={actIndex} className="group relative shadow-sm hover:shadow-md transition-all duration-200 bg-card/85 backdrop-blur-sm border-border/70 hover:bg-card/95">
+                                    <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                        <EditActivityDialog
+                                            activity={activity}
+                                            onSave={(updatedActivity) => handleUpdateActivity(dayIndex, actIndex, updatedActivity)}
+                                            trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-3 w-3"/></Button>}
+                                        />
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Supprimer cette activité ?</AlertDialogTitle>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteActivity(itinerary.id!, dayIndex, actIndex)}>
+                                                        Supprimer
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
 
-                                <CardContent className="p-3 flex items-start gap-3">
-                                    <div className="flex-shrink-0 pt-0.5">{activityIcons[activity.type] || <Sparkles className="h-5 w-5" />}</div>
-                                    <div className="flex-grow space-y-1">
-                                        <p className="font-medium text-sm leading-snug">{activity.description}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
-                                    </div>
-                                </CardContent>
-                             </Card>
-                        ))}
-                         {dayPlan.travelInfo && (
-                            <Card className="shadow-sm bg-secondary border-dashed">
-                                <CardContent className="p-3 flex items-center gap-3 text-muted-foreground">
-                                    <div className="flex-shrink-0">
-                                        {transportIcons[dayPlan.travelInfo.mode] || <Route className="h-5 w-5"/>}
-                                    </div>
-                                    <p className="text-sm italic">{dayPlan.travelInfo.description}</p>
-                                </CardContent>
-                            </Card>
-                        )}
-                     </div>
-                </div>
-            ))}
-       </div>
+                                    <CardContent className="p-3 flex items-start gap-3">
+                                        <div className="flex-shrink-0 pt-0.5">{activityIcons[activity?.type] || <Sparkles className="h-5 w-5" />}</div>
+                                        <div className="flex-grow space-y-1">
+                                            <p className="font-medium text-sm leading-snug">{activity?.description}</p>
+                                            {activity?.time && (
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Clock className="h-3 w-3" /> {activity.time}</p>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                            {dayPlan?.travelInfo && (
+                                <Card className="shadow-sm bg-secondary border-dashed">
+                                    <CardContent className="p-3 flex items-center gap-3 text-muted-foreground">
+                                        <div className="flex-shrink-0">
+                                            {transportIcons[dayPlan.travelInfo.mode] || <Route className="h-5 w-5"/>}
+                                        </div>
+                                        <p className="text-sm italic">{dayPlan.travelInfo.description}</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
     );
 };
 
@@ -665,8 +717,10 @@ function SavedItinerariesContent() {
         const itineraryToUpdate = itineraries.find(it => it.id === itineraryId);
         if (!itineraryToUpdate) return;
         
-        const newDayPlans = [...itineraryToUpdate.itinerary];
-        const newActivities = newDayPlans[dayIndex].activities.filter((_, i) => i !== activityIndex);
+        const newDayPlans = Array.isArray(itineraryToUpdate.itinerary) ? [...itineraryToUpdate.itinerary] : [];
+        if (!newDayPlans[dayIndex]) return;
+        const currentActivities = Array.isArray(newDayPlans[dayIndex]?.activities) ? newDayPlans[dayIndex].activities : [];
+        const newActivities = currentActivities.filter((_, i) => i !== activityIndex);
         newDayPlans[dayIndex] = { ...newDayPlans[dayIndex], activities: newActivities };
         
         handleUpdateItinerary({ ...itineraryToUpdate, itinerary: newDayPlans });
@@ -815,8 +869,9 @@ function SavedItinerariesContent() {
             );
             if (assets.countryName) countriesSet.add(assets.countryName);
 
-            (it.itinerary || []).forEach(d => {
-                if (d.city) citiesSet.add(d.city);
+            const days = Array.isArray(it.itinerary) ? it.itinerary : [];
+            days.forEach(d => {
+                if (d && d.city) citiesSet.add(d.city);
             });
 
             const dates = getTripDatesInfo(it);
@@ -870,7 +925,8 @@ function SavedItinerariesContent() {
                 const titleMatch = (it.title || '').toLowerCase().includes(q);
                 const countryMatch = assets.countryName.toLowerCase().includes(q);
                 const landmarkMatch = (it.landmarkName || assets.landmarkName || '').toLowerCase().includes(q);
-                const cityMatch = (it.itinerary || []).some(d => (d.city || '').toLowerCase().includes(q));
+                const days = Array.isArray(it.itinerary) ? it.itinerary : [];
+                const cityMatch = days.some(d => d && (d.city || '').toLowerCase().includes(q));
                 return titleMatch || countryMatch || landmarkMatch || cityMatch;
             }
 
@@ -926,12 +982,12 @@ function SavedItinerariesContent() {
                                 <Share2 className="h-4 w-4 text-primary" />
                                 <span>Importer</span>
                             </Button>
-                            <Link href="/itineraire">
-                                <Button size="sm" className="gap-2 shadow-sm font-medium text-xs sm:text-sm">
+                            <Button asChild size="sm" className="gap-2 shadow-sm font-medium text-xs sm:text-sm">
+                                <Link href="/itineraire">
                                     <Plus className="h-4 w-4" />
                                     <span>Nouveau voyage</span>
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </div>
                     </div>
 
@@ -1110,12 +1166,12 @@ function SavedItinerariesContent() {
                             </p>
                         </div>
                         <div className="pt-2">
-                            <Link href="/itineraire">
-                                <Button className="gap-2 shadow-sm">
+                            <Button asChild className="gap-2 shadow-sm">
+                                <Link href="/itineraire">
                                     <Sparkles className="h-4 w-4" />
                                     <span>Créer mon premier itinéraire</span>
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -1149,7 +1205,8 @@ function SavedItinerariesContent() {
                         const flagUrl = itinerary.countryFlagUrl || assets.flagUrl;
                         const datesInfo = getTripDatesInfo(itinerary);
 
-                        const uniqueCities = Array.from(new Set(itinerary.itinerary?.map(d => d.city).filter(Boolean) || []));
+                        const days = Array.isArray(itinerary?.itinerary) ? itinerary.itinerary : [];
+                        const uniqueCities = Array.from(new Set(days.map(d => d?.city).filter(Boolean)));
 
                         return (
                         <AccordionItem 
@@ -1399,9 +1456,15 @@ function SavedItinerariesContent() {
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <p className="text-xs text-muted-foreground">
-                                                    Créé le {format(parseISO(itinerary.createdAt), "d MMM yyyy", { locale: fr })}
-                                                </p>
+                                                {(() => {
+                                                    const createdDate = parseAnyDate(itinerary.createdAt);
+                                                    const formatted = safeFormatDate(createdDate, "d MMM yyyy");
+                                                    return formatted ? (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Créé le {formatted}
+                                                        </p>
+                                                    ) : null;
+                                                })()}
                                                 {isUpdating[itinerary.id!] && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                                             </div>
                                         </div>
