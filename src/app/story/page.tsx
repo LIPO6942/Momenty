@@ -6,7 +6,6 @@ import { useState, useContext, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { TimelineContext } from '@/context/timeline-context';
-import { generateStory } from '@/ai/flows/generate-story-flow';
 import type { GeneratedStory, Instant } from '@/lib/types';
 import { Loader2, Wand2, Edit, Trash2, BookText, Check, ChevronsUpDown, X } from 'lucide-react';
 import Image from 'next/image';
@@ -193,31 +192,52 @@ export default function StoryPage() {
                 ? `Du ${format(parseISO(dayDataArray[0].instants[0].date), 'd MMM', { locale: fr })} au ${format(parseISO(dayDataArray[dayDataArray.length - 1].instants[0].date), 'd MMM yyyy', { locale: fr })}`
                 : dayDataArray[0].title;
 
-            const instantsForPrompt = allInstantsForStory.map(i => ({
-                title: i.title,
-                description: i.description,
-                location: i.location,
-                emotion: i.emotion,
-                photos: i.photos || undefined,
-                day: format(parseISO(i.date), "d MMMM yyyy", { locale: fr })
-            }));
+            const instantsForPrompt = allInstantsForStory.map(i => {
+                let formattedDay = 'Moment de voyage';
+                try {
+                    if (i.date) {
+                        formattedDay = format(parseISO(i.date), "d MMMM yyyy", { locale: fr });
+                    }
+                } catch {
+                    // ignore format error
+                }
+                return {
+                    title: i.title || '',
+                    description: i.description || '',
+                    location: i.location || '',
+                    emotion: i.emotion || '',
+                    photos: i.photos || undefined,
+                    day: formattedDay
+                };
+            });
 
             const activeContext = activeTrip || activeStay;
 
-            const result = await generateStory({
-                instants: instantsForPrompt,
-                companionType: manualCompanionType || activeContext?.companionType,
-                companionName: manualCompanionName || activeContext?.companionName,
-                userFirstName: userProfile?.firstName,
-                userAge: userProfile?.age,
-                userGender: userProfile?.gender,
+            const res = await fetch('/api/story/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instants: instantsForPrompt,
+                    companionType: manualCompanionType || activeContext?.companionType,
+                    companionName: manualCompanionName || activeContext?.companionName,
+                    userFirstName: userProfile?.firstName,
+                    userAge: userProfile?.age,
+                    userGender: userProfile?.gender,
+                }),
             });
+
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.error || "L'IA n'a pas pu créer l'histoire.");
+            }
+
+            const storyText = data.story;
 
             const newStory: GeneratedStory = {
                 id: storyId,
                 date: sortedDays[0], // Use first day for sorting purposes
                 title: storyTitle,
-                story: result.story,
+                story: storyText,
                 instants: allInstantsForStory.map(({ icon, color, ...rest }) => rest), // Remove runtime properties
             };
 
@@ -231,9 +251,13 @@ export default function StoryPage() {
             setManualCompanionName("");
             toast({ title: "Histoire générée et sauvegardée !" });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to generate story:", error);
-            toast({ variant: "destructive", title: "La génération a échoué." });
+            toast({
+                variant: "destructive",
+                title: "La génération a échoué.",
+                description: error?.message || "Veuillez réessayer.",
+            });
         } finally {
             setIsLoading(false);
         }

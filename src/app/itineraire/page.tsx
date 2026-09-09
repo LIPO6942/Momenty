@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { generateItinerary, type GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
+import type { GenerateItineraryInput } from '@/ai/flows/generate-itinerary-flow';
 import type { Trip, Itinerary, ItineraryOutput } from '@/lib/types';
 import { Loader2, Wand2, Route, Calendar, Users, Building, Flag, Clock, Utensils, Landmark, ShoppingBag, Leaf, FerrisWheel, Sparkles, Bookmark, PartyPopper, Waves, Train, Car, Plane, Bus, Ship } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -94,15 +94,26 @@ export default function ItineraryPage() {
                 companionType: trip.companionType,
                 companionName: trip.companionName,
             };
-            const result = await generateItinerary(input);
-            setItinerary(result);
+
+            const res = await fetch('/api/itineraries/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input),
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                throw new Error(data.error || "L'IA n'a pas pu créer d'itinéraire.");
+            }
+
+            setItinerary(data.itinerary);
             toast({ title: 'Votre itinéraire est prêt !' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to generate itinerary:', error);
             toast({
                 variant: 'destructive',
                 title: 'La génération a échoué.',
-                description: "L'IA n'a pas pu créer d'itinéraire. Veuillez réessayer.",
+                description: error?.message || "L'IA n'a pas pu créer d'itinéraire. Veuillez réessayer.",
             });
         } finally {
             setIsLoading(false);
