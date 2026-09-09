@@ -287,11 +287,11 @@ export default function ItineraryPage() {
                      <div className="relative rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-card/75 backdrop-blur-md transition-all">
                         {/* Cliché landmark photo behind text with subtle transparency */}
                         <div 
-                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-15 dark:opacity-20 scale-105 transition-all duration-700 select-none"
+                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-25 dark:opacity-30 scale-105 transition-all duration-700 select-none"
                             style={{ backgroundImage: `url('${itinerary.coverImageUrl || destinationAssets.clichePhoto}')` }}
                         />
                         {/* Subtle gradient overlay to guarantee perfect contrast and readability */}
-                        <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/75 to-background/95 pointer-events-none" />
+                        <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/70 to-background/90 pointer-events-none" />
 
                         <div className="relative z-10 p-5 sm:p-8 space-y-6">
                             {/* Header with flag badge, title, rename button, and save action */}

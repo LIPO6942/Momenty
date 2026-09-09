@@ -212,6 +212,138 @@ const CURATED_DESTINATION_PHOTOS: Record<string, { photo: string; landmark: stri
   MU: {
     photo: "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?auto=format&fit=crop&w=1600&q=80",
     landmark: "Le Morne Brabant & Lagons de l'Île Maurice"
+  },
+  CR: {
+    photo: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Volcan Arenal & Forêt Tropicale, Costa Rica"
+  },
+  LK: {
+    photo: "https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Rocher de Sigiriya & Plantations de thé, Sri Lanka"
+  },
+  PH: {
+    photo: "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Lagons d'El Nido & Plages, Philippines"
+  },
+  MV: {
+    photo: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Villas sur pilotis & Atolls turquoise, Maldives"
+  },
+  SC: {
+    photo: "https://images.unsplash.com/photo-1589979481223-deb893043163?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Anse Source d'Argent & Rochers Granitiques, Seychelles"
+  },
+  DO: {
+    photo: "https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Plages de Punta Cana & Île Saona, Rép. Dominicaine"
+  },
+  SN: {
+    photo: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Île de Gorée & Lac Rose, Sénégal"
+  },
+  KE: {
+    photo: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Safari Masaï Mara & Kilimandjaro, Kenya"
+  },
+  TZ: {
+    photo: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Plages de Zanzibar & Parc du Serengeti, Tanzanie"
+  },
+  CL: {
+    photo: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Torres del Paine & Désert d'Atacama, Chili"
+  },
+  MT: {
+    photo: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Cité fortifiée de La Valette, Malte"
+  },
+  CY: {
+    photo: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Rocher d'Aphrodite & Côtes de Chypre"
+  },
+  MC: {
+    photo: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Port Hercule & Le Rocher, Monaco"
+  },
+  QA: {
+    photo: "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Skyline de Doha & Corniche, Qatar"
+  },
+  SA: {
+    photo: "https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Al-Ula & Mada'in Saleh, Arabie Saoudite"
+  },
+  LB: {
+    photo: "https://images.unsplash.com/photo-1579606032834-d3434685ff41?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Temples de Baalbek & Rochers des Pigeons, Liban"
+  },
+  OM: {
+    photo: "https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Grande Mosquée & Dunes de Wahiba, Oman"
+  },
+  KH: {
+    photo: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Cité sacrée d'Angkor Wat, Cambodge"
+  },
+  NP: {
+    photo: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Sommets de l'Himalaya & Katmandou, Népal"
+  },
+  TW: {
+    photo: "https://images.unsplash.com/photo-1508247967583-7d982ea01526?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Tour Taipei 101 & Marchés traditionnels, Taïwan"
+  },
+  HK: {
+    photo: "https://images.unsplash.com/photo-1506970845036-3d290572644e?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Victoria Harbour & Victoria Peak, Hong Kong"
+  },
+  LU: {
+    photo: "https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Pont Adolphe & Vieille Ville, Luxembourg"
+  },
+  SK: {
+    photo: "https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Château de Bratislava & Hautes Tatras, Slovaquie"
+  },
+  SI: {
+    photo: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Lac de Bled & Île Sainte-Marie, Slovénie"
+  },
+  RS: {
+    photo: "https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Forteresse de Kalemegdan, Belgrade, Serbie"
+  },
+  ME: {
+    photo: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Bouches de Kotor & Mer Adriatique, Monténégro"
+  },
+  AL: {
+    photo: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Riviera Albanaise & Cité de Berat, Albanie"
+  },
+  GE: {
+    photo: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Église Sainte-Trinité de Guerguéti, Géorgie"
+  },
+  MG: {
+    photo: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Allée des Baobabs & Nosy Be, Madagascar"
+  },
+  CI: {
+    photo: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Basilique Notre-Dame de Yamoussoukro, Côte d'Ivoire"
+  },
+  CM: {
+    photo: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Mont Cameroun & Chutes d'Ekom Nkam, Cameroun"
+  },
+  IL: {
+    photo: "https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Vieille Ville de Jérusalem & Dôme du Rocher"
+  },
+  RU: {
+    photo: "https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?auto=format&fit=crop&w=1600&q=80",
+    landmark: "Place Rouge & Cathédrale Saint-Basile, Moscou"
   }
 };
 
@@ -331,7 +463,68 @@ const COMMON_COUNTRY_ALIASES: Record<string, string> = {
   "îles maurice": "MU",
   "iles maurices": "MU",
   "îles maurices": "MU",
-  mauritius: "MU"
+  mauritius: "MU",
+  "costa rica": "CR",
+  costarica: "CR",
+  "sri lanka": "LK",
+  srilanka: "LK",
+  philippines: "PH",
+  maldives: "MV",
+  seychelles: "SC",
+  "république dominicaine": "DO",
+  "republique dominicaine": "DO",
+  dominican: "DO",
+  sénégal: "SN",
+  senegal: "SN",
+  kenya: "KE",
+  tanzanie: "TZ",
+  tanzania: "TZ",
+  zanzibar: "TZ",
+  chili: "CL",
+  chile: "CL",
+  malte: "MT",
+  malta: "MT",
+  chypre: "CY",
+  cyprus: "CY",
+  monaco: "MC",
+  qatar: "QA",
+  "arabie saoudite": "SA",
+  "saudi arabia": "SA",
+  liban: "LB",
+  lebanon: "LB",
+  oman: "OM",
+  cambodge: "KH",
+  cambodia: "KH",
+  népal: "NP",
+  nepal: "NP",
+  taïwan: "TW",
+  taiwan: "TW",
+  "hong kong": "HK",
+  hongkong: "HK",
+  luxembourg: "LU",
+  slovaquie: "SK",
+  slovakia: "SK",
+  slovénie: "SI",
+  slovenie: "SI",
+  slovenia: "SI",
+  serbie: "RS",
+  serbia: "RS",
+  monténégro: "ME",
+  montenegro: "ME",
+  albanie: "AL",
+  albania: "AL",
+  géorgie: "GE",
+  georgie: "GE",
+  georgia: "GE",
+  madagascar: "MG",
+  "côte d'ivoire": "CI",
+  "cote d'ivoire": "CI",
+  cameroun: "CM",
+  cameroon: "CM",
+  israël: "IL",
+  israel: "IL",
+  russie: "RU",
+  russia: "RU"
 };
 
 /**
@@ -355,10 +548,29 @@ export function getDestinationAssets(countryOrLocation: string): DestinationAsse
     return emptyResult;
   }
 
-  // 1. Recherche par alias rapide
-  let code = COMMON_COUNTRY_ALIASES[cleanCountry.toLowerCase()] || COMMON_COUNTRY_ALIASES[normalized];
+  // 0. Si le paramètre est déjà un code ISO 2 lettres
+  const trimmed = countryOrLocation.trim();
+  if (trimmed.length === 2 && /^[a-zA-Z]{2}$/.test(trimmed)) {
+    code = trimmed.toUpperCase();
+  }
 
-  // 2. Recherche dans le référentiel complet countries
+  // 1. Recherche par alias rapide
+  if (!code) {
+    code = COMMON_COUNTRY_ALIASES[cleanCountry.toLowerCase()] || COMMON_COUNTRY_ALIASES[normalized];
+  }
+
+  // 2. Recherche par correspondance de sous-chaîne dans le texte complet
+  if (!code) {
+    const rawLower = countryOrLocation.toLowerCase();
+    for (const [alias, iso] of Object.entries(COMMON_COUNTRY_ALIASES)) {
+      if (alias.length >= 3 && rawLower.includes(alias)) {
+        code = iso;
+        break;
+      }
+    }
+  }
+
+  // 3. Recherche dans le référentiel complet countries
   if (!code) {
     const rawLower = cleanCountry.toLowerCase();
     const match = countries.find(
@@ -374,8 +586,8 @@ export function getDestinationAssets(countryOrLocation: string): DestinationAsse
     }
   }
 
+  // 4. Si toujours pas trouvé, vérifie si les 2 premières lettres de cleanCountry forment un code ISO
   if (!code) {
-    // Si aucun pays précis n'est reconnu, tente avec les 2 premières lettres si code ISO
     if (cleanCountry.length === 2 && /^[a-zA-Z]{2}$/.test(cleanCountry)) {
       code = cleanCountry.toUpperCase();
     } else {

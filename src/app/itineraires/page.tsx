@@ -2,13 +2,20 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { getItineraries, deleteItinerary, saveItinerary } from "@/lib/firestore";
 import type { Itinerary, DayPlan, Activity } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, Bus, Ship, Send, Search, Edit3 } from "lucide-react";
+import { 
+    Bookmark, Calendar, Flag, Loader2, Trash2, Route, Clock, Landmark, 
+    Sparkles, Utensils, FerrisWheel, Leaf, ShoppingBag, Edit, PlusCircle, 
+    MoreVertical, PartyPopper, Waves, Save, MapPin, Train, Plane, Car, 
+    Bus, Ship, Send, Search, Edit3, Compass, Globe, Users, ArrowRight, 
+    Share2, Luggage, Check, Copy, Plus, X, Eye
+} from "lucide-react";
 import { getDestinationAssets } from "@/lib/destination-assets";
 import {
     AlertDialog,
@@ -63,6 +70,115 @@ const InteractiveMap = dynamic(() => import('@/components/map/interactive-map'),
     ssr: false,
     loading: () => <Skeleton className="h-[400px] md:h-[60vh] w-full rounded-lg" />
 });
+
+export interface TripDatesInfo {
+    startDate: Date | null;
+    endDate: Date | null;
+    dateLabel: string;
+    totalDays: number;
+    status: 'upcoming' | 'ongoing' | 'past' | 'flexible';
+    countdownText: string;
+}
+
+export function getTripDatesInfo(itinerary: Itinerary): TripDatesInfo {
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (itinerary.startDate) {
+        try {
+            const d = parseISO(itinerary.startDate);
+            if (!isNaN(d.getTime())) startDate = d;
+        } catch {}
+    }
+
+    if (itinerary.endDate) {
+        try {
+            const d = parseISO(itinerary.endDate);
+            if (!isNaN(d.getTime())) endDate = d;
+        } catch {}
+    }
+
+    // Fallback: check if dayPlan.date in itinerary.itinerary contains parseable dates
+    if (!startDate && itinerary.itinerary && itinerary.itinerary.length > 0) {
+        const first = itinerary.itinerary[0]?.date;
+        if (first && !first.toLowerCase().startsWith('jour')) {
+            try {
+                const d = new Date(first);
+                if (!isNaN(d.getTime())) startDate = d;
+            } catch {}
+        }
+    }
+
+    if (!endDate && itinerary.itinerary && itinerary.itinerary.length > 0) {
+        const last = itinerary.itinerary[itinerary.itinerary.length - 1]?.date;
+        if (last && !last.toLowerCase().startsWith('jour')) {
+            try {
+                const d = new Date(last);
+                if (!isNaN(d.getTime())) endDate = d;
+            } catch {}
+        }
+    }
+
+    const totalDays = itinerary.itinerary?.length || 0;
+    const now = new Date();
+    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let status: 'upcoming' | 'ongoing' | 'past' | 'flexible' = 'flexible';
+    let countdownText = '';
+    let dateLabel = '';
+
+    if (startDate && endDate) {
+        if (startDate.getFullYear() === endDate.getFullYear()) {
+            if (startDate.getMonth() === endDate.getMonth()) {
+                dateLabel = `Du ${format(startDate, 'd', { locale: fr })} au ${format(endDate, 'd MMMM yyyy', { locale: fr })}`;
+            } else {
+                dateLabel = `Du ${format(startDate, 'd MMM', { locale: fr })} au ${format(endDate, 'd MMM yyyy', { locale: fr })}`;
+            }
+        } else {
+            dateLabel = `Du ${format(startDate, 'd MMM yyyy', { locale: fr })} au ${format(endDate, 'd MMM yyyy', { locale: fr })}`;
+        }
+
+        const startMid = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const endMid = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+        if (todayMid < startMid) {
+            status = 'upcoming';
+            const diffDays = Math.round((startMid.getTime() - todayMid.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays === 0) {
+                countdownText = "Départ aujourd'hui !";
+            } else if (diffDays === 1) {
+                countdownText = "Départ demain !";
+            } else {
+                countdownText = `Départ dans ${diffDays} j`;
+            }
+        } else if (todayMid >= startMid && todayMid <= endMid) {
+            status = 'ongoing';
+            countdownText = "Voyage en cours";
+        } else {
+            status = 'past';
+            countdownText = "Voyage mémorable";
+        }
+    } else if (startDate) {
+        dateLabel = `À partir du ${format(startDate, 'd MMMM yyyy', { locale: fr })}`;
+    } else if (itinerary.itinerary?.[0]?.date && !itinerary.itinerary[0].date.toLowerCase().startsWith('jour')) {
+        const first = itinerary.itinerary[0].date;
+        const last = itinerary.itinerary[itinerary.itinerary.length - 1]?.date;
+        dateLabel = first === last ? first : `Du ${first} au ${last}`;
+    } else if (itinerary.createdAt) {
+        dateLabel = `Créé le ${format(parseISO(itinerary.createdAt), 'd MMM yyyy', { locale: fr })}`;
+    } else {
+        dateLabel = "Dates à définir";
+    }
+
+    return {
+        startDate,
+        endDate,
+        dateLabel,
+        totalDays: totalDays || (startDate && endDate ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) : 1),
+        status,
+        countdownText
+    };
+}
 
 
 const activityIcons: { [key: string]: React.ReactNode } = {
@@ -483,6 +599,9 @@ function SavedItinerariesContent() {
     const [importInput, setImportInput] = useState("");
     const [importLoading, setImportLoading] = useState(false);
     const [itineraryToSend, setItineraryToSend] = useState<Itinerary | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'past'>('all');
+    const [showImportCard, setShowImportCard] = useState(false);
 
     const loadItineraries = async () => {
         if (user) {
@@ -494,7 +613,7 @@ function SavedItinerariesContent() {
     };
 
     useEffect(() => {
-        if(user){
+        if (user) {
           loadItineraries();
         }
     }, [user]);
@@ -505,10 +624,8 @@ function SavedItinerariesContent() {
     useEffect(() => {
         if (importToken && user && !isLoading && !importLoading) {
             setImportInput(importToken);
-            // Small delay to ensure state is set before calling import
             const timer = setTimeout(() => {
                 handleImportByLink();
-                // Clean up URL without refreshing
                 const url = new URL(window.location.href);
                 url.searchParams.delete('import');
                 window.history.replaceState({}, '', url.toString());
@@ -562,12 +679,10 @@ function SavedItinerariesContent() {
         setImportLoading(true);
         try {
             let token = raw;
-            // Handle full URLs
             if (raw.includes('://') || raw.includes('/share/')) {
                 try {
                     const u = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
                     const parts = u.pathname.split('/').filter(Boolean);
-                    // Expected format: .../share/itinerary/[token]
                     const tokenIdx = parts.findIndex(p => p === 'itinerary');
                     if (tokenIdx !== -1 && parts[tokenIdx + 1]) {
                         token = parts[tokenIdx + 1];
@@ -581,9 +696,6 @@ function SavedItinerariesContent() {
                 }
             }
 
-            console.log("Resolving itinerary token:", token);
-
-            // Resolve token via mapping document: /shared_itineraries/{token}
             const mapRef = doc(db, 'shared_itineraries', token);
             const mapSnap = await getDoc(mapRef);
             
@@ -592,8 +704,6 @@ function SavedItinerariesContent() {
             }
 
             const { userId: ownerId, itineraryId } = mapSnap.data() as { userId: string; itineraryId: string };
-            
-            // Fetch the source itinerary
             const srcRef = doc(db, 'users', ownerId, 'itineraries', itineraryId);
             const srcSnap = await getDoc(srcRef);
             
@@ -602,8 +712,6 @@ function SavedItinerariesContent() {
             }
 
             const itinerary = srcSnap.data() as Itinerary;
-            
-            // Check if still enabled at source
             if (itinerary.shareEnabled === false) {
                  throw new Error("Le partage de cet itinéraire a été désactivé par son propriétaire.");
             }
@@ -621,6 +729,7 @@ function SavedItinerariesContent() {
             await saveItinerary(user.uid, copy);
             toast({ title: 'Succès !', description: 'Itinéraire importé dans votre compte.' });
             setImportInput("");
+            setShowImportCard(false);
             await loadItineraries();
         } catch (e: any) {
             console.error("Import error:", e);
@@ -644,7 +753,6 @@ function SavedItinerariesContent() {
                 : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
             const updated = { ...itinerary, shareEnabled: true, shareToken: token, sharedAt: new Date().toISOString() } as Itinerary;
             await saveItinerary(user.uid, updated, itId);
-            // Write mapping for public resolution
             await setDoc(doc(db, 'shared_itineraries', token), {
                 userId: user.uid,
                 itineraryId: itId,
@@ -683,84 +791,473 @@ function SavedItinerariesContent() {
         }
     };
 
+    // Stats calculation for the joyful Travel Dashboard
+    const stats = useMemo(() => {
+        const countriesSet = new Set<string>();
+        const citiesSet = new Set<string>();
+        let totalDays = 0;
+        let upcomingCount = 0;
+        let ongoingCount = 0;
+        let pastCount = 0;
+        let nextTripCountdown: string | null = null;
+        let minDaysToTrip = Infinity;
+        const now = new Date();
+        const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        itineraries.forEach(it => {
+            const assets = getDestinationAssets(
+                it.countryCode || 
+                it.location || 
+                it.citiesToVisit?.[0]?.name || 
+                it.itinerary?.[0]?.city || 
+                it.title || 
+                ''
+            );
+            if (assets.countryName) countriesSet.add(assets.countryName);
+
+            (it.itinerary || []).forEach(d => {
+                if (d.city) citiesSet.add(d.city);
+            });
+
+            const dates = getTripDatesInfo(it);
+            totalDays += dates.totalDays;
+
+            if (dates.status === 'upcoming') {
+                upcomingCount++;
+                if (dates.startDate) {
+                    const diffDays = Math.round((dates.startDate.getTime() - todayMid.getTime()) / (1000 * 60 * 60 * 24));
+                    if (diffDays < minDaysToTrip) {
+                        minDaysToTrip = diffDays;
+                        nextTripCountdown = diffDays === 0 ? "Aujourd'hui !" : diffDays === 1 ? "Demain !" : `Dans ${diffDays} j`;
+                    }
+                }
+            } else if (dates.status === 'ongoing') {
+                ongoingCount++;
+            } else if (dates.status === 'past') {
+                pastCount++;
+            }
+        });
+
+        return {
+            destinationsCount: countriesSet.size,
+            totalDays,
+            citiesCount: citiesSet.size,
+            upcomingCount,
+            ongoingCount,
+            pastCount,
+            nextTripCountdown
+        };
+    }, [itineraries]);
+
+    // Filter itineraries by status and search input
+    const filteredItineraries = useMemo(() => {
+        return itineraries.filter(it => {
+            const dates = getTripDatesInfo(it);
+            if (filterStatus !== 'all' && dates.status !== filterStatus) {
+                return false;
+            }
+
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase().trim();
+                const assets = getDestinationAssets(
+                    it.countryCode || 
+                    it.location || 
+                    it.citiesToVisit?.[0]?.name || 
+                    it.itinerary?.[0]?.city || 
+                    it.title || 
+                    ''
+                );
+                const titleMatch = (it.title || '').toLowerCase().includes(q);
+                const countryMatch = assets.countryName.toLowerCase().includes(q);
+                const landmarkMatch = (it.landmarkName || assets.landmarkName || '').toLowerCase().includes(q);
+                const cityMatch = (it.itinerary || []).some(d => (d.city || '').toLowerCase().includes(q));
+                return titleMatch || countryMatch || landmarkMatch || cityMatch;
+            }
+
+            return true;
+        });
+    }, [itineraries, filterStatus, searchQuery]);
 
     const LoadingSkeleton = () => (
         <div className="space-y-4">
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
-                <CardContent><Skeleton className="h-4 w-1/2" /></CardContent>
+            <Card className="rounded-2xl border-border/70 p-6">
+                <Skeleton className="h-6 w-3/4 mb-3" />
+                <Skeleton className="h-4 w-1/2" />
             </Card>
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader>
-                <CardContent><Skeleton className="h-4 w-1/2" /></CardContent>
+            <Card className="rounded-2xl border-border/70 p-6">
+                <Skeleton className="h-6 w-2/3 mb-3" />
+                <Skeleton className="h-4 w-1/2" />
             </Card>
         </div>
     );
 
     return (
-        <div className="container mx-auto max-w-2xl px-3 sm:px-4 py-8 min-h-screen overflow-x-hidden">
-            <div className="py-16 space-y-2">
-                <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                    <Bookmark className="h-8 w-8 text-primary"/>
-                    Mes Itinéraires
-                </h1>
-                <p className="text-muted-foreground">Retrouvez tous vos voyages planifiés.</p>
-                <div className="mt-4 flex gap-2">
-                    <Input placeholder="Coller un lien de partage ou un token" value={importInput} onChange={(e) => setImportInput(e.target.value)} />
-                    <Button onClick={handleImportByLink} disabled={!user || importLoading || !importInput.trim()}>
-                        {importLoading ? 'Import…' : 'Importer par lien'}
-                    </Button>
+        <div className="container mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-10 min-h-screen overflow-x-hidden">
+            {/* Hero & Joyful Travel Header */}
+            <div className="relative mb-8 rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/15 border border-primary/20 p-5 sm:p-8 shadow-sm overflow-hidden">
+                {/* Decorative background travel watermark */}
+                <div className="absolute -right-8 -top-8 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute right-6 bottom-1 text-7xl sm:text-8xl opacity-10 select-none pointer-events-none font-bold">
+                    ✈️
+                </div>
+
+                <div className="relative z-10 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-xs font-semibold text-primary">
+                                <Compass className="h-3.5 w-3.5" />
+                                <span>Mon Carnet d'Exploration</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+                                Mes Itinéraires
+                            </h1>
+                            <p className="text-sm sm:text-base text-muted-foreground max-w-xl">
+                                Retrouvez, personnalisez et revivez chaque étape de vos périples à travers le monde.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setShowImportCard(!showImportCard)}
+                                className="gap-1.5 shadow-xs border-dashed text-xs sm:text-sm"
+                            >
+                                <Share2 className="h-4 w-4 text-primary" />
+                                <span>Importer</span>
+                            </Button>
+                            <Link href="/itineraire">
+                                <Button size="sm" className="gap-2 shadow-sm font-medium text-xs sm:text-sm">
+                                    <Plus className="h-4 w-4" />
+                                    <span>Nouveau voyage</span>
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Collapsible Import Box */}
+                    {showImportCard && (
+                        <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <Card className="border-primary/25 bg-background/90 backdrop-blur-md shadow-xs">
+                                <CardContent className="p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                            <Share2 className="h-3.5 w-3.5 text-primary" /> Importer un itinéraire partagé
+                                        </span>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowImportCard(false)}>
+                                            <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Input 
+                                            placeholder="Coller un lien de partage ou token (ex: .../share/itinerary/...)" 
+                                            value={importInput} 
+                                            onChange={(e) => setImportInput(e.target.value)} 
+                                            className="text-sm"
+                                        />
+                                        <Button onClick={handleImportByLink} disabled={!user || importLoading || !importInput.trim()} size="sm">
+                                            {importLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Importer'}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Travel Stats Dashboard (Joyful, Modern & Friendly) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-2">
+                        <div className="p-3 rounded-2xl bg-card/85 backdrop-blur-sm border border-border/80 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <Globe className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-muted-foreground font-medium truncate">Destinations</p>
+                                <p className="text-lg font-bold text-foreground leading-tight">
+                                    {stats.destinationsCount} <span className="text-xs font-normal text-muted-foreground">pays</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-card/85 backdrop-blur-sm border border-border/80 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                <Calendar className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-muted-foreground font-medium truncate">Aventure</p>
+                                <p className="text-lg font-bold text-foreground leading-tight">
+                                    {stats.totalDays} <span className="text-xs font-normal text-muted-foreground">jours</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-card/85 backdrop-blur-sm border border-border/80 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <MapPin className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-muted-foreground font-medium truncate">Villes visitées</p>
+                                <p className="text-lg font-bold text-foreground leading-tight">
+                                    {stats.citiesCount} <span className="text-xs font-normal text-muted-foreground">villes</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-card/85 backdrop-blur-sm border border-border/80 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                <Plane className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-muted-foreground font-medium truncate">Prochain vol</p>
+                                <p className="text-sm font-bold text-foreground leading-tight truncate">
+                                    {stats.nextTripCountdown || (itineraries.length > 0 ? "Prêt à décoller" : "Aucun")}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {/* Search and Filters Toolbar */}
+            {itineraries.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+                    {/* Search bar */}
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Rechercher une destination, ville, monument..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 pr-8 h-10 bg-card/90 rounded-xl border-border/80 shadow-xs text-sm"
+                        />
+                        {searchQuery && (
+                            <button 
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Filter pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                        <button
+                            onClick={() => setFilterStatus('all')}
+                            className={cn(
+                                "px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0",
+                                filterStatus === 'all'
+                                    ? "bg-primary text-primary-foreground shadow-xs"
+                                    : "bg-card hover:bg-muted text-muted-foreground border border-border/70"
+                            )}
+                        >
+                            Tous ({itineraries.length})
+                        </button>
+                        {stats.upcomingCount > 0 && (
+                            <button
+                                onClick={() => setFilterStatus('upcoming')}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1",
+                                    filterStatus === 'upcoming'
+                                        ? "bg-emerald-600 text-white shadow-xs"
+                                        : "bg-card hover:bg-muted text-muted-foreground border border-border/70"
+                                )}
+                            >
+                                <span>🚀</span> À venir ({stats.upcomingCount})
+                            </button>
+                        )}
+                        {stats.ongoingCount > 0 && (
+                            <button
+                                onClick={() => setFilterStatus('ongoing')}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1",
+                                    filterStatus === 'ongoing'
+                                        ? "bg-teal-600 text-white shadow-xs"
+                                        : "bg-card hover:bg-muted text-muted-foreground border border-border/70"
+                                )}
+                            >
+                                <span>🌴</span> En cours ({stats.ongoingCount})
+                            </button>
+                        )}
+                        {stats.pastCount > 0 && (
+                            <button
+                                onClick={() => setFilterStatus('past')}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1",
+                                    filterStatus === 'past'
+                                        ? "bg-purple-600 text-white shadow-xs"
+                                        : "bg-card hover:bg-muted text-muted-foreground border border-border/70"
+                                )}
+                            >
+                                <span>✨</span> Souvenirs ({stats.pastCount})
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {isLoading ? (
                 <LoadingSkeleton />
             ) : itineraries.length === 0 ? (
-                <Card className="text-center py-12">
-                    <CardContent>
-                        <p className="text-muted-foreground">Aucun itinéraire sauvegardé pour le moment.</p>
-                        <p className="text-sm text-muted-foreground/80 mt-2">
-                            Activez le mode voyage et générez un itinéraire pour commencer.
-                        </p>
+                <Card className="text-center py-16 rounded-3xl border-dashed border-2 border-border/80 bg-card/60">
+                    <CardContent className="space-y-4 max-w-md mx-auto">
+                        <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center text-3xl shadow-xs">
+                            🎒
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-xl font-bold text-foreground">Votre carnet de voyage est encore vide</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Activez le mode voyage et laissez notre intelligence artificielle concevoir votre premier itinéraire de rêve.
+                            </p>
+                        </div>
+                        <div className="pt-2">
+                            <Link href="/itineraire">
+                                <Button className="gap-2 shadow-sm">
+                                    <Sparkles className="h-4 w-4" />
+                                    <span>Créer mon premier itinéraire</span>
+                                </Button>
+                            </Link>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : filteredItineraries.length === 0 ? (
+                <Card className="text-center py-12 rounded-2xl border-border/70">
+                    <CardContent className="space-y-3">
+                        <p className="text-muted-foreground text-sm">Aucun itinéraire ne correspond à votre recherche ou filtre.</p>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => { setSearchQuery(''); setFilterStatus('all'); }}
+                        >
+                            Réinitialiser les filtres
+                        </Button>
                     </CardContent>
                 </Card>
             ) : (
                 <Accordion type="single" collapsible className="w-full space-y-4">
-                    {itineraries.map((itinerary, idx) => {
-                        const assets = getDestinationAssets(itinerary.location || itinerary.itinerary?.[0]?.city || '');
+                    {filteredItineraries.map((itinerary, idx) => {
+                        const assets = getDestinationAssets(
+                            itinerary.countryCode || 
+                            itinerary.location || 
+                            itinerary.citiesToVisit?.[0]?.name || 
+                            itinerary.itinerary?.[0]?.city || 
+                            itinerary.title || 
+                            ''
+                        );
+                        const backdropPhoto = itinerary.coverImageUrl || assets.clichePhoto;
+                        const landmarkName = itinerary.landmarkName || assets.landmarkName;
+                        const countryName = assets.countryName || itinerary.location || "Destination";
+                        const flagUrl = itinerary.countryFlagUrl || assets.flagUrl;
+                        const datesInfo = getTripDatesInfo(itinerary);
+
+                        const uniqueCities = Array.from(new Set(itinerary.itinerary?.map(d => d.city).filter(Boolean) || []));
+
                         return (
-                        <AccordionItem key={itinerary.id || idx} value={itinerary.id || String(idx)} className="group border-none bg-card rounded-xl shadow-md shadow-slate-200/80 overflow-hidden w-full max-w-full">
-                           <div className="flex items-center justify-between p-3 sm:p-4 w-full max-w-full min-w-0">
-                                <AccordionTrigger className="flex-1 min-w-0 p-0 hover:no-underline text-left mr-1 sm:mr-2">
-                                    <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-1">
-                                        <div className="flex-shrink-0 flex items-center justify-center w-8 h-6 sm:w-10 sm:h-7 rounded-md overflow-hidden bg-muted border border-border shadow-xs">
+                        <AccordionItem 
+                            key={itinerary.id || idx} 
+                            value={itinerary.id || String(idx)} 
+                            className="group relative border border-border/75 bg-card rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden w-full max-w-full"
+                        >
+                            {/* Cliché landmark photo watermark softly blended on the right side of the card */}
+                            <div 
+                                className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/3 bg-cover bg-center opacity-20 dark:opacity-25 group-hover:opacity-30 transition-all duration-500 pointer-events-none rounded-r-2xl select-none"
+                                style={{ 
+                                    backgroundImage: `url('${backdropPhoto}')`,
+                                    maskImage: 'linear-gradient(to right, transparent 0%, black 80%)',
+                                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 80%)'
+                                }}
+                            />
+
+                           <div className="relative z-10 flex items-start sm:items-center justify-between p-3.5 sm:p-5 w-full max-w-full min-w-0 gap-2 sm:gap-3">
+                                <AccordionTrigger className="flex-1 min-w-0 p-0 hover:no-underline text-left">
+                                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0 pr-1">
+                                        {/* High-res Country Flag Badge */}
+                                        <div className="flex-shrink-0 flex items-center justify-center w-10 h-7 sm:w-12 sm:h-8 rounded-lg overflow-hidden bg-muted border border-border shadow-xs mt-0.5 sm:mt-0">
                                             <img 
-                                                src={itinerary.countryFlagUrl || assets.flagUrl} 
-                                                alt={assets.countryName}
+                                                src={flagUrl} 
+                                                alt={countryName}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     (e.target as HTMLElement).style.display = 'none';
                                                 }}
                                             />
                                         </div>
-                                        <div className="flex flex-col text-left min-w-0 flex-1 overflow-hidden">
-                                            <span className="text-sm sm:text-base md:text-lg font-bold leading-snug text-foreground break-words line-clamp-2" title={itinerary.title}>
+
+                                        {/* Text Info */}
+                                        <div className="flex flex-col text-left min-w-0 flex-1 space-y-1">
+                                            {/* Top badges: Country, Status, Landmark */}
+                                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                                <span className="font-bold text-foreground flex items-center gap-1">
+                                                    {countryName}
+                                                </span>
+                                                
+                                                {datesInfo.status === 'upcoming' && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-500/20 flex items-center gap-1">
+                                                        <span>🚀</span> {datesInfo.countdownText}
+                                                    </span>
+                                                )}
+                                                {datesInfo.status === 'ongoing' && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 font-semibold text-[11px] border border-teal-500/20 flex items-center gap-1 animate-pulse">
+                                                        <span>🌴</span> {datesInfo.countdownText}
+                                                    </span>
+                                                )}
+                                                {datesInfo.status === 'past' && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 font-medium text-[11px] border border-purple-500/20">
+                                                        ✨ Souvenir
+                                                    </span>
+                                                )}
+
+                                                <span className="text-muted-foreground/60 hidden sm:inline">•</span>
+                                                <span className="text-[11px] text-muted-foreground italic hidden sm:inline truncate max-w-[220px]">
+                                                    📸 {landmarkName}
+                                                </span>
+                                            </div>
+
+                                            {/* Itinerary Title (Guaranteed no overflow) */}
+                                            <span className="text-base sm:text-lg font-bold leading-snug text-foreground break-words line-clamp-2" title={itinerary.title}>
                                                 {itinerary.title}
                                             </span>
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-normal truncate mt-0.5">
-                                                <span className="font-medium text-foreground/85">{assets.countryName}</span>
-                                                <span>•</span>
-                                                <span>{itinerary.itinerary?.length || 0} jours</span>
-                                            </span>
+
+                                            {/* Trip Dates (du ... au ...) and Duration */}
+                                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-0.5">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-secondary/80 text-foreground/90 font-medium">
+                                                    <Calendar className="h-3 w-3 text-primary" />
+                                                    <span>{datesInfo.dateLabel}</span>
+                                                </span>
+                                                
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 text-muted-foreground font-normal">
+                                                    <Clock className="h-3 w-3" />
+                                                    <span>{datesInfo.totalDays} jours</span>
+                                                </span>
+
+                                                {itinerary.companionType && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[11px]">
+                                                        <Users className="h-3 w-3" />
+                                                        <span>{itinerary.companionName ? `${itinerary.companionType} (${itinerary.companionName})` : itinerary.companionType}</span>
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Visited Cities Route */}
+                                            {uniqueCities.length > 0 && (
+                                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground/80 overflow-hidden pt-0.5 truncate">
+                                                    <MapPin className="h-3 w-3 text-red-500 shrink-0" />
+                                                    <span className="truncate">
+                                                        {uniqueCities.slice(0, 4).join(' ➔ ')}
+                                                        {uniqueCities.length > 4 && ' …'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </AccordionTrigger>
-                                <div className="flex items-center shrink-0 gap-0.5 sm:gap-1">
+
+                                {/* Action Buttons outside trigger */}
+                                <div className="flex items-center shrink-0 gap-0.5 sm:gap-1 pt-1 sm:pt-0">
                                     <EditTitleDialog itinerary={itinerary} onUpdateItinerary={handleUpdateItinerary}>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                            className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                                             title="Renommer l'itinéraire"
                                             onClick={(e) => e.stopPropagation()}
                                         >
@@ -771,7 +1268,7 @@ function SavedItinerariesContent() {
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors"
                                             title="Voir sur la carte"
                                         >
                                             <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -815,7 +1312,6 @@ function SavedItinerariesContent() {
                                             )}
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem onSelect={() => { 
-                                                // Delay dialog rendering to let Radix Dropdown clean up its body lock first
                                                 setTimeout(() => setItineraryToSend(itinerary), 150); 
                                             }}>
                                                 <Send className="mr-2 h-4 w-4" />
@@ -844,28 +1340,61 @@ function SavedItinerariesContent() {
                                     </DropdownMenu>
                                 </div>
                             </div>
-                            <AccordionContent className="p-4 pt-0">
-                                <div className="relative rounded-2xl overflow-hidden border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-6 my-2 shadow-inner">
-                                    {/* Transparent cliché photo backdrop */}
-                                    <div 
-                                        className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-10 dark:opacity-15 select-none"
-                                        style={{ backgroundImage: `url('${itinerary.coverImageUrl || assets.clichePhoto}')` }}
-                                    />
-                                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/75 to-background/95 pointer-events-none" />
 
-                                    <div className="relative z-10">
-                                        <div className="flex flex-wrap justify-between items-center gap-2 mb-6 pb-3 border-b border-border/40">
+                            {/* Accordion Content with High-Res Cliché Panorama Banner & Watermark */}
+                            <AccordionContent className="p-3 sm:p-5 pt-0">
+                                <div className="relative rounded-2xl overflow-hidden border border-border/75 bg-card/75 backdrop-blur-md p-4 sm:p-6 my-2 shadow-inner">
+                                    {/* Transparent cliché photo backdrop with tuned opacity */}
+                                    <div 
+                                        className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-25 dark:opacity-30 select-none"
+                                        style={{ backgroundImage: `url('${backdropPhoto}')` }}
+                                    />
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/70 to-background/90 pointer-events-none" />
+
+                                    <div className="relative z-10 space-y-6">
+                                        {/* Panoramic Landmark Preview Banner */}
+                                        <div className="relative rounded-2xl overflow-hidden border border-border/80 shadow-md group/banner">
+                                            <div 
+                                                className="h-32 sm:h-44 w-full bg-cover bg-center relative flex items-end p-4 transition-transform duration-700 group-hover/banner:scale-105 select-none"
+                                                style={{ backgroundImage: `url('${backdropPhoto}')` }}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                                                <div className="relative z-10 flex flex-wrap items-end justify-between w-full gap-2 text-white">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/25 backdrop-blur-md border border-white/30 flex items-center gap-1.5">
+                                                                <span>📸</span> {landmarkName}
+                                                            </span>
+                                                            <span className="text-xs bg-black/40 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20">
+                                                                {countryName}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow-sm">
+                                                            {itinerary.title}
+                                                        </h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-medium text-white/95 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                                                            {datesInfo.dateLabel}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Metadata & Status Bar */}
+                                        <div className="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-border/50">
                                             <div className="flex items-center gap-2.5">
                                                 <img 
-                                                    src={itinerary.countryFlagUrl || assets.flagUrl} 
-                                                    alt={assets.countryName} 
-                                                    className="w-5 h-3.5 object-cover rounded shadow-xs border border-white/20"
+                                                    src={flagUrl} 
+                                                    alt={countryName} 
+                                                    className="w-6 h-4 object-cover rounded shadow-xs border border-white/20"
                                                     onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                                 />
                                                 <p className="text-sm font-semibold text-foreground">
-                                                    {assets.countryName}
+                                                    {countryName}
                                                     <span className="text-xs text-muted-foreground font-normal italic ml-2">
-                                                        • {itinerary.landmarkName || assets.landmarkName}
+                                                        • {landmarkName}
                                                     </span>
                                                 </p>
                                             </div>
@@ -876,6 +1405,8 @@ function SavedItinerariesContent() {
                                                 {isUpdating[itinerary.id!] && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                                             </div>
                                         </div>
+
+                                        {/* Day Plans and Activities List */}
                                         <ItineraryDisplay 
                                             itinerary={itinerary} 
                                             onUpdateItinerary={handleUpdateItinerary}
