@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { CollageTemplatePicker } from "@/components/timeline/collage-template-picker";
 import { CollageCanvas } from "@/components/timeline/collage-canvas";
 import { CollageCustomizer } from "@/components/timeline/collage-customizer";
+import { PhotoCollage } from "@/components/timeline/photo-collage";
+import { ManualFramingControls } from "@/components/timeline/manual-framing-controls";
 import type { CollageTemplate } from "@/lib/types";
 import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
@@ -111,7 +113,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [displayPreset, setDisplayPreset] = useState<"landscape" | "portrait" | "square">("landscape");
     const [displayCrop, setDisplayCrop] = useState<"fill" | "fit">("fit");
-    const [displayGravity, setDisplayGravity] = useState<"auto" | "center">("auto");
+    const [displayGravity, setDisplayGravity] = useState<"auto" | "center" | "custom">("auto");
+    const [displayPositionX, setDisplayPositionX] = useState<number>(50);
+    const [displayPositionY, setDisplayPositionY] = useState<number>(50);
+    const [displayZoom, setDisplayZoom] = useState<number>(1.25);
     const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("classique-italique");
 
     // ── Photo filter state ─────────────────────────────────────────────────
@@ -459,6 +464,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
         setDisplayGravity("auto");
+        setDisplayPositionX(50);
+        setDisplayPositionY(50);
+        setDisplayZoom(1.25);
         setDescriptionStyle("classique-italique");
         // Photo filter cleanup
         setSelectedFilter(null);
@@ -628,7 +636,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                     photo2: secondPhoto,
-                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    displayTransform: {
+                        preset: displayPreset,
+                        crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+                        gravity: displayGravity,
+                        positionX: displayPositionX,
+                        positionY: displayPositionY,
+                        zoom: displayZoom,
+                    },
                 };
                 const newId = await addEncounter(newEncounter);
 
@@ -667,7 +682,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     photo: mainPhoto,
                     photo2: secondPhoto,
                     audio: audioUrl,
-                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    displayTransform: {
+                        preset: displayPreset,
+                        crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+                        gravity: displayGravity,
+                        positionX: displayPositionX,
+                        positionY: displayPositionY,
+                        zoom: displayZoom,
+                    },
                 };
                 const newId = await addDish(newDish);
 
@@ -738,7 +760,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     photo: mainPhoto,
                     photo2: secondPhoto,
                     audio: audioUrl,
-                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    displayTransform: {
+                        preset: displayPreset,
+                        crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+                        gravity: displayGravity,
+                        positionX: displayPositionX,
+                        positionY: displayPositionY,
+                        zoom: displayZoom,
+                    },
                 };
                 const newId = await addAccommodation(newAccommodation);
 
@@ -818,7 +847,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     photos: uploadedPhotoUrls,
                     category: isKharjet ? ['Kharjet'] : ['Note'],
                     audio: audioUrl,
-                    displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+                    displayTransform: {
+                        preset: displayPreset,
+                        crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+                        gravity: displayGravity,
+                        positionX: displayPositionX,
+                        positionY: displayPositionY,
+                        zoom: displayZoom,
+                    },
                     descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
                     ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
                     ...(selectedFilter && filteredUrl ? {
@@ -983,28 +1019,58 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     {photos.length > 0 && !isCollageMode && (
                                         <div className="space-y-2">
                                             {/* Main photo */}
-                                            <div className="relative group">
-                                                {(isDish || isEncounter || isAccommodation) && (
+                                            {!(isDish || isEncounter || isAccommodation) ? (
+                                                <div className="rounded-xl overflow-hidden border shadow-sm bg-slate-50 relative group">
+                                                    <div className="absolute top-2 right-2 z-30 flex gap-2">
+                                                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading || isAnalyzing} title="Analyser avec l'IA">
+                                                            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                                        </Button>
+                                                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white hover:bg-red-700 backdrop-blur-sm shadow-sm" onClick={() => removePhoto(0)} disabled={isLoading} title="Supprimer la photo principale">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    <PhotoCollage
+                                                        photos={photos}
+                                                        title="Aperçu de la publication"
+                                                        displayTransform={{
+                                                            preset: displayPreset,
+                                                            crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+                                                            gravity: displayGravity,
+                                                            positionX: displayPositionX,
+                                                            positionY: displayPositionY,
+                                                            zoom: displayZoom,
+                                                        }}
+                                                        audioUrl={audioUrl}
+                                                        interactive={false}
+                                                        onPositionChange={(index, x, y) => {
+                                                            if (displayGravity !== 'custom') setDisplayGravity('custom');
+                                                            setDisplayPositionX(x);
+                                                            setDisplayPositionY(y);
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="relative group">
                                                     <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
                                                         Photo 1
                                                     </span>
-                                                )}
-                                                <Image
-                                                    src={photos[0]}
-                                                    alt="Aperçu principal"
-                                                    width={400}
-                                                    height={800}
-                                                    className="rounded-md object-cover w-full h-auto max-h-[30vh]"
-                                                />
-                                                <div className="absolute top-2 right-2 flex gap-2">
-                                                    <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
-                                                        {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                                    </Button>
-                                                    <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    <Image
+                                                        src={photos[0]}
+                                                        alt="Aperçu principal"
+                                                        width={400}
+                                                        height={800}
+                                                        className="rounded-md object-cover w-full h-auto max-h-[30vh]"
+                                                    />
+                                                    <div className="absolute top-2 right-2 flex gap-2">
+                                                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
+                                                            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                                        </Button>
+                                                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Second photo in dish/encounter/accommodation mode — full size preview */}
                                             {(isDish || isEncounter || isAccommodation) && photos[1] && (
@@ -1408,9 +1474,23 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 <select className="w-full border rounded-md h-9 px-2 text-sm" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
                                                     <option value="auto">Auto</option>
                                                     <option value="center">Centre</option>
+                                                    <option value="custom">Manuel</option>
                                                 </select>
                                             </div>
                                         </div>
+                                        {displayGravity === 'custom' && (
+                                            <ManualFramingControls
+                                                positionX={displayPositionX}
+                                                positionY={displayPositionY}
+                                                zoom={displayZoom}
+                                                onPositionChange={(x, y) => {
+                                                    setDisplayPositionX(x);
+                                                    setDisplayPositionY(y);
+                                                }}
+                                                onZoomChange={setDisplayZoom}
+                                                disabled={isLoading}
+                                            />
+                                        )}
                                     </div>
 
                                     {isAccommodation && (

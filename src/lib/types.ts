@@ -8,6 +8,7 @@ export interface DisplayTransform {
     gravity: 'auto' | 'center' | 'custom';
     positionX?: number; // 0-100 percentage
     positionY?: number; // 0-100 percentage
+    zoom?: number; // Scale factor (e.g. 1.0 - 2.5)
 }
 
 // --- Itinerary Flow Types ---

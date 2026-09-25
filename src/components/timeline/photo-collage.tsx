@@ -307,6 +307,7 @@ export const PhotoCollage = ({
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         if (interactive || !onPositionChange) return;
+        e.preventDefault();
         setIsDragging(true);
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -318,11 +319,14 @@ export const PhotoCollage = ({
         const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
 
-        const deltaX = (clientX - dragStart.x) / 5;
-        const deltaY = (clientY - dragStart.y) / 5;
+        const deltaX = (clientX - dragStart.x) / 4;
+        const deltaY = (clientY - dragStart.y) / 4;
 
-        const newX = Math.max(0, Math.min(100, (displayTransform?.positionX ?? 50) - deltaX));
-        const newY = Math.max(0, Math.min(100, (displayTransform?.positionY ?? 50) - deltaY));
+        const currentX = displayTransform?.positionX ?? 50;
+        const currentY = displayTransform?.positionY ?? 50;
+
+        const newX = Math.max(0, Math.min(100, Math.round((currentX - deltaX) * 10) / 10));
+        const newY = Math.max(0, Math.min(100, Math.round((currentY - deltaY) * 10) / 10));
 
         onPositionChange(0, newX, newY);
         setDragStart({ x: clientX, y: clientY });
@@ -346,28 +350,35 @@ export const PhotoCollage = ({
     }, [isDragging, dragStart]);
 
     const renderPhoto = (src: string, index: number, className: string, width: number, height: number, showAudio: boolean = false) => {
-        const objectClass = t.c === 'fit' ? "object-contain" : "object-cover";
+        const isCustom = displayTransform?.gravity === 'custom';
+        const posX = displayTransform?.positionX ?? 50;
+        const posY = displayTransform?.positionY ?? 50;
+        const zoom = displayTransform?.zoom ?? (isCustom ? 1.25 : 1);
 
-        const objectPosition = (displayTransform?.gravity === 'custom')
-            ? `${displayTransform.positionX ?? 50}% ${displayTransform.positionY ?? 50}%`
-            : undefined;
+        const objectClass = isCustom ? "object-cover" : (t.c === 'fit' ? "object-contain" : "object-cover");
+        const objectPosition = isCustom ? `${posX}% ${posY}%` : undefined;
 
         const displaySrc = src;
 
         const content = (
-            <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full" active={interactive && kenBurnsEnabled}>
+            <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full overflow-hidden" active={interactive && kenBurnsEnabled}>
                 <Image
                     src={displaySrc}
                     alt={`${title} ${index + 1}`}
                     width={width}
                     height={height}
+                    draggable={false}
                     className={cn(
-                        "w-full h-full transition-none",
+                        "w-full h-full transition-none select-none",
                         objectClass,
                         className,
                         !interactive && "cursor-move touch-none"
                     )}
-                    style={{ objectPosition }}
+                    style={{
+                        objectPosition,
+                        transform: isCustom && zoom > 1 ? `scale(${zoom})` : undefined,
+                        transformOrigin: isCustom ? `${posX}% ${posY}%` : undefined,
+                    }}
                     onMouseDown={(e) => handleMouseDown(e, index)}
                     onTouchStart={(e) => handleMouseDown(e, index)}
                 />

@@ -42,6 +42,7 @@ export type DisplayTransform = {
   gravity?: 'auto' | 'center' | 'custom';
   positionX?: number;
   positionY?: number;
+  zoom?: number;
 };
 
 export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: string } {
@@ -49,21 +50,18 @@ export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h
   const crop = (dt?.crop ?? 'fit') as 'fill' | 'fit';
   const gravity = dt?.gravity ?? 'auto';
   
-  let g = gravity;
-  if (gravity === 'custom' && dt?.positionX !== undefined && dt?.positionY !== undefined) {
-    // Cloudinary uses gravity xy_center for manual offsets
-    // But actually g_custom is not a thing, it should be g_north, etc.
-    // Or we use the CSS object-position for simplicity and just tell Cloudinary 'auto' or 'center'
-    g = 'auto'; 
+  if (gravity === 'custom') {
+    // Preserve full photo bounding box so client-side CSS object-fit: cover, object-position, and zoom can frame any region in 360°
+    return { w: 1600, h: 1600, c: 'fit', g: 'auto' };
   }
 
   switch (preset) {
     case 'portrait':
-      return { w: 900, h: 1200, c: crop, g: g };
+      return { w: 900, h: 1200, c: crop, g: gravity };
     case 'square':
-      return { w: 1000, h: 1000, c: crop, g: g };
+      return { w: 1000, h: 1000, c: crop, g: gravity };
     case 'landscape':
     default:
-      return { w: 1200, h: 900, c: crop, g: g };
+      return { w: 1200, h: 900, c: crop, g: gravity };
   }
 }
