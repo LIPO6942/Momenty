@@ -35,6 +35,7 @@ import type { DisplayTransform } from "@/lib/types";
 import { DescriptionStylePicker, type DescriptionStyle } from "@/components/timeline/description-style-picker";
 import { ArtisticStylePicker } from "@/components/timeline/artistic-style-picker";
 import type { PhotoFilter, PhotoFilterType } from "@/lib/types";
+import { compressImage, uploadImageString, uploadMultipleImages } from "@/lib/image-upload-helper";
 
 
 interface EditNoteDialogProps {
@@ -186,6 +187,10 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isConverting) {
+      toast({ title: "Veuillez patienter pendant la préparation des photos..." });
+      return;
+    }
     setIsLoading(true);
 
     const dateToSave = new Date(date);
@@ -200,27 +205,17 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     }
 
     try {
-      const uploadPromises = photos.filter(p => p.startsWith('data:')).map(async (photoDataUrl) => {
-        const formData = new FormData();
-        const blob = await (await fetch(photoDataUrl)).blob();
-        formData.append('file', blob);
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const result = await response.json();
-        return result.secure_url;
-      });
+      // Safely upload all new/dataUrl photos to Cloudinary and preserve order
+      const finalPhotoUrls = await uploadMultipleImages(photos);
 
-      const uploadedUrls = await Promise.all(uploadPromises);
-      const existingUrls = photos.filter(p => !p.startsWith('data:'));
-      const finalPhotoUrls = [...existingUrls, ...uploadedUrls];
-
+      // Also ensure filteredUrl is uploaded if it's a data URL
+      let finalFilteredUrl = filteredUrl;
+      if (finalFilteredUrl && finalFilteredUrl.startsWith('data:')) {
+        finalFilteredUrl = await uploadImageString(finalFilteredUrl);
+      }
 
       const finalDescription = description || "Note";
 
-      setOpen(false); // Close the dialog immediately for better responsiveness
-      
       await updateInstant(instantToEdit.id, {
         title: finalDescription.substring(0, 30) + (finalDescription.length > 30 ? '...' : ''),
         description,
@@ -238,16 +233,21 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
         },
         descriptionStyle: finalPhotoUrls.length > 0 ? descriptionStyle : undefined,
         audio: audioUrl,
-        photoFilter: selectedFilter && filteredUrl ? {
+        photoFilter: selectedFilter && finalFilteredUrl ? {
           filter: selectedFilter,
-          filteredUrl: filteredUrl
+          filteredUrl: finalFilteredUrl
         } : undefined,
       });
 
-      toast({ title: "Instant mis à jour !" });
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Erreur lors de la mise à jour", variant: 'destructive' });
+      setOpen(false); // Close dialog ONLY after successful update
+      toast({ title: "Publication mise à jour !" });
+    } catch (error: any) {
+      console.error("Error updating instant:", error);
+      toast({ 
+        title: "Erreur lors de la mise à jour", 
+        description: error?.message || "Une erreur est survenue lors de l'enregistrement.",
+        variant: 'destructive' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -255,37 +255,54 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     setIsConverting(true);
-    toast({ title: `Traitement de ${files.length} photo(s)...` });
+    toast({ title: `Traitement et optimisation de ${files.length} photo(s)...` });
 
-    for (const file of Array.from(files)) {
-      let processingFile: File | Blob = file;
-      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+    try {
+      const newCompressedPhotos: string[] = [];
+
+      for (const file of Array.from(files)) {
+        let processingFile: File | Blob = file;
+        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+          try {
+            const heic2any = (await import('heic2any')).default;
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.85,
+            });
+            processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+          } catch (error) {
+            console.error('HEIC Conversion Error:', error);
+            toast({ variant: "destructive", title: "Erreur de conversion", description: `Impossible de convertir ${file.name}.` });
+            continue;
+          }
+        }
+
         try {
-          const heic2any = (await import('heic2any')).default;
-          const convertedBlob = await heic2any({
-            blob: file,
-            toType: "image/jpeg",
-          });
-          processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-        } catch (error) {
-          console.error('HEIC Conversion Error:', error);
-          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
-          continue;
+          const compressed = await compressImage(processingFile);
+          newCompressedPhotos.push(compressed);
+        } catch (compErr) {
+          console.error("Compression error:", compErr);
+          toast({ variant: "destructive", title: "Erreur de fichier", description: `Impossible de lire l'image ${file.name}.` });
         }
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotos(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(processingFile);
+      if (newCompressedPhotos.length > 0) {
+        setPhotos(prev => [...prev, ...newCompressedPhotos]);
+        toast({ title: `${newCompressedPhotos.length} photo(s) ajoutée(s) et prête(s) !` });
+      }
+    } catch (err) {
+      console.error("Photo upload handling error:", err);
+      toast({ variant: "destructive", title: "Erreur lors de l'ajout des photos" });
+    } finally {
+      setIsConverting(false);
+      if (e.target) {
+        e.target.value = '';
+      }
     }
-
-    setIsConverting(false);
-    toast({ title: "Photos ajoutées et prêtes à être téléversées." });
   };
 
   // Function to reset state when the dialog is closed without saving
@@ -349,9 +366,30 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                 {photos.length > 0 && (
                   <div className="space-y-4">
                     <div className="rounded-xl overflow-hidden border shadow-sm bg-slate-50 relative group">
-                      <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm" onClick={() => photos[0].startsWith('data:') && handleAnalyzePhoto(photos[0])} disabled={isLoading || !photos[0].startsWith('data:')}>
-                          {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                      <div className="absolute top-2 right-2 z-30 flex gap-2">
+                        {photos[0].startsWith('data:') && (
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            size="icon" 
+                            className="h-8 w-8 bg-white/90 backdrop-blur-sm" 
+                            onClick={() => handleAnalyzePhoto(photos[0])} 
+                            disabled={isLoading || isAnalyzing}
+                            title="Analyser avec l'IA"
+                          >
+                            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                          </Button>
+                        )}
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-8 w-8 bg-red-600/90 text-white hover:bg-red-700 backdrop-blur-sm shadow-sm" 
+                          onClick={() => removePhoto(0)}
+                          disabled={isLoading}
+                          title="Supprimer la photo principale"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                       <PhotoCollage 
@@ -375,22 +413,50 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                       />
                     </div>
                     {photos.length > 1 && (
-                      <div className="flex flex-wrap gap-2">
-                        {photos.slice(1).map((photo, index) => (
-                          <div key={index} className="relative group">
-                            <Image src={photo} alt={`Miniature ${index + 1}`} width={80} height={80} className="rounded-md object-cover w-20 h-20" />
-                            <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100" onClick={() => removePhoto(index + 1)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Toutes les photos ({photos.length})</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {photos.map((photo, index) => (
+                            <div key={index} className="relative group rounded-md overflow-hidden border shadow-xs">
+                              <Image src={photo} alt={`Photo ${index + 1}`} width={72} height={72} className="rounded-md object-cover w-[72px] h-[72px]" />
+                              <span className="absolute bottom-1 left-1 bg-black/60 text-[9px] text-white px-1 rounded font-bold">
+                                {index === 0 ? "Principale" : `#${index + 1}`}
+                              </span>
+                              <Button 
+                                type="button" 
+                                size="icon" 
+                                variant="destructive" 
+                                className="absolute top-1 right-1 h-5 w-5 opacity-80 group-hover:opacity-100" 
+                                onClick={() => removePhoto(index)}
+                                disabled={isLoading}
+                                title={`Supprimer la photo ${index + 1}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
-                <Button type="button" variant="outline" className="w-full flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
-                  {isConverting ? <Loader2 className="h-6 w-6 animate-spin" /> : <ImageIcon className="h-6 w-6" />}
-                  <span>{isConverting ? "Conversion..." : "Importer photo(s)"}</span>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex-col gap-2 py-4 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-all" 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={isLoading || isConverting}
+                >
+                  {isConverting ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-primary" />
+                  )}
+                  <span className="font-medium text-sm">
+                    {isConverting 
+                      ? "Optimisation et compression des photos..." 
+                      : (photos.length > 0 ? "+ Ajouter d'autres photos à cette publication" : "Ajouter une ou des photos")}
+                  </span>
                 </Button>
                 <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} multiple={isMultiSelect} />
               </div>
@@ -590,9 +656,9 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
             <DialogClose asChild>
               <Button type="button" variant="ghost">Fermer</Button>
             </DialogClose>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Enregistrer
+            <Button type="submit" disabled={isLoading || isConverting}>
+              {(isLoading || isConverting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Mise à jour..." : isConverting ? "Optimisation..." : "Enregistrer"}
             </Button>
           </DialogFooter>
         </form>

@@ -111,10 +111,20 @@ export const CITY_TO_COUNTRY: Record<string, string> = {
   "alger": "Algérie",
   "oran": "Algérie",
   "le caire": "Égypte",
-  "cairo": "Égypte",
   "grand baie": "Maurice",
   "port louis": "Maurice",
+  "port-louis": "Maurice",
+  "portlouis": "Maurice",
   "flic en flac": "Maurice",
+  "chamarel": "Maurice",
+  "curepipe": "Maurice",
+  "beau bassin": "Maurice",
+  "kuala lumpur": "Malaisie",
+  "kuala lampur": "Malaisie",
+  "kulala lumpur": "Malaisie",
+  "kulala lampur": "Malaisie",
+  "kualalumpur": "Malaisie",
+  "kuala-lumpur": "Malaisie",
 };
 
 export const COUNTRY_ALIASES: Record<string, string> = {
@@ -230,46 +240,86 @@ export const getCountry = (loc: string): string => {
   return rawCountry.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
+export const CITY_ALIASES: Record<string, string> = {
+  "kuala lumpur": "Kuala Lumpur",
+  "kuala lampur": "Kuala Lumpur",
+  "kulala lumpur": "Kuala Lumpur",
+  "kulala lampur": "Kuala Lumpur",
+  "kualalumpur": "Kuala Lumpur",
+  "kuala-lumpur": "Kuala Lumpur",
+  "port-louis": "Port Louis",
+  "portlouis": "Port Louis",
+  "port louis": "Port Louis",
+};
+
+export const normalizeCityName = (raw: string): string => {
+  if (!raw) return "";
+  const cleaned = raw.trim();
+  const lower = cleaned.toLowerCase();
+  if (CITY_ALIASES[lower]) {
+    return CITY_ALIASES[lower];
+  }
+  return cleaned
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export const getCity = (loc: string): string => {
   if (!loc) return "";
   const parts = loc.split(",").map(p => p.trim()).filter(Boolean);
   if (parts.length === 0) return "";
 
+  // Si un seul composant et qu'il s'agit d'un pays reconnu (ex: "Îles Maurice", "Maurice", "France", "Tunisie")
+  // alors ce n'est PAS une ville
+  if (parts.length === 1 && (isRecognizedCountry(parts[0]) || COUNTRY_ALIASES[parts[0].toLowerCase()])) {
+    return "";
+  }
+
   // Si le format est "Sortie Kharjet, Gammarth", la ville est "Gammarth"
   if (parts[0].toLowerCase().startsWith("sortie kharjet") && parts.length > 1) {
     const raw = parts[1];
-    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    if (isRecognizedCountry(raw) || COUNTRY_ALIASES[raw.toLowerCase()]) return "";
+    return normalizeCityName(raw);
   }
 
   // Si format "Spot, Ville, Pays" (3+ composants), la ville est l'avant-dernière
   if (parts.length >= 3) {
     const candidate = parts[parts.length - 2];
-    return candidate.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    if (isRecognizedCountry(candidate) || COUNTRY_ALIASES[candidate.toLowerCase()]) return "";
+    return normalizeCityName(candidate);
   }
 
   // Si format "Ville, Pays" où la 2e partie est un pays reconnu
-  if (parts.length === 2 && isRecognizedCountry(parts[1])) {
+  if (parts.length === 2 && (isRecognizedCountry(parts[1]) || COUNTRY_ALIASES[parts[1].toLowerCase()])) {
     const raw = parts[0];
-    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    if (isRecognizedCountry(raw) || COUNTRY_ALIASES[raw.toLowerCase()]) return "";
+    return normalizeCityName(raw);
   }
 
   // Si format "Spot, Ville" où la 2e partie est une ville connue
   if (parts.length === 2 && CITY_TO_COUNTRY[parts[1].toLowerCase()]) {
     const raw = parts[1];
-    return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    return normalizeCityName(raw);
+  }
+
+  // Si format à 2 composants et que les 2 sont des pays reconnus (ex: "Îles Maurice, Maurice")
+  if (parts.length === 2 && 
+      (isRecognizedCountry(parts[0]) || COUNTRY_ALIASES[parts[0].toLowerCase()]) && 
+      (isRecognizedCountry(parts[1]) || COUNTRY_ALIASES[parts[1].toLowerCase()])) {
+    return "";
   }
 
   const rawCity = parts[0];
-  const lower = rawCity.toLowerCase();
-  
-  const aliases: Record<string, string> = {
-    "kuala lampur": "Kuala Lumpur",
-    "kuala lumpur": "Kuala Lumpur",
-  };
-  
-  if (aliases[lower]) return aliases[lower];
+  if (isRecognizedCountry(rawCity) || COUNTRY_ALIASES[rawCity.toLowerCase()]) {
+    // Si la 1ère partie est un pays et la 2e partie n'en est pas un, tester la 2e partie
+    if (parts.length > 1 && !isRecognizedCountry(parts[1]) && !COUNTRY_ALIASES[parts[1].toLowerCase()]) {
+      return normalizeCityName(parts[1]);
+    }
+    return "";
+  }
 
-  return rawCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  return normalizeCityName(rawCity);
 };
 
 export const getPhotoFilterCss = (filter?: string): string | undefined => {

@@ -23,6 +23,7 @@ import type { Accommodation, DisplayTransform } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
+import { compressImage, uploadImageString } from "@/lib/image-upload-helper";
 
 
 // Helper to format ISO string to datetime-local string
@@ -112,15 +113,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
     try {
         let uploadedPhotoUrl = photo;
         if (photo && photo.startsWith('data:')) {
-             const formData = new FormData();
-             const blob = await (await fetch(photo)).blob();
-             formData.append('file', blob);
-             const response = await fetch('/api/upload', {
-                 method: 'POST',
-                 body: formData,
-             });
-             const result = await response.json();
-             uploadedPhotoUrl = result.secure_url;
+             uploadedPhotoUrl = await uploadImageString(photo);
         }
 
         await updateAccommodation(accommodationToEdit.id, {
@@ -136,9 +129,9 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
         setOpen(false);
         toast({ title: "Logement mis à jour !" });
 
-    } catch(error) {
+    } catch(error: any) {
         console.error("Failed to update accommodation", error);
-        toast({ variant: "destructive", title: "Erreur de mise à jour" });
+        toast({ variant: "destructive", title: "Erreur de mise à jour", description: error?.message || "Une erreur est survenue." });
     } finally {
         setIsLoading(false);
     }
@@ -146,34 +139,40 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
   
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      let processingFile: File | Blob = file;
-      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-        setIsConverting(true);
-        toast({ title: "Conversion de l'image HEIC..." });
-        try {
-          const heic2any = (await import('heic2any')).default;
-          const convertedBlob = await heic2any({
-            blob: file,
-            toType: "image/jpeg",
-          });
-          processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-        } catch (error) {
-          console.error('HEIC Conversion Error:', error);
-          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
-          setIsConverting(false);
-          return;
-        } finally {
-          setIsConverting(false);
-        }
+    if (!file) return;
+
+    let processingFile: File | Blob = file;
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      setIsConverting(true);
+      toast({ title: "Conversion de l'image HEIC..." });
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+        });
+        processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      } catch (error) {
+        console.error('HEIC Conversion Error:', error);
+        toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+        setIsConverting(false);
+        return;
+      } finally {
+        setIsConverting(false);
       }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhoto(reader.result as string);
-        toast({title: "Photo prête à être téléversée."});
-      };
-      reader.readAsDataURL(processingFile);
+    }
+    
+    try {
+      setIsConverting(true);
+      const compressed = await compressImage(processingFile);
+      setPhoto(compressed);
+      toast({ title: "Photo prête à être enregistrée." });
+    } catch (err) {
+      console.error("Compression error:", err);
+      toast({ variant: "destructive", title: "Erreur lors du traitement de l'image" });
+    } finally {
+      setIsConverting(false);
+      if (e.target) e.target.value = '';
     }
   };
 

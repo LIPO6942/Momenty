@@ -36,7 +36,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { parseISO, getHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { countries } from "@/lib/countries";
-import { cn, getCountry, getCity, getFlagEmoji, isRecognizedCountry, CITY_TO_COUNTRY } from "@/lib/utils";
+import { cn, getCountry, getCity, getFlagEmoji, isRecognizedCountry, CITY_TO_COUNTRY, COUNTRY_ALIASES, normalizeCityName } from "@/lib/utils";
 import { Instant, Dish, Encounter, Accommodation } from "@/lib/types";
 
 interface PassportViewProps {
@@ -235,37 +235,68 @@ export const PassportView = ({
     const locationsMap = new Map<string, { name: string; countryName: string; continent: string, dates: string[] }>();
     
     instants.forEach(i => {
-      const cityName = getCity(i.location);
-      const countryName = getCountry(i.location);
-      if (!cityName) return;
-      // Ne pas ajouter comme ville si la valeur correspond en fait au pays souverain
-      if (isRecognizedCountry(cityName) && cityName.toLowerCase() === countryName.toLowerCase()) return;
+      const rawCity = getCity(i.location);
+      if (!rawCity) return;
+      const cityName = normalizeCityName(rawCity);
+      // Ne jamais ajouter un pays ou un alias de pays (ex: "Îles Maurice", "Maurice") comme ville
+      if (isRecognizedCountry(cityName) || isRecognizedCountry(rawCity) || COUNTRY_ALIASES[cityName.toLowerCase()] || COUNTRY_ALIASES[rawCity.toLowerCase()]) return;
 
-      const key = `${cityName}, ${countryName}`.toLowerCase();
-      const normalizedC = countryName.trim();
+      const rawCountry = getCountry(i.location);
+      let countryName = rawCountry;
+      const mappedCountry = CITY_TO_COUNTRY[cityName.toLowerCase()] || CITY_TO_COUNTRY[rawCity.toLowerCase()];
+      if (mappedCountry) {
+        countryName = mappedCountry;
+      } else if (rawCountry && isRecognizedCountry(rawCountry)) {
+        countryName = getCountry(rawCountry) || rawCountry;
+      }
+
+      // Clé canonique pour fusionner les doublons (ex: "Kuala Lumpur", "kulala lampur", "Kuala Lampur")
+      const cityKey = cityName.toLowerCase().trim();
+      const normalizedC = (countryName || '').trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
-      if (!locationsMap.has(key)) {
-        locationsMap.set(key, { name: cityName, countryName, continent, dates: [i.date] });
+
+      if (!locationsMap.has(cityKey)) {
+        locationsMap.set(cityKey, { name: cityName, countryName, continent, dates: i.date ? [i.date] : [] });
       } else {
-        const item = locationsMap.get(key)!;
+        const item = locationsMap.get(cityKey)!;
+        // Enrichir le pays si l'entrée précédente n'avait pas de pays reconnu
+        if ((!item.countryName || !isRecognizedCountry(item.countryName)) && countryName && isRecognizedCountry(countryName)) {
+          item.countryName = countryName;
+          item.continent = continent !== 'other' ? continent : item.continent;
+        }
         if (i.date) item.dates.push(i.date);
       }
     });
     
     manualLocations.forEach(m => {
-      const cityName = getCity(m.name);
-      const countryName = getCountry(m.name);
-      if (!cityName) return;
-      if (isRecognizedCountry(cityName) && cityName.toLowerCase() === countryName.toLowerCase()) return;
+      const rawCity = getCity(m.name);
+      if (!rawCity) return;
+      const cityName = normalizeCityName(rawCity);
+      if (isRecognizedCountry(cityName) || isRecognizedCountry(rawCity) || COUNTRY_ALIASES[cityName.toLowerCase()] || COUNTRY_ALIASES[rawCity.toLowerCase()]) return;
 
-      const key = `${cityName}, ${countryName}`.toLowerCase();
+      const rawCountry = getCountry(m.name);
+      let countryName = rawCountry;
+      const mappedCountry = CITY_TO_COUNTRY[cityName.toLowerCase()] || CITY_TO_COUNTRY[rawCity.toLowerCase()];
+      if (mappedCountry) {
+        countryName = mappedCountry;
+      } else if (rawCountry && isRecognizedCountry(rawCountry)) {
+        countryName = getCountry(rawCountry) || rawCountry;
+      }
+
+      const cityKey = cityName.toLowerCase().trim();
       const mDate = m.startDate || new Date().toISOString();
-      const normalizedC = countryName.trim();
+      const normalizedC = (countryName || '').trim();
       const continent = countryToContinent[normalizedC] || countryToContinent[normalizedC.charAt(0).toUpperCase() + normalizedC.slice(1).toLowerCase()] || 'other';
-      if (!locationsMap.has(key)) {
-        locationsMap.set(key, { name: cityName, countryName, continent, dates: [mDate] });
+
+      if (!locationsMap.has(cityKey)) {
+        locationsMap.set(cityKey, { name: cityName, countryName, continent, dates: [mDate] });
       } else {
-        locationsMap.get(key)!.dates.push(mDate);
+        const item = locationsMap.get(cityKey)!;
+        if ((!item.countryName || !isRecognizedCountry(item.countryName)) && countryName && isRecognizedCountry(countryName)) {
+          item.countryName = countryName;
+          item.continent = continent !== 'other' ? continent : item.continent;
+        }
+        item.dates.push(mDate);
       }
     });
     
@@ -303,9 +334,11 @@ export const PassportView = ({
 
   const isDomesticCity = (visa: VisaData) => {
     const c = (visa.countryName || '').trim().toLowerCase();
-    if (c === normalizedHomeCountry) return true;
+    const canonHome = COUNTRY_ALIASES[normalizedHomeCountry] || normalizedHomeCountry;
+    const canonCountry = COUNTRY_ALIASES[c] || c;
+    if (canonCountry.toLowerCase() === canonHome.toLowerCase()) return true;
     const mappedCountry = CITY_TO_COUNTRY[visa.name.toLowerCase()];
-    if (mappedCountry && mappedCountry.trim().toLowerCase() === normalizedHomeCountry) return true;
+    if (mappedCountry && ((COUNTRY_ALIASES[mappedCountry.toLowerCase()] || mappedCountry).toLowerCase() === canonHome.toLowerCase())) return true;
     return false;
   };
 

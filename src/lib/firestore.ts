@@ -41,10 +41,23 @@ const saveDataInSubcollection = async <T extends {id?: string, icon?: any, color
     delete raw.icon;
     delete raw.color;
     delete raw.id;
-    // Remove undefined fields (Firestore does not allow undefined)
-    const dataToSave = Object.fromEntries(
-        Object.entries(raw).filter(([_, v]) => v !== undefined)
-    );
+    
+    // Deeply remove undefined fields and filter undefined from arrays
+    const sanitize = (val: any): any => {
+        if (Array.isArray(val)) {
+            return val.filter(v => v !== undefined).map(sanitize);
+        }
+        if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+            return Object.fromEntries(
+                Object.entries(val)
+                    .filter(([_, v]) => v !== undefined)
+                    .map(([k, v]) => [k, sanitize(v)])
+            );
+        }
+        return val;
+    };
+
+    const dataToSave = sanitize(raw);
 
     await setDoc(docRef, dataToSave as any, { merge: true });
     return docRef.id;
