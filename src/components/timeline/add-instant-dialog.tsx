@@ -25,7 +25,7 @@ import { CollageTemplatePicker } from "@/components/timeline/collage-template-pi
 import { CollageCanvas } from "@/components/timeline/collage-canvas";
 import { CollageCustomizer } from "@/components/timeline/collage-customizer";
 import { PhotoCollage } from "@/components/timeline/photo-collage";
-import { ManualFramingControls } from "@/components/timeline/manual-framing-controls";
+import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
 import type { CollageTemplate } from "@/lib/types";
 import type { CollageTemplateDef } from "@/lib/collage-templates";
 import { getCompatibleTemplates } from "@/lib/collage-templates";
@@ -117,6 +117,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayPositionX, setDisplayPositionX] = useState<number>(50);
     const [displayPositionY, setDisplayPositionY] = useState<number>(50);
     const [displayZoom, setDisplayZoom] = useState<number>(1.25);
+    const [photosTransforms, setPhotosTransforms] = useState<Record<string | number, { positionX: number; positionY: number; zoom: number }>>({});
     const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("classique-italique");
 
     // ── Photo filter state ─────────────────────────────────────────────────
@@ -467,6 +468,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setDisplayPositionX(50);
         setDisplayPositionY(50);
         setDisplayZoom(1.25);
+        setPhotosTransforms({});
         setDescriptionStyle("classique-italique");
         // Photo filter cleanup
         setSelectedFilter(null);
@@ -643,6 +645,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         positionX: displayPositionX,
                         positionY: displayPositionY,
                         zoom: displayZoom,
+                        photosTransforms: photosTransforms,
                     },
                 };
                 const newId = await addEncounter(newEncounter);
@@ -689,6 +692,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         positionX: displayPositionX,
                         positionY: displayPositionY,
                         zoom: displayZoom,
+                        photosTransforms: photosTransforms,
                     },
                 };
                 const newId = await addDish(newDish);
@@ -767,6 +771,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         positionX: displayPositionX,
                         positionY: displayPositionY,
                         zoom: displayZoom,
+                        photosTransforms: photosTransforms,
                     },
                 };
                 const newId = await addAccommodation(newAccommodation);
@@ -854,6 +859,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         positionX: displayPositionX,
                         positionY: displayPositionY,
                         zoom: displayZoom,
+                        photosTransforms: photosTransforms,
                     },
                     descriptionStyle: photos.length > 0 ? descriptionStyle : undefined,
                     ...(builtCollageTemplate ? { collageTemplate: builtCollageTemplate } : {}),
@@ -1017,7 +1023,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     </div>
 
                                     {photos.length > 0 && !isCollageMode && (
-                                        <div className="space-y-2">
+                                        <div className="space-y-4">
                                             {/* Main photo */}
                                             {!(isDish || isEncounter || isAccommodation) ? (
                                                 <div className="rounded-xl overflow-hidden border shadow-sm bg-slate-50 relative group">
@@ -1039,57 +1045,75 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                             positionX: displayPositionX,
                                                             positionY: displayPositionY,
                                                             zoom: displayZoom,
+                                                            photosTransforms: photosTransforms,
                                                         }}
                                                         audioUrl={audioUrl}
                                                         interactive={false}
-                                                        onPositionChange={(index, x, y) => {
+                                                        onFramingChange={(index, framing) => {
                                                             if (displayGravity !== 'custom') setDisplayGravity('custom');
-                                                            setDisplayPositionX(x);
-                                                            setDisplayPositionY(y);
+                                                            setPhotosTransforms(prev => ({ ...prev, [index]: framing }));
+                                                            if (index === 0) {
+                                                                setDisplayPositionX(framing.positionX);
+                                                                setDisplayPositionY(framing.positionY);
+                                                                setDisplayZoom(framing.zoom);
+                                                            }
                                                         }}
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="relative group">
-                                                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
-                                                        Photo 1
-                                                    </span>
-                                                    <Image
+                                                <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                                                    <InteractiveImageFrame
                                                         src={photos[0]}
-                                                        alt="Aperçu principal"
-                                                        width={400}
-                                                        height={800}
-                                                        className="rounded-md object-cover w-full h-auto max-h-[30vh]"
+                                                        alt="Photo 1"
+                                                        width={600}
+                                                        height={600}
+                                                        positionX={photosTransforms[0]?.positionX ?? displayPositionX}
+                                                        positionY={photosTransforms[0]?.positionY ?? displayPositionY}
+                                                        zoom={photosTransforms[0]?.zoom ?? displayZoom}
+                                                        badgeLabel="Photo 1"
+                                                        topRightActions={
+                                                            <div className="flex gap-1.5">
+                                                                <Button type="button" variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading || isAnalyzing}>
+                                                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                                                </Button>
+                                                                <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => removePhoto(0)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        }
+                                                        onFramingChange={(framing) => {
+                                                            if (displayGravity !== 'custom') setDisplayGravity('custom');
+                                                            setPhotosTransforms(prev => ({ ...prev, 0: framing }));
+                                                            setDisplayPositionX(framing.positionX);
+                                                            setDisplayPositionY(framing.positionY);
+                                                            setDisplayZoom(framing.zoom);
+                                                        }}
                                                     />
-                                                    <div className="absolute top-2 right-2 flex gap-2">
-                                                        <Button type="button" variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleAnalyzePhoto(photos[0])} disabled={isLoading}>
-                                                            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(0)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
                                                 </div>
                                             )}
 
-                                            {/* Second photo in dish/encounter/accommodation mode — full size preview */}
+                                            {/* Second photo in dish/encounter/accommodation mode — interactive framing */}
                                             {(isDish || isEncounter || isAccommodation) && photos[1] && (
-                                                <div className="relative group">
-                                                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
-                                                        Photo 2
-                                                    </span>
-                                                    <Image
+                                                <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                                                    <InteractiveImageFrame
                                                         src={photos[1]}
-                                                        alt="2e photo"
-                                                        width={400}
-                                                        height={800}
-                                                        className="rounded-md object-cover w-full h-auto max-h-[30vh]"
+                                                        alt="Photo 2"
+                                                        width={600}
+                                                        height={600}
+                                                        positionX={photosTransforms[1]?.positionX ?? 50}
+                                                        positionY={photosTransforms[1]?.positionY ?? 50}
+                                                        zoom={photosTransforms[1]?.zoom ?? 1.25}
+                                                        badgeLabel="Photo 2"
+                                                        topRightActions={
+                                                            <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => removePhoto(1)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        }
+                                                        onFramingChange={(framing) => {
+                                                            if (displayGravity !== 'custom') setDisplayGravity('custom');
+                                                            setPhotosTransforms(prev => ({ ...prev, 1: framing }));
+                                                        }}
                                                     />
-                                                    <div className="absolute top-2 right-2">
-                                                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => removePhoto(1)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
                                                 </div>
                                             )}
 
@@ -1478,19 +1502,6 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 </select>
                                             </div>
                                         </div>
-                                        {displayGravity === 'custom' && (
-                                            <ManualFramingControls
-                                                positionX={displayPositionX}
-                                                positionY={displayPositionY}
-                                                zoom={displayZoom}
-                                                onPositionChange={(x, y) => {
-                                                    setDisplayPositionX(x);
-                                                    setDisplayPositionY(y);
-                                                }}
-                                                onZoomChange={setDisplayZoom}
-                                                disabled={isLoading}
-                                            />
-                                        )}
                                     </div>
 
                                     {isAccommodation && (

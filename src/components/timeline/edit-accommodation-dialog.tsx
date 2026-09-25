@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Accommodation, DisplayTransform } from "@/lib/types";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2 } from "lucide-react";
+import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Plus } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import { compressImage, uploadImageString } from "@/lib/image-upload-helper";
@@ -66,17 +67,20 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
   
   const { updateAccommodation } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInput2Ref = useRef<HTMLInputElement>(null);
 
   // Initialize state with values from the accommodation to be edited
   const [name, setName] = useState(accommodationToEdit.name);
   const [description, setDescription] = useState(accommodationToEdit.description);
   const [location, setLocation] = useState(accommodationToEdit.location);
   const [photo, setPhoto] = useState<string | null | undefined>(accommodationToEdit.photo);
+  const [photo2, setPhoto2] = useState<string | null | undefined>(accommodationToEdit.photo2);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
   const [date, setDate] = useState(accommodationToEdit.date);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
   const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
+  const [photosTransforms, setPhotosTransforms] = useState<Record<string | number, { positionX: number; positionY: number; zoom: number }>>({});
   
   const [isLoading, setIsLoading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
@@ -87,11 +91,13 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
         setDescription(accommodationToEdit.description);
         setLocation(accommodationToEdit.location);
         setPhoto(accommodationToEdit.photo);
+        setPhoto2(accommodationToEdit.photo2);
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
         setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
         setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
+        setPhotosTransforms((accommodationToEdit.displayTransform?.photosTransforms as any) || {});
     }
   }, [open, accommodationToEdit]);
 
@@ -115,15 +121,28 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
         if (photo && photo.startsWith('data:')) {
              uploadedPhotoUrl = await uploadImageString(photo);
         }
+        let uploadedPhoto2Url = photo2;
+        if (photo2 && photo2.startsWith('data:')) {
+             uploadedPhoto2Url = await uploadImageString(photo2);
+        }
 
         await updateAccommodation(accommodationToEdit.id, {
             name,
             description,
             photo: uploadedPhotoUrl,
+            photo2: uploadedPhoto2Url || null,
             location,
             emotion: emotions.length > 0 ? emotions : ["Neutre"],
             date: dateToSave.toISOString(),
-            displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+            displayTransform: {
+              preset: displayPreset,
+              crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+              gravity: displayGravity,
+              photosTransforms: photosTransforms,
+              positionX: photosTransforms[0]?.positionX,
+              positionY: photosTransforms[0]?.positionY,
+              zoom: photosTransforms[0]?.zoom,
+            },
         });
         
         setOpen(false);
@@ -176,17 +195,58 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
     }
   };
 
+  const handlePhoto2Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    let processingFile: File | Blob = file;
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      setIsConverting(true);
+      toast({ title: "Conversion de l'image HEIC..." });
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+        });
+        processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      } catch (error) {
+        console.error('HEIC Conversion Error:', error);
+        toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+        setIsConverting(false);
+        return;
+      } finally {
+        setIsConverting(false);
+      }
+    }
+
+    try {
+      setIsConverting(true);
+      const compressed = await compressImage(processingFile);
+      setPhoto2(compressed);
+      toast({ title: "Photo 2 prête à être enregistrée." });
+    } catch (err) {
+      console.error("Compression error:", err);
+      toast({ variant: "destructive", title: "Erreur lors du traitement de l'image" });
+    } finally {
+      setIsConverting(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const cleanup = () => {
     if (accommodationToEdit) {
         setName(accommodationToEdit.name);
         setDescription(accommodationToEdit.description);
         setLocation(accommodationToEdit.location);
         setPhoto(accommodationToEdit.photo);
+        setPhoto2(accommodationToEdit.photo2);
         setEmotions(Array.isArray(accommodationToEdit.emotion) ? accommodationToEdit.emotion : (accommodationToEdit.emotion ? [accommodationToEdit.emotion] : []));
         setDate(accommodationToEdit.date);
         setDisplayPreset(accommodationToEdit.displayTransform?.preset ?? 'landscape');
         setDisplayCrop(accommodationToEdit.displayTransform?.crop ?? 'fit');
         setDisplayGravity(accommodationToEdit.displayTransform?.gravity ?? 'auto');
+        setPhotosTransforms((accommodationToEdit.displayTransform?.photosTransforms as any) || {});
     }
     setIsLoading(false);
   }
@@ -221,25 +281,68 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
           </DialogHeader>
            <div className="flex-grow overflow-y-auto pr-6 -mr-6">
              <div className="space-y-6 py-4">
-                 <div className="space-y-2">
-                    <Label className="text-muted-foreground">Souvenir visuel</Label>
-                    {photo ? (
-                        <div className="relative group">
-                            <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
-                                    <Trash2 className="h-4 w-4"/>
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                       <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
-                            {isConverting ? <Loader2 className="h-6 w-6 animate-spin"/> : <ImageIcon className="h-6 w-6" />}
-                            <span>{isConverting ? "Conversion..." : "Importer une nouvelle photo"}</span>
-                        </Button>
-                    )}
-                    <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
-                 </div>
+                  <div className="space-y-3">
+                     <Label className="text-muted-foreground">Souvenirs visuels (jusqu'à 2 photos)</Label>
+                     {photo ? (
+                         <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                             <InteractiveImageFrame
+                               src={photo}
+                               alt="Photo 1"
+                               width={600}
+                               height={600}
+                               positionX={photosTransforms[0]?.positionX ?? 50}
+                               positionY={photosTransforms[0]?.positionY ?? 50}
+                               zoom={photosTransforms[0]?.zoom ?? 1.25}
+                               badgeLabel="Photo 1"
+                               topRightActions={
+                                 <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => setPhoto(null)}>
+                                     <Trash2 className="h-4 w-4"/>
+                                 </Button>
+                               }
+                               onFramingChange={(framing) => {
+                                 if (displayGravity !== 'custom') setDisplayGravity('custom');
+                                 setPhotosTransforms(prev => ({ ...prev, 0: framing }));
+                               }}
+                             />
+                         </div>
+                     ) : (
+                        <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
+                             {isConverting ? <Loader2 className="h-5 w-5 animate-spin"/> : <ImageIcon className="h-5 w-5" />}
+                             <span className="text-xs">{isConverting ? "Conversion..." : "Importer la photo principale"}</span>
+                         </Button>
+                     )}
+                     <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+
+                     {photo2 ? (
+                         <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                             <InteractiveImageFrame
+                               src={photo2}
+                               alt="Photo 2"
+                               width={600}
+                               height={600}
+                               positionX={photosTransforms[1]?.positionX ?? 50}
+                               positionY={photosTransforms[1]?.positionY ?? 50}
+                               zoom={photosTransforms[1]?.zoom ?? 1.25}
+                               badgeLabel="Photo 2"
+                               topRightActions={
+                                 <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => setPhoto2(null)}>
+                                     <Trash2 className="h-4 w-4"/>
+                                 </Button>
+                               }
+                               onFramingChange={(framing) => {
+                                 if (displayGravity !== 'custom') setDisplayGravity('custom');
+                                 setPhotosTransforms(prev => ({ ...prev, 1: framing }));
+                               }}
+                             />
+                         </div>
+                     ) : photo ? (
+                         <Button type="button" variant="outline" className="w-full h-12 border-dashed border-primary/40 hover:bg-primary/5 gap-2 text-primary font-medium rounded-xl" onClick={() => fileInput2Ref.current?.click()} disabled={isLoading || isConverting}>
+                             <Plus className="h-4 w-4" />
+                             <span className="text-xs">Ajouter une 2ème photo du logement</span>
+                         </Button>
+                     ) : null}
+                     <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInput2Ref} onChange={handlePhoto2Upload} />
+                  </div>
                  
                  <Separator />
                  <div>
@@ -265,6 +368,7 @@ export function EditAccommodationDialog({ children, accommodationToEdit, open: c
                         <select className="w-full border rounded-md h-9 px-2" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
                           <option value="auto">Auto</option>
                           <option value="center">Centre</option>
+                          <option value="custom">Manuel</option>
                         </select>
                       </div>
                     </div>

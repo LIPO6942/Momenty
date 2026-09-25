@@ -43,6 +43,7 @@ export type DisplayTransform = {
   positionX?: number;
   positionY?: number;
   zoom?: number;
+  photosTransforms?: Record<string | number, { positionX?: number; positionY?: number; zoom?: number }>;
 };
 
 export function buildTransformFromDisplay(dt?: DisplayTransform): { w: number; h: number; c: 'fill' | 'fit'; g: string } {

@@ -2,13 +2,43 @@
 import { type ManualLocation } from "./firestore"; // Changed from idb
 import type { User } from 'firebase/auth';
 
+export interface PhotoFraming {
+    positionX?: number; // 0-100 percentage
+    positionY?: number; // 0-100 percentage
+    zoom?: number;      // scale factor (e.g. 1.0 - 2.5)
+}
+
 export interface DisplayTransform {
     preset: 'landscape' | 'portrait' | 'square';
     crop: 'fill' | 'fit';
     gravity: 'auto' | 'center' | 'custom';
-    positionX?: number; // 0-100 percentage
-    positionY?: number; // 0-100 percentage
+    positionX?: number; // 0-100 percentage (photo 0 default)
+    positionY?: number; // 0-100 percentage (photo 0 default)
     zoom?: number; // Scale factor (e.g. 1.0 - 2.5)
+    photosTransforms?: Record<string | number, PhotoFraming>; // Per-photo framing for multi-photo posts
+}
+
+export function getPhotoFraming(dt?: DisplayTransform, index: number = 0): { positionX: number; positionY: number; zoom: number } {
+    const perPhoto = dt?.photosTransforms?.[index] ?? dt?.photosTransforms?.[`${index}`];
+    if (perPhoto) {
+        return {
+            positionX: perPhoto.positionX ?? 50,
+            positionY: perPhoto.positionY ?? 50,
+            zoom: perPhoto.zoom ?? (dt?.gravity === 'custom' ? 1.25 : 1),
+        };
+    }
+    if (index === 0) {
+        return {
+            positionX: dt?.positionX ?? 50,
+            positionY: dt?.positionY ?? 50,
+            zoom: dt?.zoom ?? (dt?.gravity === 'custom' ? 1.25 : 1),
+        };
+    }
+    return {
+        positionX: 50,
+        positionY: 50,
+        zoom: dt?.gravity === 'custom' ? 1.25 : 1,
+    };
 }
 
 // --- Itinerary Flow Types ---

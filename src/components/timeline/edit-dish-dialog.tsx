@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Dish, DisplayTransform } from "@/lib/types";
+import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
@@ -97,6 +98,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
   const [displayCrop, setDisplayCrop] = useState<DisplayTransform['crop']>('fit');
   const [displayGravity, setDisplayGravity] = useState<DisplayTransform['gravity']>('auto');
+  const [photosTransforms, setPhotosTransforms] = useState<Record<string | number, { positionX: number; positionY: number; zoom: number }>>({});
 
   // Kol Youm API State
   const [places, setPlaces] = useState<{ label: string; zone: string; category: string }[]>([]);
@@ -123,6 +125,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
       setDisplayPreset(dishToEdit.displayTransform?.preset ?? 'landscape');
       setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(dishToEdit.displayTransform?.gravity ?? 'auto');
+      setPhotosTransforms((dishToEdit.displayTransform?.photosTransforms as any) || {});
     }
   }, [open, dishToEdit]);
 
@@ -193,7 +196,15 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         city,
         emotion: emotions.length > 0 ? emotions : ["Neutre"],
         date: dateToSave.toISOString(),
-        displayTransform: { preset: displayPreset, crop: displayCrop, gravity: displayGravity },
+        displayTransform: {
+          preset: displayPreset,
+          crop: displayGravity === 'custom' ? 'fill' : displayCrop,
+          gravity: displayGravity,
+          photosTransforms: photosTransforms,
+          positionX: photosTransforms[0]?.positionX,
+          positionY: photosTransforms[0]?.positionY,
+          zoom: photosTransforms[0]?.zoom,
+        },
       });
 
       // --- Sync with Kol Youm if it's a dish and we have a location/city ---
@@ -358,14 +369,26 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
               <div className="space-y-3">
                 <Label className="text-muted-foreground">Souvenirs visuels (jusqu'à 2 photos)</Label>
                 {photo ? (
-                  <div className="relative group">
-                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md">Photo 1</span>
-                    <Image src={photo} alt="Photo 1" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                    <InteractiveImageFrame
+                      src={photo}
+                      alt="Photo 1"
+                      width={600}
+                      height={600}
+                      positionX={photosTransforms[0]?.positionX ?? 50}
+                      positionY={photosTransforms[0]?.positionY ?? 50}
+                      zoom={photosTransforms[0]?.zoom ?? 1.25}
+                      badgeLabel="Photo 1"
+                      topRightActions={
+                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => setPhoto(null)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                      onFramingChange={(framing) => {
+                        if (displayGravity !== 'custom') setDisplayGravity('custom');
+                        setPhotosTransforms(prev => ({ ...prev, 0: framing }));
+                      }}
+                    />
                   </div>
                 ) : (
                   <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
@@ -376,14 +399,26 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                 <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
 
                 {photo2 ? (
-                  <div className="relative group">
-                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md">Photo 2</span>
-                    <Image src={photo2} alt="Photo 2" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto2(null)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="h-[280px] w-full rounded-xl overflow-hidden relative border shadow-sm">
+                    <InteractiveImageFrame
+                      src={photo2}
+                      alt="Photo 2"
+                      width={600}
+                      height={600}
+                      positionX={photosTransforms[1]?.positionX ?? 50}
+                      positionY={photosTransforms[1]?.positionY ?? 50}
+                      zoom={photosTransforms[1]?.zoom ?? 1.25}
+                      badgeLabel="Photo 2"
+                      topRightActions={
+                        <Button type="button" variant="destructive" size="icon" className="h-8 w-8 bg-red-600/90 text-white" onClick={() => setPhoto2(null)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                      onFramingChange={(framing) => {
+                        if (displayGravity !== 'custom') setDisplayGravity('custom');
+                        setPhotosTransforms(prev => ({ ...prev, 1: framing }));
+                      }}
+                    />
                   </div>
                 ) : photo ? (
                   <Button type="button" variant="outline" className="w-full h-12 border-dashed border-primary/40 hover:bg-primary/5 gap-2 text-primary font-medium rounded-xl" onClick={() => fileInput2Ref.current?.click()} disabled={isLoading || isConverting}>
@@ -418,6 +453,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                     <select className="w-full border rounded-md h-9 px-2" value={displayGravity} onChange={(e) => setDisplayGravity(e.target.value as any)} disabled={isLoading}>
                       <option value="auto">Auto</option>
                       <option value="center">Centre</option>
+                      <option value="custom">Manuel</option>
                     </select>
                   </div>
                 </div>

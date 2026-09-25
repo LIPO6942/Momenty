@@ -23,7 +23,6 @@ import type { Instant } from "@/lib/types";
 import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Images, Tag, Check, ChevronsUpDown, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { PhotoCollage } from "@/components/timeline/photo-collage";
-import { ManualFramingControls } from "@/components/timeline/manual-framing-controls";
 import { format, parseISO, isValid } from "date-fns";
 import { describePhoto } from "@/ai/flows/describe-photo-flow";
 
@@ -103,6 +102,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
   const [displayPositionX, setDisplayPositionX] = useState<number>(50);
   const [displayPositionY, setDisplayPositionY] = useState<number>(50);
   const [displayZoom, setDisplayZoom] = useState<number>(1.25);
+  const [photosTransforms, setPhotosTransforms] = useState<Record<string | number, { positionX: number; positionY: number; zoom: number }>>({});
   const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
   const [audioUrl, setAudioUrl] = useState<string | null>(instantToEdit.audio || null);
 
@@ -124,6 +124,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
       setDisplayPositionX(instantToEdit.displayTransform?.positionX ?? 50);
       setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
       setDisplayZoom(instantToEdit.displayTransform?.zoom ?? 1.25);
+      setPhotosTransforms((instantToEdit.displayTransform?.photosTransforms as any) || {});
       setDescriptionStyle((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
       setAudioUrl(instantToEdit.audio || null);
       // Initialize photo filter state
@@ -233,7 +234,8 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
           gravity: displayGravity,
           positionX: displayPositionX,
           positionY: displayPositionY,
-          zoom: displayZoom
+          zoom: displayZoom,
+          photosTransforms: photosTransforms,
         },
         descriptionStyle: finalPhotoUrls.length > 0 ? descriptionStyle : undefined,
         audio: audioUrl,
@@ -323,6 +325,7 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
     setDisplayPositionX(instantToEdit.displayTransform?.positionX ?? 50);
     setDisplayPositionY(instantToEdit.displayTransform?.positionY ?? 50);
     setDisplayZoom(instantToEdit.displayTransform?.zoom ?? 1.25);
+    setPhotosTransforms((instantToEdit.displayTransform?.photosTransforms as any) || {});
     setDescriptionStyle((instantToEdit.descriptionStyle && ['classique-italique', 'magazine-bold', 'polaroid-marker', 'cinematique'].includes(instantToEdit.descriptionStyle)) ? instantToEdit.descriptionStyle as DescriptionStyle : "classique-italique");
     setAudioUrl(instantToEdit.audio || null);
     setIsAnalyzing(false);
@@ -408,14 +411,19 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                           gravity: displayGravity,
                           positionX: displayPositionX,
                           positionY: displayPositionY,
-                          zoom: displayZoom
+                          zoom: displayZoom,
+                          photosTransforms: photosTransforms,
                         }}
                         audioUrl={audioUrl}
                         interactive={false}
-                        onPositionChange={(index, x, y) => {
+                        onFramingChange={(index, framing) => {
                           if (displayGravity !== 'custom') setDisplayGravity('custom');
-                          setDisplayPositionX(x);
-                          setDisplayPositionY(y);
+                          setPhotosTransforms(prev => ({ ...prev, [index]: framing }));
+                          if (index === 0) {
+                            setDisplayPositionX(framing.positionX);
+                            setDisplayPositionY(framing.positionY);
+                            setDisplayZoom(framing.zoom);
+                          }
                         }}
                         photoFilter={selectedFilter && filteredUrl ? { filter: selectedFilter, filteredUrl } : undefined}
                       />
@@ -498,19 +506,6 @@ export function EditNoteDialog({ children, instantToEdit, open: controlledOpen, 
                     </select>
                   </div>
                 </div>
-                {displayGravity === 'custom' && (
-                  <ManualFramingControls
-                    positionX={displayPositionX}
-                    positionY={displayPositionY}
-                    zoom={displayZoom}
-                    onPositionChange={(x, y) => {
-                      setDisplayPositionX(x);
-                      setDisplayPositionY(y);
-                    }}
-                    onZoomChange={setDisplayZoom}
-                    disabled={isLoading}
-                  />
-                )}
 
                 {photos.length > 0 && (
                   <div className="mt-4 space-y-4">

@@ -6,7 +6,8 @@ import { cn, getPhotoFilterCss } from "@/lib/utils";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ParallaxContainer } from "@/components/ui/parallax-container";
-import type { DisplayTransform, CollageTemplate, PhotoFilter } from "@/lib/types";
+import { getPhotoFraming, type DisplayTransform, type CollageTemplate, type PhotoFilter } from "@/lib/types";
+import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
 import { getTemplateById } from "@/lib/collage-templates";
 import { LayoutGrid, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -250,6 +251,7 @@ export const PhotoCollage = ({
     audioUrl,
     interactive = true,
     onPositionChange,
+    onFramingChange,
     collageTemplate,
     photoFilter,
 }: {
@@ -259,6 +261,7 @@ export const PhotoCollage = ({
     audioUrl?: string | null,
     interactive?: boolean,
     onPositionChange?: (index: number, x: number, y: number) => void,
+    onFramingChange?: (index: number, framing: { positionX: number; positionY: number; zoom: number }) => void,
     collageTemplate?: CollageTemplate,
     photoFilter?: PhotoFilter,
 }) => {
@@ -281,10 +284,6 @@ export const PhotoCollage = ({
     const photoCount = photos.length;
     const t = buildTransformFromDisplay(displayTransform);
 
-    // Drag state for manual positioning
-    const [isDragging, setIsDragging] = React.useState(false);
-    const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
-    
     // Ken Burns toggle state
     const [kenBurnsEnabled, setKenBurnsEnabled] = React.useState(() => {
         if (typeof window !== 'undefined') {
@@ -305,65 +304,41 @@ export const PhotoCollage = ({
         };
     }, []);
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, index: number) => {
-        if (interactive || !onPositionChange) return;
-        e.preventDefault();
-        setIsDragging(true);
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        setDragStart({ x: clientX, y: clientY });
-    };
-
-    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-        if (!isDragging || !onPositionChange) return;
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
-
-        const deltaX = (clientX - dragStart.x) / 4;
-        const deltaY = (clientY - dragStart.y) / 4;
-
-        const currentX = displayTransform?.positionX ?? 50;
-        const currentY = displayTransform?.positionY ?? 50;
-
-        const newX = Math.max(0, Math.min(100, Math.round((currentX - deltaX) * 10) / 10));
-        const newY = Math.max(0, Math.min(100, Math.round((currentY - deltaY) * 10) / 10));
-
-        onPositionChange(0, newX, newY);
-        setDragStart({ x: clientX, y: clientY });
-    };
-
-    const handleMouseUp = () => setIsDragging(false);
-
-    React.useEffect(() => {
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-            window.addEventListener('touchmove', handleMouseMove);
-            window.addEventListener('touchend', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.removeEventListener('touchmove', handleMouseMove);
-            window.removeEventListener('touchend', handleMouseUp);
-        };
-    }, [isDragging, dragStart]);
-
     const renderPhoto = (src: string, index: number, className: string, width: number, height: number, showAudio: boolean = false) => {
         const isCustom = displayTransform?.gravity === 'custom';
-        const posX = displayTransform?.positionX ?? 50;
-        const posY = displayTransform?.positionY ?? 50;
-        const zoom = displayTransform?.zoom ?? (isCustom ? 1.25 : 1);
+        const framing = getPhotoFraming(displayTransform, index);
+
+        // When not interactive (creation or edit mode), every photo has its own independent on-photo framing & zoom controls
+        if (!interactive) {
+            return (
+                <InteractiveImageFrame
+                    src={src}
+                    alt={`${title} ${index + 1}`}
+                    width={width}
+                    height={height}
+                    className={className}
+                    positionX={framing.positionX}
+                    positionY={framing.positionY}
+                    zoom={framing.zoom}
+                    badgeLabel={photoCount > 1 ? `Photo ${index + 1}` : undefined}
+                    onFramingChange={(newFraming) => {
+                        if (onFramingChange) {
+                            onFramingChange(index, newFraming);
+                        } else if (onPositionChange) {
+                            onPositionChange(index, newFraming.positionX, newFraming.positionY);
+                        }
+                    }}
+                />
+            );
+        }
 
         const objectClass = isCustom ? "object-cover" : (t.c === 'fit' ? "object-contain" : "object-cover");
-        const objectPosition = isCustom ? `${posX}% ${posY}%` : undefined;
-
-        const displaySrc = src;
+        const objectPosition = isCustom ? `${framing.positionX}% ${framing.positionY}%` : undefined;
 
         const content = (
             <ParallaxContainer speed={0.02 * (index + 1)} className="w-full h-full overflow-hidden" active={interactive && kenBurnsEnabled}>
                 <Image
-                    src={displaySrc}
+                    src={src}
                     alt={`${title} ${index + 1}`}
                     width={width}
                     height={height}
@@ -371,16 +346,13 @@ export const PhotoCollage = ({
                     className={cn(
                         "w-full h-full transition-none select-none",
                         objectClass,
-                        className,
-                        !interactive && "cursor-move touch-none"
+                        className
                     )}
                     style={{
                         objectPosition,
-                        transform: isCustom && zoom > 1 ? `scale(${zoom})` : undefined,
-                        transformOrigin: isCustom ? `${posX}% ${posY}%` : undefined,
+                        transform: isCustom && framing.zoom > 1 ? `scale(${framing.zoom})` : undefined,
+                        transformOrigin: isCustom ? `${framing.positionX}% ${framing.positionY}%` : undefined,
                     }}
-                    onMouseDown={(e) => handleMouseDown(e, index)}
-                    onTouchStart={(e) => handleMouseDown(e, index)}
                 />
             </ParallaxContainer>
         );
