@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { 
   X, 
   Utensils, 
@@ -32,9 +32,11 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { parseISO, getHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn, getCountry, getCity, getFlagEmoji, isRecognizedCountry } from "@/lib/utils";
+import { countries } from "@/lib/countries";
+import { cn, getCountry, getCity, getFlagEmoji, isRecognizedCountry, CITY_TO_COUNTRY } from "@/lib/utils";
 import { Instant, Dish, Encounter, Accommodation } from "@/lib/types";
 
 interface PassportViewProps {
@@ -218,7 +220,18 @@ export const PassportView = ({
     });
   }, [instants, manualLocations]);
 
-  const cityVisas = useMemo(() => {
+  // User's home country (defaults to 'Tunisie', persisted in localStorage)
+  const [userHomeCountry, setUserHomeCountry] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('momenty_home_country') || 'Tunisie';
+    }
+    return 'Tunisie';
+  });
+  const [showHomeCities, setShowHomeCities] = useState(false);
+  const [showCapitalsModal, setShowCapitalsModal] = useState(false);
+  const [citiesFilter, setCitiesFilter] = useState<'all' | 'capitals'>('all');
+
+  const allCityVisas = useMemo(() => {
     const locationsMap = new Map<string, { name: string; countryName: string; continent: string, dates: string[] }>();
     
     instants.forEach(i => {
@@ -286,10 +299,43 @@ export const PassportView = ({
       });
   }, [instants, manualLocations]);
 
-  const totalCapitalsCount = useMemo(() => {
+  const normalizedHomeCountry = (userHomeCountry || 'Tunisie').trim().toLowerCase();
+
+  const isDomesticCity = (visa: VisaData) => {
+    const c = (visa.countryName || '').trim().toLowerCase();
+    if (c === normalizedHomeCountry) return true;
+    const mappedCountry = CITY_TO_COUNTRY[visa.name.toLowerCase()];
+    if (mappedCountry && mappedCountry.trim().toLowerCase() === normalizedHomeCountry) return true;
+    return false;
+  };
+
+  // Exclude domestic cities in user's home country from explored cities (unless user toggles showHomeCities)
+  const cityVisas = useMemo(() => {
+    return allCityVisas.filter(visa => {
+      if (showHomeCities) return true;
+      return !isDomesticCity(visa);
+    });
+  }, [allCityVisas, normalizedHomeCountry, showHomeCities]);
+
+  const domesticCitiesCount = useMemo(() => {
+    return allCityVisas.filter(visa => isDomesticCity(visa)).length;
+  }, [allCityVisas, normalizedHomeCountry]);
+
+  // World capitals visited by the user
+  const visitedCapitals = useMemo(() => {
     const lowerCapitals = new Set(capitals.map(c => c.toLowerCase()));
-    return cityVisas.filter(visa => lowerCapitals.has(visa.name.toLowerCase())).length;
-  }, [cityVisas]);
+    return allCityVisas.filter(visa => lowerCapitals.has(visa.name.toLowerCase()));
+  }, [allCityVisas]);
+
+  const totalCapitalsCount = visitedCapitals.length;
+
+  const displayedCities = useMemo(() => {
+    if (citiesFilter === 'capitals') {
+      const lowerCapitals = new Set(capitals.map(c => c.toLowerCase()));
+      return cityVisas.filter(visa => lowerCapitals.has(visa.name.toLowerCase()));
+    }
+    return cityVisas;
+  }, [cityVisas, citiesFilter]);
 
   const explorerGrade = useMemo(() => {
     return getExplorerGrade(countryVisas.length, cityVisas.length);
@@ -367,7 +413,7 @@ export const PassportView = ({
                       <h3 className={cn("text-2xl sm:text-4xl font-serif font-black", explorerGrade.color)}>{explorerGrade.title}</h3>
                     </div>
                   </div>
-                  <div className="flex gap-3 sm:gap-4 flex-wrap">
+                  <div className="flex gap-3 sm:gap-4 flex-wrap items-center">
                     <div className="bg-[#8B4513]/5 px-3 sm:px-4 py-2 rounded-xl border border-[#8B4513]/10 flex flex-col">
                       <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Pays</span>
                       <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{countryVisas.length}</span>
@@ -376,12 +422,42 @@ export const PassportView = ({
                       <span className="text-xs font-black text-[#8B4513]/40 uppercase leading-none mb-1 text-[8px] sm:text-[10px]">Villes</span>
                       <span className="text-xl sm:text-2xl font-black text-[#8B4513]">{cityVisas.length}</span>
                     </div>
-                    {totalCapitalsCount > 0 && (
-                      <div className="bg-amber-100/50 px-3 sm:px-4 py-2 rounded-xl border border-amber-200/50 flex flex-col relative overflow-hidden group">
-                        <span className="text-xs font-black text-amber-700/60 uppercase leading-none mb-1 text-[8px] sm:text-[10px] relative z-10 flex items-center gap-1"><Award className="h-3 w-3"/> Capitales</span>
-                        <span className="text-xl sm:text-2xl font-black text-amber-900 relative z-10">{totalCapitalsCount}</span>
-                      </div>
-                    )}
+                    <div 
+                      onClick={() => setShowCapitalsModal(true)}
+                      className="bg-amber-100/70 hover:bg-amber-200/90 px-3 sm:px-4 py-2 rounded-xl border border-amber-300 flex flex-col relative overflow-hidden group cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs"
+                      title="Cliquer pour afficher les capitales visitées"
+                      role="button"
+                    >
+                      <span className="text-xs font-black text-amber-800 uppercase leading-none mb-1 text-[8px] sm:text-[10px] relative z-10 flex items-center gap-1">
+                        <Award className="h-3 w-3 text-amber-600"/> Capitales
+                      </span>
+                      <span className="text-xl sm:text-2xl font-black text-amber-950 relative z-10 flex items-center gap-1">
+                        {totalCapitalsCount}
+                        <span className="text-[9px] font-bold text-amber-800/80 uppercase ml-1 opacity-70 group-hover:opacity-100 transition-opacity">voir ↗</span>
+                      </span>
+                    </div>
+
+                    {/* Home country selector */}
+                    <div className="flex items-center gap-1.5 bg-[#8B4513]/5 px-2.5 py-1.5 rounded-xl border border-[#8B4513]/10 text-xs">
+                      <span className="text-[9px] font-bold text-[#8B4513]/60 uppercase">Mon pays :</span>
+                      <select
+                        value={userHomeCountry}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setUserHomeCountry(val);
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('momenty_home_country', val);
+                          }
+                        }}
+                        className="bg-white/80 border border-[#8B4513]/20 rounded-md text-[11px] font-bold px-1.5 py-0.5 text-[#5C3A21] focus:outline-none cursor-pointer"
+                      >
+                        {countries.map(c => (
+                          <option key={c.value} value={c.label}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -478,21 +554,81 @@ export const PassportView = ({
               )}
 
               {/* Cities Section */}
-              {cityVisas.length > 0 && (
-                <div className="space-y-6 sm:space-y-10 pb-10">
+              <div className="space-y-6 sm:space-y-10 pb-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg sm:text-2xl font-serif font-black text-blue-900 uppercase tracking-widest flex items-center gap-3">
                       <span className="h-1 sm:h-2 w-8 sm:w-12 bg-blue-600 rounded-full" /> 
-                      Mes Villes Explorées
+                      Mes Villes Explorées ({displayedCities.length})
                     </h3>
                   </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center bg-blue-100/60 p-1 rounded-xl border border-blue-200/60 shadow-xs">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={citiesFilter === 'all' ? "default" : "ghost"}
+                        onClick={() => setCitiesFilter('all')}
+                        className={cn("h-7 text-xs px-2.5 rounded-lg", citiesFilter === 'all' ? "bg-blue-600 text-white" : "text-blue-900 hover:bg-blue-200/50")}
+                      >
+                        Toutes ({cityVisas.length})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={citiesFilter === 'capitals' ? "default" : "ghost"}
+                        onClick={() => setCitiesFilter('capitals')}
+                        className={cn("h-7 text-xs px-2.5 rounded-lg gap-1", citiesFilter === 'capitals' ? "bg-amber-600 text-white" : "text-amber-900 hover:bg-amber-100/60")}
+                      >
+                        <Award className="h-3 w-3" />
+                        Capitales ({visitedCapitals.length})
+                      </Button>
+                    </div>
+
+                    {domesticCitiesCount > 0 && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowHomeCities(!showHomeCities)}
+                        className="h-7 text-[11px] px-2.5 rounded-lg border-blue-200 text-blue-800 hover:bg-blue-50"
+                      >
+                        {showHomeCities 
+                          ? `Masquer ${userHomeCountry}` 
+                          : `+${domesticCitiesCount} en ${userHomeCountry}`}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {displayedCities.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {cityVisas.map((visa, idx) => (
+                    {displayedCities.map((visa, idx) => (
                       <VisaCard key={visa.name} visa={visa} index={idx} />
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-8 px-4 bg-white/40 rounded-2xl border border-dashed border-blue-200">
+                    <p className="text-sm font-semibold text-slate-600">
+                      {citiesFilter === 'capitals' 
+                        ? "Aucune capitale trouvée parmi vos villes explorées." 
+                        : `Toutes vos villes enregistrées se situent dans votre pays d'origine (${userHomeCountry}).`}
+                    </p>
+                    {domesticCitiesCount > 0 && !showHomeCities && (
+                      <Button 
+                        type="button"
+                        variant="link" 
+                        size="sm" 
+                        onClick={() => setShowHomeCities(true)}
+                        className="text-xs text-blue-600 mt-1"
+                      >
+                        Afficher les {domesticCitiesCount} villes en {userHomeCountry}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -507,6 +643,50 @@ export const PassportView = ({
              <div className="h-px flex-1 bg-[#8B4513]/5" />
         </div>
       </Card>
+
+      {/* Capitals Dialog */}
+      <Dialog open={showCapitalsModal} onOpenChange={setShowCapitalsModal}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col bg-[#FDF5E6] border-[#8B4513] border-4 rounded-2xl p-0 overflow-hidden z-[110]">
+          <DialogHeader className="bg-[#5C3A21] text-white p-4 sm:p-6 text-left relative shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl sm:text-2xl font-serif font-black text-amber-100">
+                    Mes Capitales Visitées
+                  </DialogTitle>
+                  <p className="text-xs text-amber-200/70 font-medium">
+                    {visitedCapitals.length} {visitedCapitals.length === 1 ? 'capitale mondiale explorée' : 'capitales mondiales explorées'}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="border-amber-400/40 text-amber-200 bg-amber-950/30 font-bold px-3 py-1">
+                {visitedCapitals.length} / 195
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+            {visitedCapitals.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {visitedCapitals.map((visa, idx) => (
+                  <VisaCard key={visa.name} visa={visa} index={idx} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 px-4 space-y-3">
+                <Compass className="h-12 w-12 text-amber-800/30 mx-auto" />
+                <h4 className="font-serif font-black text-lg text-[#5C3A21]">Aucune capitale visitée pour le moment</h4>
+                <p className="text-sm text-slate-600 max-w-sm mx-auto">
+                  Visitez des capitales mondiales (Paris, Rome, Londres, Madrid, Tokyo, Tunis...) lors de vos voyages pour collectionner leurs visas officiels !
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -278,15 +278,18 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
     const addInstant = async (instantData: Omit<Instant, 'id'>) => {
         if (!user) throw new Error("User not authenticated");
         let categories = instantData.category || ['Note'];
-        try {
-            const result = await categorizeInstant({
-                title: instantData.title,
-                description: instantData.description,
-                location: instantData.location,
-            });
-            categories = result.categories;
-        } catch (error) {
-            console.error("AI categorization failed", error);
+        // Only run AI categorization if not explicitly marked as Kharjet
+        if (!instantData.category?.includes('Kharjet')) {
+            try {
+                const result = await categorizeInstant({
+                    title: instantData.title,
+                    description: instantData.description,
+                    location: instantData.location,
+                });
+                categories = result.categories;
+            } catch (error) {
+                console.error("AI categorization failed", error);
+            }
         }
 
         const newInstantForDb: Omit<Instant, 'id' | 'icon' | 'color'> = {
@@ -355,12 +358,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             instant.id === id ? updatedInstantForState : instant
         ));
 
-        // Auto-sync edits with Kol Youm if this instant is a Kharjet outing or has location/date
+        // Auto-sync edits with Kol Youm ONLY if this instant is explicitly a Kharjet outing
         const isKharjetInstant = updatedInstant.category?.includes('Kharjet') ||
                                  originalInstant.category?.includes('Kharjet') ||
                                  updatedInstant.title?.includes('Kharjet') ||
-                                 originalInstant.title?.includes('Kharjet') ||
-                                 (updatedInstant.location && updatedInstant.location.length > 0);
+                                 originalInstant.title?.includes('Kharjet');
 
         if (isKharjetInstant && user?.email && isOnline) {
             try {

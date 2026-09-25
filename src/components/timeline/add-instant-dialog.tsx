@@ -19,7 +19,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight, Compass } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight, Compass, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CollageTemplatePicker } from "@/components/timeline/collage-template-picker";
 import { CollageCanvas } from "@/components/timeline/collage-canvas";
@@ -374,11 +374,10 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setIsConverting(true);
         toast({ title: `Traitement de ${files.length} photo(s)...` });
 
+        let currentCount = photos.length;
+        const newPhotosToAdd: string[] = [];
+
         for (const file of Array.from(files)) {
-            // Check limit before each file
-            const currentCount = await new Promise<number>(resolve => {
-                setPhotos(prev => { resolve(prev.length); return prev; });
-            });
             if (currentCount >= maxPhotos) {
                 toast({ variant: "destructive", title: `Maximum ${maxPhotos} photo(s) en mode ${isDish ? 'plat' : isEncounter ? 'rencontre' : 'logement'}.` });
                 break;
@@ -405,10 +404,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
             try {
                 const compressedDataUrl = await compressImage(processingFile);
-                setPhotos(prev => {
-                    if (prev.length >= maxPhotos) return prev; // double-check
-                    return [...prev, compressedDataUrl];
-                });
+                newPhotosToAdd.push(compressedDataUrl);
+                currentCount++;
             } catch (error) {
                 console.error(`Erreur de traitement du fichier: ${file.name}`, error);
                 toast({
@@ -419,11 +416,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
             }
         }
 
-        // This needs a slight delay to allow all file readers to complete
-        setTimeout(() => {
-            setIsConverting(false);
-            toast({ title: 'Toutes les photos ont été traitées.' });
-        }, 100 * files.length); // Rough estimate
+        if (newPhotosToAdd.length > 0) {
+            setPhotos(prev => {
+                const combined = [...prev, ...newPhotosToAdd];
+                return isLimited ? combined.slice(0, maxPhotos) : combined;
+            });
+        }
+
+        setIsConverting(false);
+        toast({ title: 'Toutes les photos ont été traitées.' });
 
         if (e.target) {
             e.target.value = ''; // Reset input
@@ -449,6 +450,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setIsAccommodation(false);
         setAccommodationName("");
         setIsSubmitting(false);
+        setIsKharjet(false);
+        setKharjetSpotName("");
+        setSelectedKharjetTags([]);
+        setIsCreatingNewZone(false);
+        setNewCustomZone("");
         setAudioUrl(null);
         setDisplayPreset("landscape");
         setDisplayCrop("fit");
@@ -634,6 +640,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         fieldName: 'photo',
                         mediaType: 'image'
                     });
+                    if (photos.length > 1) {
+                        await queueMediaForUpload({
+                            data: photos[1],
+                            collection: 'encounters',
+                            docId: newId,
+                            fieldName: 'photo2',
+                            mediaType: 'image'
+                        });
+                    }
                 }
                 toast({ title: "Nouvelle rencontre ajoutée !" });
             } else if (isDish) {
@@ -663,6 +678,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                             collection: 'dishes',
                             docId: newId,
                             fieldName: 'photo',
+                            mediaType: 'image'
+                        });
+                    }
+                    if (photos.length > 1) {
+                        await queueMediaForUpload({
+                            data: photos[1],
+                            collection: 'dishes',
+                            docId: newId,
+                            fieldName: 'photo2',
                             mediaType: 'image'
                         });
                     }
@@ -725,6 +749,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                             collection: 'accommodations',
                             docId: newId,
                             fieldName: 'photo',
+                            mediaType: 'image'
+                        });
+                    }
+                    if (photos.length > 1) {
+                        await queueMediaForUpload({
+                            data: photos[1],
+                            collection: 'accommodations',
+                            docId: newId,
+                            fieldName: 'photo2',
                             mediaType: 'image'
                         });
                     }
@@ -951,6 +984,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                         <div className="space-y-2">
                                             {/* Main photo */}
                                             <div className="relative group">
+                                                {(isDish || isEncounter || isAccommodation) && (
+                                                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
+                                                        Photo 1
+                                                    </span>
+                                                )}
                                                 <Image
                                                     src={photos[0]}
                                                     alt="Aperçu principal"
@@ -971,6 +1009,9 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                             {/* Second photo in dish/encounter/accommodation mode — full size preview */}
                                             {(isDish || isEncounter || isAccommodation) && photos[1] && (
                                                 <div className="relative group">
+                                                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
+                                                        Photo 2
+                                                    </span>
                                                     <Image
                                                         src={photos[1]}
                                                         alt="2e photo"
@@ -984,6 +1025,19 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         </Button>
                                                     </div>
                                                 </div>
+                                            )}
+
+                                            {/* Dedicated slot to add 2nd photo when in dish/encounter/accommodation mode */}
+                                            {(isDish || isEncounter || isAccommodation) && photos.length === 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="w-full h-14 border-2 border-dashed border-primary/40 hover:bg-primary/5 gap-2 text-primary font-medium rounded-xl transition-all"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                >
+                                                    <Plus className="h-5 w-5" />
+                                                    <span>Ajouter une 2ème photo {isDish ? 'du plat' : isAccommodation ? 'du logement' : 'de la rencontre'}</span>
+                                                </Button>
                                             )}
 
                                             {/* Additional photos (instants only) — shown as thumbnails */}

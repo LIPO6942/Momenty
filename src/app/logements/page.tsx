@@ -32,6 +32,7 @@ import { cn, getCity, getCountry } from "@/lib/utils";
 import type { Accommodation } from "@/lib/types";
 import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 
 export default function AccommodationsPage() {
     const { accommodations, deleteAccommodation } = useContext(TimelineContext);
@@ -67,42 +68,66 @@ export default function AccommodationsPage() {
                 <div className="grid md:grid-cols-1 gap-8">
                     {accommodations.map((accommodation) => {
                         const isTextVisible = textVisibility[accommodation.id] ?? true;
+                        const t = buildTransformFromDisplay(accommodation.displayTransform);
                         return (
                             <Card key={accommodation.id} className="overflow-hidden rounded-xl border-none shadow-md shadow-slate-200/80 relative text-white">
                                 {accommodation.photo ? (
                                     <>
                                         {accommodation.photo2 ? (
-                                            /* Two photos: side by side */
+                                            /* Two photos: side by side with lightbox */
                                             <div className="grid grid-cols-2 gap-0.5">
-                                                <Image
-                                                    src={clTransform(accommodation.photo, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                <ImageLightbox
+                                                    photos={[accommodation.photo, accommodation.photo2]}
+                                                    initialIndex={0}
                                                     alt={`Photo 1 de ${accommodation.name}`}
-                                                    width={400} height={400}
-                                                    className="w-full h-[280px] object-cover"
-                                                    data-ai-hint="hotel room interior design"
-                                                />
-                                                <Image
-                                                    src={clTransform(accommodation.photo2, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                    width={t.w}
+                                                    height={t.h}
+                                                >
+                                                    <Image
+                                                        src={clTransform(accommodation.photo, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                        alt={`Photo 1 de ${accommodation.name}`}
+                                                        width={400} height={400}
+                                                        className="w-full h-[280px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                        data-ai-hint="hotel room interior design"
+                                                    />
+                                                </ImageLightbox>
+                                                <ImageLightbox
+                                                    photos={[accommodation.photo, accommodation.photo2]}
+                                                    initialIndex={1}
                                                     alt={`Photo 2 de ${accommodation.name}`}
-                                                    width={400} height={400}
-                                                    className="w-full h-[280px] object-cover"
-                                                    data-ai-hint="hotel room interior design"
-                                                />
+                                                    width={t.w}
+                                                    height={t.h}
+                                                >
+                                                    <Image
+                                                        src={clTransform(accommodation.photo2, { w: 400, h: 400, c: 'fill', g: 'auto' })}
+                                                        alt={`Photo 2 de ${accommodation.name}`}
+                                                        width={400} height={400}
+                                                        className="w-full h-[280px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                        data-ai-hint="hotel room interior design"
+                                                    />
+                                                </ImageLightbox>
                                             </div>
                                         ) : (
-                                            /* Single photo: full width */
-                                            <Image
+                                            /* Single photo: full width with lightbox */
+                                            <ImageLightbox
                                                 src={accommodation.photo}
                                                 alt={`Photo de ${accommodation.name}`}
-                                                width={600}
-                                                height={400}
-                                                className="w-full h-[400px] object-cover"
-                                                data-ai-hint="hotel room interior design"
-                                            />
+                                                width={t.w}
+                                                height={t.h}
+                                            >
+                                                <Image
+                                                    src={accommodation.photo}
+                                                    alt={`Photo de ${accommodation.name}`}
+                                                    width={600}
+                                                    height={400}
+                                                    className="w-full h-[400px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                    data-ai-hint="hotel room interior design"
+                                                />
+                                            </ImageLightbox>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"></div>
 
-                                        <div className="absolute top-2 right-2 flex gap-2">
+                                        <div className="absolute top-2 right-2 flex gap-2 z-20">
                                             <EditAccommodationDialog accommodationToEdit={accommodation}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:text-white">
                                                     <Edit className="h-4 w-4" />

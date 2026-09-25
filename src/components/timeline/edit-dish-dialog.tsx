@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
 import type { Dish, DisplayTransform } from "@/lib/types";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import {
@@ -83,12 +83,14 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
   
   const { updateDish } = useContext(TimelineContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInput2Ref = useRef<HTMLInputElement>(null);
 
   // Initialize state with values from the dish to be edited
   const [name, setName] = useState(dishToEdit.name);
   const [description, setDescription] = useState(dishToEdit.description);
   const [location, setLocation] = useState(dishToEdit.location);
   const [photo, setPhoto] = useState<string | null | undefined>(dishToEdit.photo);
+  const [photo2, setPhoto2] = useState<string | null | undefined>(dishToEdit.photo2);
   const [emotions, setEmotions] = useState<string[]>(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
   const [date, setDate] = useState(dishToEdit.date);
   const [displayPreset, setDisplayPreset] = useState<DisplayTransform['preset']>('landscape');
@@ -113,6 +115,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
       setDescription(dishToEdit.description);
       setLocation(dishToEdit.location);
       setPhoto(dishToEdit.photo);
+      setPhoto2(dishToEdit.photo2);
       setEmotions(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
       setDate(dishToEdit.date);
       setCity(dishToEdit.city || "");
@@ -183,11 +186,24 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         uploadedPhotoUrl = result.secure_url;
       }
 
+      let uploadedPhoto2Url = photo2;
+      if (photo2 && photo2.startsWith('data:')) {
+        const formData = new FormData();
+        const blob = await (await fetch(photo2)).blob();
+        formData.append('file', blob);
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await response.json();
+        uploadedPhoto2Url = result.secure_url;
+      }
 
       await updateDish(dishToEdit.id, {
         name,
         description,
         photo: uploadedPhotoUrl,
+        photo2: uploadedPhoto2Url,
         location,
         city,
         emotion: emotions.length > 0 ? emotions : ["Neutre"],
@@ -257,7 +273,40 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhoto(reader.result as string);
-        toast({ title: "Photo prête à être téléversée." });
+        toast({ title: "Photo 1 prête à être téléversée." });
+      };
+      reader.readAsDataURL(processingFile);
+    }
+  };
+
+  const handlePhoto2Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      let processingFile: File | Blob = file;
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        setIsConverting(true);
+        toast({ title: "Conversion de l'image HEIC..." });
+        try {
+          const heic2any = (await import('heic2any')).default;
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+          });
+          processingFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        } catch (error) {
+          console.error('HEIC Conversion Error:', error);
+          toast({ variant: "destructive", title: "Erreur de conversion", description: "Impossible de convertir l'image HEIC." });
+          setIsConverting(false);
+          return;
+        } finally {
+          setIsConverting(false);
+        }
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto2(reader.result as string);
+        toast({ title: "Photo 2 prête à être téléversée." });
       };
       reader.readAsDataURL(processingFile);
     }
@@ -269,6 +318,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
       setDescription(dishToEdit.description);
       setLocation(dishToEdit.location);
       setPhoto(dishToEdit.photo);
+      setPhoto2(dishToEdit.photo2);
       setEmotions(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
       setDate(dishToEdit.date);
       setDisplayPreset(dishToEdit.displayTransform?.preset ?? 'landscape');
@@ -308,11 +358,12 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
           </DialogHeader>
           <div className="flex-grow overflow-y-auto pr-6 -mr-6">
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Souvenir visuel</Label>
+              <div className="space-y-3">
+                <Label className="text-muted-foreground">Souvenirs visuels (jusqu'à 2 photos)</Label>
                 {photo ? (
                   <div className="relative group">
-                    <Image src={photo} alt="Aperçu" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[40vh]" />
+                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md">Photo 1</span>
+                    <Image src={photo} alt="Photo 1" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
                     <div className="absolute top-2 right-2 flex gap-2">
                       <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto(null)}>
                         <Trash2 className="h-4 w-4" />
@@ -320,12 +371,30 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                     </div>
                   </div>
                 ) : (
-                  <Button type="button" variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
-                    {isConverting ? <Loader2 className="h-6 w-6 animate-spin" /> : <ImageIcon className="h-6 w-6" />}
-                    <span>{isConverting ? "Conversion..." : "Importer une nouvelle photo"}</span>
+                  <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isConverting}>
+                    {isConverting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+                    <span className="text-xs">{isConverting ? "Conversion..." : "Importer la photo principale"}</span>
                   </Button>
                 )}
                 <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
+
+                {photo2 ? (
+                  <div className="relative group">
+                    <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-md">Photo 2</span>
+                    <Image src={photo2} alt="Photo 2" width={400} height={800} className="rounded-md object-cover w-full h-auto max-h-[30vh]" />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => setPhoto2(null)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : photo ? (
+                  <Button type="button" variant="outline" className="w-full h-12 border-dashed border-primary/40 hover:bg-primary/5 gap-2 text-primary font-medium rounded-xl" onClick={() => fileInput2Ref.current?.click()} disabled={isLoading || isConverting}>
+                    <Plus className="h-4 w-4" />
+                    <span className="text-xs">Ajouter une 2ème photo du plat</span>
+                  </Button>
+                ) : null}
+                <Input type="file" accept="image/*,.heic,.heif" className="hidden" ref={fileInput2Ref} onChange={handlePhoto2Upload} />
               </div>
 
               <Separator />
