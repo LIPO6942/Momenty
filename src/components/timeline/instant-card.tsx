@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TimelineContext } from "@/context/timeline-context";
 import { EditNoteDialog } from "@/components/timeline/edit-note-dialog";
-import { cn, getCity, getCountry, formatInstantTitle } from "@/lib/utils";
+import { cn, getCity, getCountry, formatInstantTitle, formatInstantLocation } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { DescriptionStyle } from "@/components/timeline/description-style-picker";
 
@@ -121,18 +121,23 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
                             </div>
                         )}
 
-                        <div className="flex gap-2 flex-wrap">
-                            {categories.map(cat => (
-                                <Badge key={cat} variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
-                                    <Tag className="h-3 w-3" />
-                                    {cat}
-                                </Badge>
-                            ))}
-                            {emotions.map(emotion => (
-                                <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
-                                    {emotion}
-                                </Badge>
-                            ))}
+                        <div className="flex justify-between items-end gap-2 mt-3">
+                            <div className="flex gap-2 flex-wrap">
+                                {categories.map(cat => (
+                                    <Badge key={cat} variant="secondary" className="flex items-center gap-1.5 bg-white/20 text-white border-none">
+                                        <Tag className="h-3 w-3" />
+                                        {cat}
+                                    </Badge>
+                                ))}
+                                {emotions.map(emotion => (
+                                    <Badge key={emotion} variant="outline" className="bg-white/20 text-white border-none">
+                                        {emotion}
+                                    </Badge>
+                                ))}
+                            </div>
+                            <span className="text-xs text-white/70 shrink-0 ml-auto font-medium">
+                                {format(parseISO(instant.date), "d MMM yyyy", { locale: fr })}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -234,20 +239,32 @@ export const InstantCard = ({ instant }: { instant: Instant }) => {
 
             <CardFooter className="flex flex-col items-start gap-3 px-4 pt-0 pb-4">
                     <div className="w-full ml-14">
-                    {/* Location & Date - One line with colored background */}
-                    <div 
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap overflow-hidden"
-                        style={{ 
-                            backgroundColor: `hsl(${hue}, 70%, 95%)`,
-                            borderLeft: `3px solid hsl(${hue}, 70%, 50%)`
-                        }}
-                    >
-                        <MapPin 
-                            className="h-4 w-4 flex-shrink-0" 
-                            style={{ color: `hsl(${hue}, 70%, 45%)` }}
-                        />
-                        <span className="font-semibold text-sm text-foreground truncate">
-                            {formatInstantTitle(instant.location, instant.date) || instant.title}
+                    {/* Location row */}
+                    <div className="flex items-center gap-2">
+                        <div 
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap overflow-hidden flex-1 min-w-0"
+                            style={{ 
+                                backgroundColor: `hsl(${hue}, 70%, 95%)`,
+                                borderLeft: `3px solid hsl(${hue}, 70%, 50%)`
+                            }}
+                        >
+                            <MapPin 
+                                className="h-4 w-4 flex-shrink-0" 
+                                style={{ color: `hsl(${hue}, 70%, 45%)` }}
+                            />
+                            <span className="font-semibold text-sm text-foreground truncate">
+                                {formatInstantLocation(instant.location) || instant.title}
+                            </span>
+                        </div>
+                        {/* Date badge - bottom right like Plats */}
+                        <span
+                            className="text-xs font-semibold px-2 py-1 rounded-full shrink-0 whitespace-nowrap"
+                            style={{
+                                backgroundColor: `hsl(${hue}, 70%, 90%)`,
+                                color: `hsl(${hue}, 70%, 35%)`
+                            }}
+                        >
+                            {format(parseISO(instant.date), "d MMM yyyy", { locale: fr })}
                         </span>
                     </div>
                     <div className="flex gap-2 flex-wrap mt-3">

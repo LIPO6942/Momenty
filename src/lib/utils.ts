@@ -407,6 +407,15 @@ export const formatInstantTitle = (location: string, dateString: string): string
   return `${city}${city && country ? ', ' : ''}${country} (${date})`;
 };
 
+// Format instant location only: "ville, pays" (sans date)
+export const formatInstantLocation = (location: string): string => {
+  const city = abbreviateCity(getCity(location));
+  const country = getCountry(location);
+
+  if (!city && !country) return '';
+  return `${city}${city && country ? ', ' : ''}${country}`;
+};
+
 // Convert ISO 2-letter country code to emoji flag
 export function getFlagEmojiByCode(countryCode: string): string {
   if (!countryCode) return "";
