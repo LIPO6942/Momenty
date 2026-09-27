@@ -7,7 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatInstantDate, getCity, getCountry, abbreviateCity } from '@/lib/utils';
+import { formatInstantDate, getCity, getCountry, abbreviateCity, getFlagEmoji } from '@/lib/utils';
 import {
     getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
     getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
@@ -25,6 +25,7 @@ interface GroupedInstants {
     [key: string]: {
         title: string;
         date: string;
+        flag: string;
         instants: Instant[];
     };
 }
@@ -510,6 +511,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                 groups[dayKey] = {
                     title: '', // Will be filled later
                     date: '',  // Will be filled later
+                    flag: '',  // Will be filled later
                     instants: []
                 };
             }
@@ -538,6 +540,11 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             const formattedDay = formatInstantDate(dayKey) || format(dayDate, 'd MMM yy', { locale: fr }).replace(/\./g, '');
             groups[dayKey].title = locationString;
             groups[dayKey].date = formattedDay;
+
+            // Flag: take the country of the first instant with a location
+            const firstLocWithCountry = dayInstants.find(i => i.location && getCountry(i.location));
+            const countryName = firstLocWithCountry ? getCountry(firstLocWithCountry.location) : '';
+            groups[dayKey].flag = countryName ? getFlagEmoji(countryName) : '';
         });
 
         return groups;
