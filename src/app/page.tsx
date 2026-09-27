@@ -378,10 +378,10 @@ function TimelineContent() {
                     {group.days.map((day) => (
                       <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
                               <AccordionTrigger
-                                className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
+                                className={`mb-2 py-2 px-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
                                 style={day.photoUrl ? {
                                   backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
-                                  minHeight: '72px',
+                                  minHeight: '44px',
                                 } : {
                                   backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
                                   borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
@@ -427,10 +427,10 @@ function TimelineContent() {
             return (
               <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
                 <AccordionTrigger
-                  className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
+                  className={`mb-2 py-2 px-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
                   style={day.photoUrl ? {
                     backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
-                    minHeight: '72px',
+                    minHeight: '44px',
                   } : {
                     backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
                     borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
