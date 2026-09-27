@@ -628,7 +628,123 @@ const COUNTRY_BG_PHOTOS: Record<string, string[]> = {
     "1558618047-3b6ab8af3bfe",   // Champs de tulipes
   ],
 
+  // ── Russie ── 3 photos
+  "russie": [
+    "1513326738677-b964603b136d", // Moscou — Place Rouge & Saint-Basile
+    "1547153467-a29f81614ac9",   // Saint-Pétersbourg — Hermitage & canaux
+    "1520453803296-55360c2f43e4", // Lac Baïkal — panorama hivernal
+  ],
+
+  // ── Philippines ── 3 photos
+  "philippines": [
+    "1518509562399-e587c6b5e686", // El Nido Palawan — lagons turquoise
+    "1504802635467-df54a8540fb9", // Rizières en terrasses Banaue
+    "1565967752-082ae55f0a1d",   // Île tropicale au coucher du soleil
+  ],
+
+  // ── Indonésie ── 3 photos
+  "indonesie": [
+    "1537996134470-f30c9a5a2fd9", // Bali — rizières de Tegallalang
+    "1580673971767-5d5c7b6da16e", // Temple Tanah Lot — coucher de soleil
+    "1516690561799-46d8f74f9244", // Volcan / paysage naturel
+  ],
+
+  // ── Malaisie ── 3 photos
+  "malaisie": [
+    "1526481280693-3bfa7568e0f3", // Kuala Lumpur — Petronas Towers
+    "1508964942454-1a3dd264c89d", // Langkawi — jungle et plages
+    "1536003407894-a6b01e8bb8a4", // Cameron Highlands — thé vert
+  ],
+
+  // ── Vietnam ── 3 photos
+  "vietnam": [
+    "1528360983277-13d401cdc186", // Hanoï vieille ville
+    "1570366583862-f91883a08cd6", // Baie d'Ha Long — karsts calcaires
+    "1523731407965-2430cd12f5e4", // Rizières de Sapa en terrasses
+  ],
+
+  // ── Inde ── 3 photos
+  "inde": [
+    "1524492412937-b28074a5d7da", // Taj Mahal au lever du soleil
+    "1477587458883-47145ed31602", // Rajasthan — palais colorés
+    "1582560474978-80e5571cfd48", // Varanasi — rives du Gange
+  ],
+
+  // ── Chine ── 3 photos
+  "chine": [
+    "1508804185872-4aca6b37b01b", // Grande Muraille de Chine
+    "1474181487882-5abf3f0ba6c2", // Shanghai — Pudong skyline
+    "1513415431253-1a3b4df8f0d2", // Guilin — monts karstiques
+  ],
+
+  // ── Australie ── 2 photos
+  "australie": [
+    "1524293581917-878a6347a0ff", // Sydney Opera House
+    "1529108190613-71e39534f300", // Uluru (Ayers Rock) coucher de soleil
+  ],
+
+  // ── Brésil ── 2 photos
+  "bresil": [
+    "1483729558449-99ef09a8c325", // Rio de Janeiro — Pain de Sucre
+    "1518105779142-d975f22f1b0a", // Amazonie / forêt tropicale
+  ],
+
+  // ── Mexique ── 2 photos
+  "mexique": [
+    "1518638150340-f706e86654de", // Chichen Itza pyramides mayas
+    "1512813195386-6cf811ad3542", // Plages de Tulum turquoise
+  ],
+
+  // ── Pérou ── 2 photos
+  "perou": [
+    "1526392060635-9d6019884377", // Machu Picchu — cité inca
+    "1483728642387-6c3bdd6c93e5", // Montagne des 7 couleurs / Vinicunca
+  ],
+
+  // ── Suisse ── 2 photos
+  "suisse": [
+    "1527668752968-14dc70a786f8", // Alpes suisses enneigées
+    "1506905925346-21bda4d32df4", // Lac de montagne alpin
+  ],
+
+  // ── Belgique ── 2 photos
+  "belgique": [
+    "1491557345352-5929e343eb89", // Bruges — canaux médiévaux
+    "1559329671-f36cfab93c33",   // Bruxelles — Grand-Place
+  ],
+
+  // ── Autriche ── 2 photos
+  "autriche": [
+    "1516550135993-f73fe87e66b0", // Vienne — Schönbrunn
+    "1531804054935-891670a93eb0", // Hallstatt — village alpin lacustre
+  ],
+
+  // ── Suède ── 2 photos
+  "suede": [
+    "1509356843962-f10d7f4892e8", // Stockholm — Gamla Stan
+    "1531123897727-d4b0f6e52e40", // Aurores boréales Laponie
+  ],
+
+  // ── Pologne ── 2 photos
+  "pologne": [
+    "1506905925346-21bda4d32df4", // Cracovie — vieille ville
+    "1558618666-fcd25c85cd64",   // Monts Tatras
+  ],
+
+  // ── Arménie ── 2 photos
+  "armenie": [
+    "1565999869598-50b64adf0b67", // Monastère Khor Virap et Ararat
+    "1548014129-91283bdaf2f9",   // Paysage arménien montagneux
+  ],
+
+  // ── Géorgie ── 2 photos
+  "georgie": [
+    "1519671282429-b874cde7b7c2", // Tbilissi — vieille ville colorée
+    "1551993429-b7b96d72b07a",   // Kazbegi — Trinité Gergeti & Caucase
+  ],
+
 };
+
 
 /**
  * Returns an Unsplash background photo URL for the given country name.

@@ -167,9 +167,8 @@ function TimelineContent() {
         };
         setTimeout(() => tryScroll(0), 400);
       } else if (!hasSetInitialFilter) {
-        // Default behavior if no instant matched (and we haven't set filter yet)
-        const mostRecentInstantDate = parseISO(instants[0].date);
-        setSelectedYear(getYear(mostRecentInstantDate));
+        // Par défaut : afficher toutes les années
+        setSelectedYear(-1);
         setSelectedMonth(-1);
         setHasSetInitialFilter(true);
       }
