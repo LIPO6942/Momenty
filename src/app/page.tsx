@@ -396,7 +396,7 @@ function TimelineContent() {
                                       backgroundImage: `url(${day.photoUrl})`,
                                       backgroundSize: 'cover',
                                       backgroundPosition: 'center',
-                                      filter: 'blur(4px)',
+                                      filter: 'blur(2px)',
                                       transform: 'scale(1.08)',
                                     }}
                                   />
@@ -445,7 +445,7 @@ function TimelineContent() {
                         backgroundImage: `url(${day.photoUrl})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
-                        filter: 'blur(4px)',
+                        filter: 'blur(2px)',
                         transform: 'scale(1.08)',
                       }}
                     />

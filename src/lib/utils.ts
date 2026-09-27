@@ -489,16 +489,16 @@ export function getFlagEmoji(countryName: string): string {
 // ---------------------------------------------------------------------------
 const COUNTRY_BG_PHOTOS: Record<string, string[]> = {
 
-  // ── Tunisie ── 8 photos variées
+  // ── Tunisie ── 8 photos variées (paysages larges emblématiques)
   "tunisie": [
-    "1564507592333-c60657eea523", // Sidi Bou Said bleu & blanc
-    "1539037116277-4db20889f2d4", // Dunes du Sahara
-    "1578895101408-1a36b5e1efec", // Médina de Tunis
-    "1548013146-72479768bada",    // Paysage désertique
-    "1556103255-4443dbae8e5a",   // Côte méditerranéenne
-    "1614551718538-e1e02e7dfb79", // Ruines romaines (El Jem)
-    "1582555172866-f73bb12a2ab3", // Palmeraie / oasis
-    "1560679735-c7f4fe2cc62c",   // Port de pêche
+    "1564507592333-c60657eea523", // Sidi Bou Said — maisons bleues & blanches
+    "1516690561799-46d8f74f9244", // Médina de Tunis — ruelles colorées
+    "1506905925346-21bda4d32df4", // Sahara tunisien — dunes dorées
+    "1509316785289-025f5b846b35", // Désert & dunes au coucher du soleil
+    "1471115853179-430bde9a9a7e", // Côte méditerranéenne turquoise
+    "1586348943529-beaae6c28db9", // Chott el-Djerid — lac salé miroir
+    "1519451241324-20b4ea2c4220", // Amphithéâtre d'El Jem — arènes romaines
+    "1547036967-3530c2256d02", // Palmeraie de Tozeur — oasis
   ],
 
   // ── France ── 4 photos
