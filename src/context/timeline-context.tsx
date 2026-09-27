@@ -24,6 +24,7 @@ import { getPendingMedia, removeFromQueue } from '@/lib/offline-sync';
 interface GroupedInstants {
     [key: string]: {
         title: string;
+        date: string;
         instants: Instant[];
     };
 }
@@ -508,6 +509,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             if (!groups[dayKey]) {
                 groups[dayKey] = {
                     title: '', // Will be filled later
+                    date: '',  // Will be filled later
                     instants: []
                 };
             }
@@ -534,7 +536,8 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
             const dayDate = parseISO(dayKey);
             const formattedDay = formatInstantDate(dayKey) || format(dayDate, 'd MMM yy', { locale: fr }).replace(/\./g, '');
-            groups[dayKey].title = `${locationString} (${formattedDay})`;
+            groups[dayKey].title = locationString;
+            groups[dayKey].date = formattedDay;
         });
 
         return groups;
