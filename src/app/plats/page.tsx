@@ -31,7 +31,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn, getCity, getCountry, getFlagEmoji } from "@/lib/utils";
+import { cn, getCity, getCountry, getFlagEmoji, isRecognizedCountry } from "@/lib/utils";
 import { EditDishDialog } from "@/components/timeline/edit-dish-dialog";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
@@ -58,12 +58,36 @@ function PlatsContent() {
     const [searchFilter, setSearchFilter] = useState<"all" | "dishes" | "restaurants">("all");
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
-    // Compute list of unique countries with counts
+    // Détermine le pays authentifié et reconnu d'un plat (évite de confondre les noms de restaurants avec des pays)
+    const getDishCountry = (dish: Dish): string => {
+        // 1. Pays explicite et reconnu
+        if (dish.country && isRecognizedCountry(dish.country)) {
+            return getCountry(dish.country);
+        }
+        // 2. Pays reconnu déduit de la ville
+        if (dish.city) {
+            const cityCountry = getCountry(dish.city);
+            if (cityCountry && isRecognizedCountry(cityCountry)) {
+                return cityCountry;
+            }
+        }
+        // 3. Pays reconnu déduit de l'adresse/lieu
+        if (dish.location) {
+            const locCountry = getCountry(dish.location);
+            if (locCountry && isRecognizedCountry(locCountry)) {
+                return locCountry;
+            }
+        }
+        // 4. Par défaut en Tunisie
+        return "Tunisie";
+    };
+
+    // Compute list of unique recognized countries with counts
     const countryStats = useMemo(() => {
         const counts: Record<string, number> = {};
         dishes.forEach((dish) => {
-            const country = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "") || "Tunisie";
-            if (country && country !== "Pays inconnu") {
+            const country = getDishCountry(dish);
+            if (country && isRecognizedCountry(country)) {
                 counts[country] = (counts[country] || 0) + 1;
             }
         });
@@ -104,7 +128,7 @@ function PlatsContent() {
     const getDishLocationText = (dish: Dish): string => {
         const restaurant = dish.location?.trim();
         const city = dish.city?.trim() || getCity(dish.location);
-        const country = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
+        const country = getDishCountry(dish);
 
         if (restaurant && (city || country)) {
             const zoneInfo = [city, country].filter(Boolean).join(", ");
@@ -123,7 +147,7 @@ function PlatsContent() {
     const filteredDishes = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
         const base = dishes.filter((dish) => {
-            const dishCountry = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "") || "Tunisie";
+            const dishCountry = getDishCountry(dish);
 
             // Filter by selectedCountry if set
             if (selectedCountry && dishCountry.toLowerCase() !== selectedCountry.toLowerCase()) {
@@ -443,7 +467,7 @@ function PlatsContent() {
                                                         <MapPin className="h-4 w-4 text-white/90 shrink-0" />
                                                         <span>Dégusté à {getDishLocationText(dish)}</span>
                                                         {(() => {
-                                                            const c = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
+                                                            const c = getDishCountry(dish);
                                                             const flag = c ? getFlagEmoji(c) : "";
                                                             return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
                                                         })()}
@@ -472,7 +496,7 @@ function PlatsContent() {
                                                         <MapPin className="h-4 w-4 shrink-0" />
                                                         <span>Dégusté à {getDishLocationText(dish)}</span>
                                                         {(() => {
-                                                            const c = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
+                                                            const c = getDishCountry(dish);
                                                             const flag = c ? getFlagEmoji(c) : "";
                                                             return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
                                                         })()}

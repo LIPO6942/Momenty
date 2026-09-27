@@ -28,7 +28,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn, getCity, getCountry, getFlagEmoji } from "@/lib/utils";
+import { cn, getCity, getCountry, getFlagEmoji, isRecognizedCountry } from "@/lib/utils";
 import type { Accommodation } from "@/lib/types";
 import { getPhotoFraming } from "@/lib/types";
 import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
@@ -44,12 +44,21 @@ export default function AccommodationsPage() {
     const [countryQuery, setCountryQuery] = useState("");
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
-    // Compute list of unique countries with counts
+    // Détermine le pays authentifié et reconnu d'un logement
+    const getAccCountry = (acc: Accommodation): string => {
+        const c = getCountry(acc.location);
+        if (c && isRecognizedCountry(c)) {
+            return c;
+        }
+        return "Tunisie";
+    };
+
+    // Compute list of unique recognized countries with counts
     const countryStats = useMemo(() => {
         const counts: Record<string, number> = {};
         accommodations.forEach(acc => {
-            const country = getCountry(acc.location);
-            if (country && country !== "Pays inconnu") {
+            const country = getAccCountry(acc);
+            if (country && isRecognizedCountry(country)) {
                 counts[country] = (counts[country] || 0) + 1;
             }
         });
@@ -61,7 +70,7 @@ export default function AccommodationsPage() {
     // Filter accommodations by selectedCountry and/or countryQuery (sorted chronologically descending)
     const filteredAccommodations = useMemo(() => {
         const filtered = accommodations.filter(acc => {
-            const accCountry = getCountry(acc.location);
+            const accCountry = getAccCountry(acc);
             const accCity = getCity(acc.location);
 
             // Filter by chip selection
@@ -329,9 +338,9 @@ export default function AccommodationsPage() {
                                                 <p className="text-sm text-white/80 mt-1 italic">"{accommodation.description}"</p>
                                                 <div className="flex items-center gap-1.5 mt-3">
                                                     <MapPin className="h-4 w-4 text-white/90 shrink-0" />
-                                                    <span className="font-semibold text-sm">Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}</span>
+                                                    <span className="font-semibold text-sm">Séjour à {getCity(accommodation.location)}, {getAccCountry(accommodation)}</span>
                                                     {(() => {
-                                                        const flag = getFlagEmoji(getCountry(accommodation.location));
+                                                        const flag = getFlagEmoji(getAccCountry(accommodation));
                                                         return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
                                                     })()}
                                                 </div>
@@ -355,9 +364,9 @@ export default function AccommodationsPage() {
                                                 <CardTitle className="text-2xl">{accommodation.name}</CardTitle>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                                                     <MapPin className="h-4 w-4 shrink-0" />
-                                                    <span>Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}</span>
+                                                    <span>Séjour à {getCity(accommodation.location)}, {getAccCountry(accommodation)}</span>
                                                     {(() => {
-                                                        const flag = getFlagEmoji(getCountry(accommodation.location));
+                                                        const flag = getFlagEmoji(getAccCountry(accommodation));
                                                         return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
                                                     })()}
                                                 </p>
