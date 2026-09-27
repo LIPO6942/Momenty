@@ -8,7 +8,7 @@ import { getPhotoFraming } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MapPin, Trash2, Utensils, Edit, MoreVertical, Search, X, RotateCcw } from "lucide-react";
+import { MapPin, Trash2, Utensils, Edit, MoreVertical, Search, X, RotateCcw, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { TimelineContext } from "@/context/timeline-context";
@@ -31,7 +31,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn, getCity, getCountry } from "@/lib/utils";
+import { cn, getCity, getCountry, getFlagEmoji } from "@/lib/utils";
 import { EditDishDialog } from "@/components/timeline/edit-dish-dialog";
 import { clTransform, buildTransformFromDisplay } from "@/lib/cloudinary";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
@@ -56,6 +56,21 @@ function PlatsContent() {
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState("");
     const [searchFilter, setSearchFilter] = useState<"all" | "dishes" | "restaurants">("all");
+    const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+
+    // Compute list of unique countries with counts
+    const countryStats = useMemo(() => {
+        const counts: Record<string, number> = {};
+        dishes.forEach((dish) => {
+            const country = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "") || "Tunisie";
+            if (country && country !== "Pays inconnu") {
+                counts[country] = (counts[country] || 0) + 1;
+            }
+        });
+        return Object.entries(counts)
+            .map(([country, count]) => ({ country, count }))
+            .sort((a, b) => b.count - a.count);
+    }, [dishes]);
 
     useEffect(() => {
         const id = searchParams.get('id');
@@ -89,7 +104,7 @@ function PlatsContent() {
     const getDishLocationText = (dish: Dish): string => {
         const restaurant = dish.location?.trim();
         const city = dish.city?.trim() || getCity(dish.location);
-        const country = dish.country?.trim() || getCountry(dish.location);
+        const country = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
 
         if (restaurant && (city || country)) {
             const zoneInfo = [city, country].filter(Boolean).join(", ");
@@ -107,20 +122,32 @@ function PlatsContent() {
     // Filtered dishes (sorted chronologically descending)
     const filteredDishes = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
-        const base = !q ? dishes : dishes.filter((dish) => {
-            const matchDish = (dish.name && dish.name.toLowerCase().includes(q)) ||
-                              (dish.description && dish.description.toLowerCase().includes(q));
-            const matchRestaurant = (dish.location && dish.location.toLowerCase().includes(q)) ||
-                                    (dish.city && dish.city.toLowerCase().includes(q)) ||
-                                    (dish.country && dish.country.toLowerCase().includes(q));
+        const base = dishes.filter((dish) => {
+            const dishCountry = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "") || "Tunisie";
 
-            if (searchFilter === "dishes") return matchDish;
-            if (searchFilter === "restaurants") return matchRestaurant;
-            return matchDish || matchRestaurant;
+            // Filter by selectedCountry if set
+            if (selectedCountry && dishCountry.toLowerCase() !== selectedCountry.toLowerCase()) {
+                return false;
+            }
+
+            // Filter by search query
+            if (q) {
+                const matchDish = (dish.name && dish.name.toLowerCase().includes(q)) ||
+                                  (dish.description && dish.description.toLowerCase().includes(q));
+                const matchRestaurant = (dish.location && dish.location.toLowerCase().includes(q)) ||
+                                        (dish.city && dish.city.toLowerCase().includes(q));
+                const matchCountry = dishCountry.toLowerCase().includes(q);
+
+                if (searchFilter === "dishes") return matchDish;
+                if (searchFilter === "restaurants") return matchRestaurant || matchCountry;
+                return matchDish || matchRestaurant || matchCountry;
+            }
+
+            return true;
         });
 
         return [...base].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [dishes, searchQuery, searchFilter]);
+    }, [dishes, searchQuery, searchFilter, selectedCountry]);
 
     return (
         <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
@@ -132,56 +159,58 @@ function PlatsContent() {
                 <p className="text-muted-foreground">Les saveurs qui ont marqué votre voyage.</p>
             </div>
 
-            {/* Barre de recherche et filtres Plats / Restaurants */}
+            {/* Barre de recherche discrète et filtres par pays */}
             {dishes.length > 0 && (
-                <div className="mb-6 space-y-3 bg-card border rounded-2xl p-3.5 shadow-sm">
-                    <div className="relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={
-                                searchFilter === "dishes"
-                                    ? "Rechercher par nom de plat..."
-                                    : searchFilter === "restaurants"
-                                    ? "Rechercher par restaurant, ville ou lieu..."
-                                    : "Rechercher un plat, restaurant, lieu..."
-                            }
-                            className="pl-10 pr-9 bg-muted/40 border-muted rounded-xl text-sm h-10"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-                                title="Effacer la recherche"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
+                <div className="mb-6 space-y-2.5">
+                    {/* Ligne recherche avec sélecteur de type compact */}
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={
+                                    searchFilter === "dishes"
+                                        ? "Rechercher par plat..."
+                                        : searchFilter === "restaurants"
+                                        ? "Rechercher par lieu, resto, pays..."
+                                        : "Rechercher un plat, restaurant, pays..."
+                                }
+                                className="pl-9 pr-8 bg-muted/25 hover:bg-muted/40 focus:bg-background border-border/30 focus:border-primary/40 rounded-full text-xs h-9 transition-colors placeholder:text-muted-foreground/60 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors rounded-full"
+                                    title="Effacer la recherche"
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
+                            )}
+                        </div>
 
-                    <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                        <div className="flex items-center gap-1.5 p-1 bg-muted/50 rounded-xl border border-muted/50">
+                        {/* Sélecteur de type compact */}
+                        <div className="flex items-center p-0.5 bg-muted/25 rounded-full border border-border/30 shrink-0 text-[11px]">
                             <button
                                 type="button"
                                 onClick={() => setSearchFilter("all")}
                                 className={cn(
-                                    "px-3 py-1.5 rounded-lg font-medium transition-all",
+                                    "px-2.5 py-1 rounded-full font-medium transition-all",
                                     searchFilter === "all"
-                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        ? "bg-primary text-primary-foreground shadow-xs"
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                Tous ({dishes.length})
+                                Tout
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSearchFilter("dishes")}
                                 className={cn(
-                                    "px-3 py-1.5 rounded-lg font-medium transition-all",
+                                    "px-2.5 py-1 rounded-full font-medium transition-all",
                                     searchFilter === "dishes"
-                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        ? "bg-primary text-primary-foreground shadow-xs"
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
@@ -191,20 +220,76 @@ function PlatsContent() {
                                 type="button"
                                 onClick={() => setSearchFilter("restaurants")}
                                 className={cn(
-                                    "px-3 py-1.5 rounded-lg font-medium transition-all",
+                                    "px-2.5 py-1 rounded-full font-medium transition-all",
                                     searchFilter === "restaurants"
-                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        ? "bg-primary text-primary-foreground shadow-xs"
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                Restaurants
+                                Lieux
                             </button>
                         </div>
-
-                        <span className="text-muted-foreground font-medium pr-1">
-                            {filteredDishes.length} {filteredDishes.length > 1 ? "plats trouvés" : "plat trouvé"}
-                        </span>
                     </div>
+
+                    {/* Chips de pays avec drapeaux miniatures */}
+                    {countryStats.length > 0 && (
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCountry(null)}
+                                className={cn(
+                                    "px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs",
+                                    selectedCountry === null
+                                        ? "bg-primary text-primary-foreground shadow-xs"
+                                        : "bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/30"
+                                )}
+                            >
+                                <span>🌍</span>
+                                <span>Tous les pays ({dishes.length})</span>
+                            </button>
+                            {countryStats.map(({ country, count }) => {
+                                const flag = getFlagEmoji(country) || "🌍";
+                                return (
+                                    <button
+                                        key={country}
+                                        type="button"
+                                        onClick={() => setSelectedCountry(selectedCountry === country ? null : country)}
+                                        className={cn(
+                                            "px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1.5 text-xs",
+                                            selectedCountry === country
+                                                ? "bg-primary text-primary-foreground shadow-xs"
+                                                : "bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/30"
+                                        )}
+                                    >
+                                        <span className="text-xs leading-none">{flag}</span>
+                                        <span>{country}</span>
+                                        <span className="opacity-60 text-[10px]">({count})</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Ligne discrète de statut et réinitialisation */}
+                    {(selectedCountry || searchQuery || searchFilter !== "all") && (
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1 pt-0.5">
+                            <span>
+                                {filteredDishes.length} {filteredDishes.length > 1 ? "plats trouvés" : "plat trouvé"}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCountry(null);
+                                    setSearchQuery("");
+                                    setSearchFilter("all");
+                                }}
+                                className="text-primary hover:underline flex items-center gap-1 font-medium transition-colors"
+                            >
+                                <RotateCcw className="h-3 w-3" />
+                                Réinitialiser les filtres
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -357,6 +442,11 @@ function PlatsContent() {
                                                     <div className="flex items-center gap-1.5 font-semibold text-sm">
                                                         <MapPin className="h-4 w-4 text-white/90 shrink-0" />
                                                         <span>Dégusté à {getDishLocationText(dish)}</span>
+                                                        {(() => {
+                                                            const c = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
+                                                            const flag = c ? getFlagEmoji(c) : "";
+                                                            return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
+                                                        })()}
                                                     </div>
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
@@ -380,7 +470,12 @@ function PlatsContent() {
                                                 <div className="mt-1 space-y-0.5">
                                                     <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                                                         <MapPin className="h-4 w-4 shrink-0" />
-                                                        Dégusté à {getDishLocationText(dish)}
+                                                        <span>Dégusté à {getDishLocationText(dish)}</span>
+                                                        {(() => {
+                                                            const c = dish.country?.trim() || getCountry(dish.location) || (dish.city ? getCountry(dish.city) : "");
+                                                            const flag = c ? getFlagEmoji(c) : "";
+                                                            return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -451,6 +546,7 @@ function PlatsContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
+                            setSelectedCountry(null);
                             setSearchQuery("");
                             setSearchFilter("all");
                         }}

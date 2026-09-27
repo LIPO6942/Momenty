@@ -28,7 +28,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { cn, getCity, getCountry } from "@/lib/utils";
+import { cn, getCity, getCountry, getFlagEmoji } from "@/lib/utils";
 import type { Accommodation } from "@/lib/types";
 import { getPhotoFraming } from "@/lib/types";
 import { EditAccommodationDialog } from "@/components/timeline/edit-accommodation-dialog";
@@ -113,82 +113,87 @@ export default function AccommodationsPage() {
                 <p className="text-muted-foreground">Les lieux où vous avez séjourné.</p>
             </div>
 
-            {/* Barre de recherche par pays et filtres rapides */}
+            {/* Barre de recherche discrète par pays et filtres rapides */}
             {accommodations.length > 0 && (
-                <div className="mb-6 space-y-3 bg-card border rounded-2xl p-3.5 shadow-sm">
+                <div className="mb-6 space-y-2.5">
                     <div className="relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
                         <Input
                             value={countryQuery}
                             onChange={(e) => setCountryQuery(e.target.value)}
                             placeholder="Rechercher par pays (ex: France, Tunisie...), ville ou hébergement..."
-                            className="pl-10 pr-9 bg-muted/40 border-muted rounded-xl text-sm h-10"
+                            className="pl-9 pr-8 bg-muted/25 hover:bg-muted/40 focus:bg-background border-border/30 focus:border-primary/40 rounded-full text-xs h-9 transition-colors placeholder:text-muted-foreground/60 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
                         />
                         {countryQuery && (
                             <button
                                 type="button"
                                 onClick={() => setCountryQuery("")}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors rounded-full"
                                 title="Effacer la recherche"
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                             </button>
                         )}
                     </div>
 
-                    {/* Chips de pays */}
+                    {/* Chips de pays avec drapeaux miniatures */}
                     {countryStats.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap text-xs pt-1">
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
                             <button
                                 type="button"
                                 onClick={() => setSelectedCountry(null)}
                                 className={cn(
-                                    "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5",
+                                    "px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs",
                                     selectedCountry === null
-                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                        : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        ? "bg-primary text-primary-foreground shadow-xs"
+                                        : "bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/30"
                                 )}
                             >
-                                <Globe className="h-3 w-3" />
-                                Tous les pays ({accommodations.length})
+                                <span>🌍</span>
+                                <span>Tous les pays ({accommodations.length})</span>
                             </button>
-                            {countryStats.map(({ country, count }) => (
-                                <button
-                                    key={country}
-                                    type="button"
-                                    onClick={() => setSelectedCountry(selectedCountry === country ? null : country)}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1",
-                                        selectedCountry === country
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
-                                    )}
-                                >
-                                    <span>{country}</span>
-                                    <span className="opacity-70 text-[10px]">({count})</span>
-                                </button>
-                            ))}
+                            {countryStats.map(({ country, count }) => {
+                                const flag = getFlagEmoji(country) || "🌍";
+                                return (
+                                    <button
+                                        key={country}
+                                        type="button"
+                                        onClick={() => setSelectedCountry(selectedCountry === country ? null : country)}
+                                        className={cn(
+                                            "px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1.5 text-xs",
+                                            selectedCountry === country
+                                                ? "bg-primary text-primary-foreground shadow-xs"
+                                                : "bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-border/30"
+                                        )}
+                                    >
+                                        <span className="text-xs leading-none">{flag}</span>
+                                        <span>{country}</span>
+                                        <span className="opacity-60 text-[10px]">({count})</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
-                        <span>
-                            {filteredAccommodations.length} {filteredAccommodations.length > 1 ? "logements trouvés" : "logement trouvé"}
-                        </span>
-                        {(selectedCountry || countryQuery) && (
+                    {/* Ligne discrète de statut et réinitialisation */}
+                    {(selectedCountry || countryQuery) && (
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1 pt-0.5">
+                            <span>
+                                {filteredAccommodations.length} {filteredAccommodations.length > 1 ? "logements trouvés" : "logement trouvé"}
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => {
                                     setSelectedCountry(null);
                                     setCountryQuery("");
                                 }}
-                                className="text-primary hover:underline flex items-center gap-1 font-medium"
+                                className="text-primary hover:underline flex items-center gap-1 font-medium transition-colors"
                             >
                                 <RotateCcw className="h-3 w-3" />
                                 Réinitialiser les filtres
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -323,8 +328,12 @@ export default function AccommodationsPage() {
                                                 <h3 className="font-bold text-2xl">{accommodation.name}</h3>
                                                 <p className="text-sm text-white/80 mt-1 italic">"{accommodation.description}"</p>
                                                 <div className="flex items-center gap-1.5 mt-3">
-                                                    <MapPin className="h-4 w-4 text-white/90" />
+                                                    <MapPin className="h-4 w-4 text-white/90 shrink-0" />
                                                     <span className="font-semibold text-sm">Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}</span>
+                                                    {(() => {
+                                                        const flag = getFlagEmoji(getCountry(accommodation.location));
+                                                        return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
+                                                    })()}
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
                                                     <div className="flex gap-2 flex-wrap">
@@ -345,8 +354,12 @@ export default function AccommodationsPage() {
                                             <div className="flex-grow">
                                                 <CardTitle className="text-2xl">{accommodation.name}</CardTitle>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                                                    <MapPin className="h-4 w-4" />
-                                                    Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}
+                                                    <MapPin className="h-4 w-4 shrink-0" />
+                                                    <span>Séjour à {getCity(accommodation.location)}, {getCountry(accommodation.location)}</span>
+                                                    {(() => {
+                                                        const flag = getFlagEmoji(getCountry(accommodation.location));
+                                                        return flag ? <span className="text-sm leading-none shrink-0">{flag}</span> : null;
+                                                    })()}
                                                 </p>
                                             </div>
                                             <DropdownMenu>
