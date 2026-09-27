@@ -178,17 +178,20 @@ function TimelineContent() {
 
 
   const filteredGroupedInstants = useMemo(() => {
-    return Object.entries(groupedInstants)
+    const entries = Object.entries(groupedInstants)
       .filter(([dayKey]) => {
         const date = parseISO(dayKey);
         const isYearMatch = selectedYear === -1 || getYear(date) === selectedYear;
         const isMonthMatch = selectedMonth === -1 || getMonth(date) === selectedMonth;
         return isYearMatch && isMonthMatch;
-      })
-      .reduce((acc, [dayKey, dayData]) => {
-        acc[dayKey] = dayData;
-        return acc;
-      }, {} as typeof groupedInstants);
+      });
+
+    entries.sort(([dayKeyA], [dayKeyB]) => new Date(dayKeyB).getTime() - new Date(dayKeyA).getTime());
+
+    return entries.reduce((acc, [dayKey, dayData]) => {
+      acc[dayKey] = dayData;
+      return acc;
+    }, {} as typeof groupedInstants);
   }, [groupedInstants, selectedMonth, selectedYear]);
 
   const allDayKeys = useMemo(() => {
@@ -352,8 +355,8 @@ function TimelineContent() {
           {displayGroups.map((group, groupIndex) => {
             if (group.type === 'trip') {
               // Render a Trip Header and then the days
-              const firstDayNum = group.days[group.days.length - 1].dayNumber;
-              const lastDayNum = group.days[0].dayNumber;
+              const firstDayNum = (group.days[group.days.length - 1] as any)?.dayNumber;
+              const lastDayNum = (group.days[0] as any)?.dayNumber;
 
               return (
                 <div key={`group-${groupIndex}`} className="space-y-4 relative">

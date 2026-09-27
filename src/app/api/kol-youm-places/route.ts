@@ -75,3 +75,50 @@ export async function GET() {
         );
     }
 }
+
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        const { zone, placeName, category, action } = body;
+
+        if (!zone || !placeName) {
+            return NextResponse.json(
+                { success: false, error: 'Zone et nom du lieu requis' },
+                { status: 400 }
+            );
+        }
+
+        console.log(`[Kol Youm Places Proxy] Adding place "${placeName}" in zone "${zone}" (${category || 'restaurants'})`);
+
+        const response = await fetch('https://kol-youm-app.vercel.app/api/places-database-firestore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: action || 'addPlace',
+                zone: zone.trim(),
+                placeName: placeName.trim(),
+                category: category || 'restaurants',
+            }),
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error('[Kol Youm Places Proxy POST Error]:', response.status, errText);
+            return NextResponse.json(
+                { success: false, error: `Erreur API Kol Youm: ${response.status}`, details: errText },
+                { status: response.status }
+            );
+        }
+
+        const data = await response.json();
+        return NextResponse.json({ success: true, ...data });
+    } catch (error) {
+        console.error('[Kol Youm Places Proxy POST Exception]:', error);
+        return NextResponse.json(
+            { success: false, error: error instanceof Error ? error.message : 'Échec de l\'ajout dans Kol Youm' },
+            { status: 500 }
+        );
+    }
+}

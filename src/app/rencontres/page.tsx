@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import Image from "next/image";
 import { type Encounter } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +41,10 @@ export default function EncountersPage() {
   const [activeEncounterForEdit, setActiveEncounterForEdit] = useState<Encounter | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  const sortedEncounters = useMemo(() => {
+    return [...encounters].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [encounters]);
+
   const handleDelete = (id: string) => {
     deleteEncounter(id);
     toast({
@@ -59,9 +63,9 @@ export default function EncountersPage() {
         <p className="text-muted-foreground">Les personnes qui ont marqué votre voyage.</p>
       </div>
 
-      {encounters.length > 0 ? (
+      {sortedEncounters.length > 0 ? (
         <div className="grid md:grid-cols-1 gap-8">
-          {encounters.map((encounter) => (
+          {sortedEncounters.map((encounter) => (
             <Card key={encounter.id} className="overflow-hidden">
                  {encounter.photo && (() => {
                     const t = buildTransformFromDisplay(encounter.displayTransform);

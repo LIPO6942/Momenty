@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, ReactNode, useContext, useRef, useEffect } from "react";
+import { useState, ReactNode, useContext, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
 import { TimelineContext } from "@/context/timeline-context";
 import type { Dish, DisplayTransform } from "@/lib/types";
 import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus, Building } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import {
@@ -106,6 +106,80 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
   const [openCombobox, setOpenCombobox] = useState(false);
   const [city, setCity] = useState(dishToEdit.city || "");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [isAddingPlaceToKolYoum, setIsAddingPlaceToKolYoum] = useState(false);
+  const [manuallyAddedPlaces, setManuallyAddedPlaces] = useState<Set<string>>(new Set());
+
+  const isPlaceInKolYoum = useMemo(() => {
+    if (!location.trim()) return false;
+    const clean = location.trim().toLowerCase();
+    return places.some(p => p.label.trim().toLowerCase() === clean) || manuallyAddedPlaces.has(clean);
+  }, [location, places, manuallyAddedPlaces]);
+
+  const handleAddPlaceToKolYoum = async (placeNameToAdd?: string, zoneToAdd?: string) => {
+    const targetPlace = (placeNameToAdd || location).trim();
+    const targetZone = (zoneToAdd || city).trim();
+
+    if (!targetPlace) {
+      toast({ variant: "destructive", title: "Veuillez entrer le nom du restaurant." });
+      return;
+    }
+    if (!targetZone) {
+      toast({
+        variant: "destructive",
+        title: "Zone / Ville requise",
+        description: "Veuillez d'abord indiquer la zone ou ville (ex: La Marsa, Gammarth, Lac 2...) ci-dessous pour ajouter ce restaurant dans Kol Youm."
+      });
+      const cityInput = document.getElementById("editDishCity");
+      cityInput?.focus();
+      return;
+    }
+
+    setIsAddingPlaceToKolYoum(true);
+    try {
+      const response = await fetch('/api/kol-youm-places', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addPlace',
+          placeName: targetPlace,
+          zone: targetZone,
+          category: selectedCategory || 'restaurants'
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        const cleanKey = targetPlace.toLowerCase();
+        const newPlaceObj = {
+          label: targetPlace,
+          zone: targetZone,
+          category: selectedCategory || 'restaurants'
+        };
+        setPlaces(prev => [...prev, newPlaceObj]);
+        setManuallyAddedPlaces(prev => new Set(prev).add(cleanKey));
+        setOpenCombobox(false);
+        toast({
+          title: "Restaurant ajouté à Kol Youm !",
+          description: `« ${targetPlace} » (${targetZone}) fait maintenant partie de la base de données Kol Youm.`
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur lors de l'ajout",
+          description: data.error || "Impossible d'ajouter le restaurant à Kol Youm."
+        });
+      }
+    } catch (err) {
+      console.error("Failed to add place to Kol Youm:", err);
+      toast({
+        variant: "destructive",
+        title: "Erreur réseau",
+        description: "Impossible de joindre le serveur pour ajouter le restaurant."
+      });
+    } finally {
+      setIsAddingPlaceToKolYoum(false);
+    }
+  };
 
   const { user } = useAuth();
 
@@ -207,9 +281,12 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         },
       });
 
-      // --- Sync with Kol Youm if it's a dish and we have a location/city ---
+      // --- Sync with Kol Youm if it's a dish and we have a location/city AND place is in Kol Youm ---
       const isOnline = typeof window !== 'undefined' ? navigator.onLine : true;
-      if (isOnline && name && location && city) {
+      const cleanLoc = location.trim().toLowerCase();
+      const isPlaceInDb = places.some(p => p.label.trim().toLowerCase() === cleanLoc) || manuallyAddedPlaces.has(cleanLoc);
+
+      if (isOnline && name && location && city && isPlaceInDb) {
         try {
           const syncResponse = await fetch('/api/sync-kol-youm', {
             method: 'POST',
@@ -229,10 +306,14 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         } catch (e) {
           console.error('[Kol Youm Sync Error Update]', e);
         }
+      } else if (!isPlaceInDb) {
+        console.log(`[Kol Youm Sync Skipped] Le restaurant "${location}" n'est pas dans la base Kol Youm. Aucun envoi vers Kol Youm.`);
       }
 
       setOpen(false);
-      toast({ title: "Plat mis à jour !" });
+      toast({
+        title: isPlaceInDb ? "Plat mis à jour et enregistré dans Kol Youm !" : "Plat mis à jour !"
+      });
 
     } catch (error) {
       console.error("Failed to update dish", error);
@@ -501,58 +582,167 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground flex items-center gap-2">
-                  Où étiez-vous ?
-                  {isFetchingPlaces && <Loader2 className="h-4 w-4 animate-spin" />}
-                </Label>
-                <div className="relative">
-                  <div className="flex items-center gap-1 border rounded-md">
-                    <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+              <div className="space-y-3 p-3 bg-muted/20 border rounded-xl">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-restaurant-search" className="text-sm font-medium text-foreground flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Utensils className="h-4 w-4 text-primary" />
+                      Nom du restaurant
+                    </span>
+                    {isFetchingPlaces && (
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        <span>Kol Youm...</span>
+                      </span>
+                    )}
+                  </Label>
+                  <div className="relative">
+                    <div className="flex items-center gap-1 border rounded-lg bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                      <Utensils className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                      <Input
+                        id="edit-restaurant-search"
+                        placeholder="Tapez le nom du restaurant..."
+                        className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-lg"
+                        value={location}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLocation(val);
+                          setOpenCombobox(val.trim().length >= 2);
+                          const exactMatch = places.find(p => p.label.toLowerCase() === val.trim().toLowerCase());
+                          if (exactMatch) {
+                            setCity(exactMatch.zone);
+                            setSelectedCategory(exactMatch.category);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (location.trim().length >= 2) setOpenCombobox(true);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setOpenCombobox(false), 250);
+                        }}
+                        disabled={isLoading}
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    {openCombobox && location.trim().length >= 2 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-xl shadow-xl max-h-[260px] overflow-y-auto p-1">
+                        {places
+                          .filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase()))
+                          .slice(0, 25)
+                          .map((place) => (
+                            <div
+                              key={`${place.label}-${place.zone}`}
+                              className="px-3 py-2 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center justify-between gap-2 transition-colors select-none text-sm"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setLocation(place.label);
+                                setCity(place.zone);
+                                setSelectedCategory(place.category);
+                                setOpenCombobox(false);
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Utensils className="h-4 w-4 text-primary shrink-0" />
+                                <span className="font-medium">{place.label}</span>
+                              </div>
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{place.zone}</span>
+                            </div>
+                          ))}
+                        {places.filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-muted-foreground text-xs text-center">
+                            {isFetchingPlaces ? "Recherche sur Kol Youm..." : `Aucun restaurant trouvé pour "${location}"`}
+                          </div>
+                        )}
+                        {!isPlaceInKolYoum && (
+                          <div
+                            className="mt-1 p-2 bg-primary/10 hover:bg-primary/20 border-t border-primary/20 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              handleAddPlaceToKolYoum();
+                            }}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Plus className="h-4 w-4 text-primary shrink-0" />
+                              <span className="text-xs font-semibold text-primary truncate">
+                                Ajouter « {location.trim()} » à la base Kol Youm
+                              </span>
+                            </div>
+                            {isAddingPlaceToKolYoum ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                            ) : (
+                              <span className="text-[11px] bg-primary text-primary-foreground font-medium px-2 py-0.5 rounded-md shrink-0">
+                                + Ajouter
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Statut Kol Youm : Reconnu vs Non répertorié */}
+                  {location.trim().length >= 2 && (
+                    <div className="pt-1">
+                      {isPlaceInKolYoum ? (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
+                          <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                          <span><strong>Restaurant répertorié dans Kol Youm :</strong> ce souvenir sera mis à jour et synchronisé dans Kol Youm.</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-amber-800 dark:text-amber-200 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
+                          <div className="flex items-start gap-1.5">
+                            <span className="shrink-0 text-sm">ℹ️</span>
+                            <span>
+                              Ce restaurant ne fait pas partie de Kol Youm. <strong>Il ne sera pas envoyé à Kol Youm</strong> sauf si vous l'ajoutez :
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 font-semibold text-amber-900 dark:text-amber-100 shrink-0 self-start sm:self-auto rounded-lg"
+                            disabled={isAddingPlaceToKolYoum}
+                            onClick={() => handleAddPlaceToKolYoum()}
+                          >
+                            {isAddingPlaceToKolYoum ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1 text-primary" />
+                            ) : (
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            Ajouter à la base Kol Youm
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Zone / Ville */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="editDishCity" className="text-sm font-medium text-foreground flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-primary" />
+                      Zone / Ville
+                    </span>
+                    {city && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        ✓ Remplie automatiquement
+                      </span>
+                    )}
+                  </Label>
+                  <div className="flex items-center gap-1 border rounded-lg bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                    <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
                     <Input
-                      placeholder="Tapez le nom du restaurant..."
-                      className="border-0 focus-visible:ring-0 flex-grow"
-                      value={location}
-                      onChange={(e) => {
-                        setLocation(e.target.value);
-                        setOpenCombobox(e.target.value.length >= 2);
-                      }}
-                      onFocus={() => {
-                        if (location.length >= 2) setOpenCombobox(true);
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setOpenCombobox(false), 200);
-                      }}
+                      id="editDishCity"
+                      name="city"
+                      placeholder="Zone ou ville (ex: La Marsa, Gammarth, Lac 2...)"
+                      className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-lg"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
                       disabled={isLoading}
                     />
                   </div>
-
-                  {openCombobox && places.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-lg max-h-[200px] overflow-auto">
-                      <Command className="bg-transparent">
-                        <CommandList>
-                          <CommandGroup>
-                            {places
-                              .filter(p => p.label.toLowerCase().includes(location.toLowerCase()))
-                              .map((place) => (
-                                <CommandItem
-                                  key={place.label}
-                                  value={place.label}
-                                  onSelect={handleSelectPlace}
-                                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent"
-                                >
-                                  <Utensils className="h-4 w-4" />
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{place.label}</span>
-                                    <span className="text-xs text-muted-foreground">{place.zone}</span>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="pt-2">

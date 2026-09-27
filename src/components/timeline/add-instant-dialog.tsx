@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, ReactNode, useContext, useRef, useEffect } from "react";
+import { useState, useMemo, ReactNode, useContext, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +19,8 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { TimelineContext } from "@/context/timeline-context";
-import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight, Compass, Plus } from "lucide-react";
+import { Camera, MapPin, Trash2, LocateFixed, Loader2, Image as ImageIcon, Wand2, Building, Globe, Users, Utensils, Home, Images, Check, ChevronsUpDown, LayoutGrid, ArrowLeft, ArrowRight, Compass, Plus, Calendar } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { CollageTemplatePicker } from "@/components/timeline/collage-template-picker";
 import { CollageCanvas } from "@/components/timeline/collage-canvas";
@@ -119,6 +120,13 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [displayZoom, setDisplayZoom] = useState<number>(1.25);
     const [photosTransforms, setPhotosTransforms] = useState<Record<string | number, { positionX: number; positionY: number; zoom: number }>>({});
     const [descriptionStyle, setDescriptionStyle] = useState<DescriptionStyle>("classique-italique");
+    const [customDate, setCustomDate] = useState<string>(() => {
+        try {
+            return format(new Date(), "yyyy-MM-dd'T'HH:mm");
+        } catch {
+            return "";
+        }
+    });
 
     // ── Photo filter state ─────────────────────────────────────────────────
     const [selectedFilter, setSelectedFilter] = useState<PhotoFilterType | null>(null);
@@ -196,55 +204,132 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     }, [activeContext, city, country, isDish, isKharjet]);
 
     // Fetch places from local API proxy (bypasses CORS)
-    useEffect(() => {
-        const fetchPlaces = async () => {
-            setIsFetchingPlaces(true);
-            try {
-                console.log('[Kol Youm] Fetching places from local API proxy...');
-                const response = await fetch('/api/kol-youm-places');
-                const result = await response.json();
+    const fetchPlaces = useCallback(async () => {
+        setIsFetchingPlaces(true);
+        try {
+            console.log('[Kol Youm] Fetching places from local API proxy...');
+            const response = await fetch('/api/kol-youm-places');
+            const result = await response.json();
 
-                console.log('[Kol Youm] API Response:', result);
+            if (result.success && Array.isArray(result.places)) {
+                console.log(`[Kol Youm] Loaded ${result.places.length} places`);
+                setPlaces(result.places);
 
-                if (result.success && Array.isArray(result.places)) {
-                    console.log(`[Kol Youm] Loaded ${result.places.length} places`);
-                    setPlaces(result.places);
-
-                    // Build the map for zone lookups
-                    const map = new Map<string, string>();
-                    result.places.forEach((place: { label: string; zone: string; category: string }) => {
-                        map.set(place.label, place.zone);
-                    });
-                    setPlacesMap(map);
-                } else {
-                    console.error('[Kol Youm] Failed to load places:', result.error || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('[Kol Youm] Failed to fetch places:', error);
-            } finally {
-                setIsFetchingPlaces(false);
+                // Build the map for zone lookups
+                const map = new Map<string, string>();
+                result.places.forEach((place: { label: string; zone: string; category: string }) => {
+                    map.set(place.label, place.zone);
+                });
+                setPlacesMap(map);
+            } else {
+                console.error('[Kol Youm] Failed to load places:', result.error || 'Unknown error');
             }
-        };
-
-        fetchPlaces();
+        } catch (error) {
+            console.error('[Kol Youm] Failed to fetch places:', error);
+        } finally {
+            setIsFetchingPlaces(false);
+        }
     }, []);
 
-    const handleSelectPlace = (currentValue: string) => {
-        // cmdk passes the value in lowercase, so we need case-insensitive matching
-        const selectedPlace = places.find(
-            place => place.label.toLowerCase() === currentValue.toLowerCase()
-        );
-        if (selectedPlace) {
-            setLocation(selectedPlace.label);
-            setCity(selectedPlace.zone);
-            setSelectedCategory(selectedPlace.category);
-            setOpenCombobox(false);
-        } else {
-            console.warn('[Kol Youm] No match found for:', currentValue);
+    useEffect(() => {
+        if ((open || isDish || isKharjet) && places.length === 0) {
+            fetchPlaces();
+        }
+    }, [open, isDish, isKharjet, places.length, fetchPlaces]);
+
+    useEffect(() => {
+        fetchPlaces();
+    }, [fetchPlaces]);
+
+    const [isAddingPlaceToKolYoum, setIsAddingPlaceToKolYoum] = useState(false);
+    const [manuallyAddedPlaces, setManuallyAddedPlaces] = useState<Set<string>>(new Set());
+
+    const isPlaceInKolYoum = useMemo(() => {
+        if (!location.trim()) return false;
+        const clean = location.trim().toLowerCase();
+        return places.some(p => p.label.trim().toLowerCase() === clean) || manuallyAddedPlaces.has(clean);
+    }, [location, places, manuallyAddedPlaces]);
+
+    const handleAddPlaceToKolYoum = async (placeNameToAdd?: string, zoneToAdd?: string) => {
+        const targetPlace = (placeNameToAdd || location).trim();
+        const targetZone = (zoneToAdd || city).trim();
+
+        if (!targetPlace) {
+            toast({ variant: "destructive", title: "Veuillez entrer le nom du restaurant." });
+            return;
+        }
+        if (!targetZone) {
+            toast({
+                variant: "destructive",
+                title: "Zone / Ville requise",
+                description: "Veuillez d'abord indiquer la zone ou ville (ex: La Marsa, Gammarth, Lac 2...) ci-dessous pour ajouter ce restaurant dans Kol Youm."
+            });
+            const cityInput = document.getElementById("dishCity") || document.getElementById("city");
+            cityInput?.focus();
+            return;
+        }
+
+        setIsAddingPlaceToKolYoum(true);
+        try {
+            const response = await fetch('/api/kol-youm-places', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'addPlace',
+                    placeName: targetPlace,
+                    zone: targetZone,
+                    category: selectedCategory || (isDish ? 'restaurants' : 'kharjet')
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                const cleanKey = targetPlace.toLowerCase();
+                const newPlaceObj = {
+                    label: targetPlace,
+                    zone: targetZone,
+                    category: selectedCategory || (isDish ? 'restaurants' : 'kharjet')
+                };
+                setPlaces(prev => [...prev, newPlaceObj]);
+                setManuallyAddedPlaces(prev => new Set(prev).add(cleanKey));
+                setOpenCombobox(false);
+                toast({
+                    title: "Restaurant ajouté à Kol Youm !",
+                    description: `« ${targetPlace} » (${targetZone}) fait maintenant partie de la base de données Kol Youm.`
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Erreur lors de l'ajout",
+                    description: data.error || "Impossible d'ajouter le restaurant à Kol Youm."
+                });
+            }
+        } catch (err) {
+            console.error("Failed to add place to Kol Youm:", err);
+            toast({
+                variant: "destructive",
+                title: "Erreur réseau",
+                description: "Impossible de joindre le serveur pour ajouter le restaurant."
+            });
+        } finally {
+            setIsAddingPlaceToKolYoum(false);
         }
     };
 
-    const showPlacesCombobox = (isDish || isKharjet) && (places.length > 0 || isFetchingPlaces);
+    const handleSelectPlace = (selected: { label: string; zone: string; category?: string } | string) => {
+        const placeObj = typeof selected === 'string'
+            ? places.find(p => p.label.toLowerCase() === selected.toLowerCase())
+            : selected;
+
+        if (placeObj) {
+            setLocation(placeObj.label);
+            setCity(placeObj.zone);
+            if (placeObj.category) setSelectedCategory(placeObj.category);
+            setOpenCombobox(false);
+        } else {
+            console.warn('[Kol Youm] No match found for:', selected);
+        }
+    };
 
 
     useEffect(() => {
@@ -373,6 +458,18 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        // Auto-detect photo capture date if available
+        if (files[0] && (files[0] as any).lastModified) {
+            try {
+                const photoTime = new Date((files[0] as any).lastModified);
+                if (isValid(photoTime)) {
+                    setCustomDate(format(photoTime, "yyyy-MM-dd'T'HH:mm"));
+                }
+            } catch (err) {
+                console.warn("Could not parse photo timestamp", err);
+            }
+        }
+
         // Limit to 2 photos for dish/encounter/accommodation
         const isLimited = isDish || isEncounter || isAccommodation;
         const maxPhotos = isLimited ? 2 : 99;
@@ -458,6 +555,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         setIsSubmitting(false);
         setIsKharjet(false);
         setKharjetSpotName("");
+        try {
+            setCustomDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+        } catch {
+            setCustomDate("");
+        }
         setSelectedKharjetTags([]);
         setIsCreatingNewZone(false);
         setNewCustomZone("");
@@ -624,6 +726,15 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 // Audio will be queued later after we have a docId
             }
 
+            const finalDate = (() => {
+                if (customDate) {
+                    const parsed = new Date(customDate);
+                    if (isValid(parsed)) return parsed.toISOString();
+                }
+                return new Date().toISOString();
+            })();
+            const dateTimestamp = new Date(finalDate).getTime();
+
             if (isEncounter) {
                 if (!encounterName) {
                     toast({ variant: "destructive", title: "Veuillez nommer la personne rencontrée." });
@@ -633,7 +744,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 const newEncounter: Omit<Encounter, 'id'> = {
                     name: encounterName,
                     description: description || "Rencontre mémorable",
-                    date: new Date().toISOString(),
+                    date: finalDate,
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
@@ -678,7 +789,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 const newDish: Omit<Dish, 'id'> = {
                     name: dishName,
                     description: description || "Un plat mémorable",
-                    date: new Date().toISOString(),
+                    date: finalDate,
                     location,
                     city,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
@@ -726,7 +837,11 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         });
                     }
                 }
-                    if (isOnline && dishName && location && city) {
+                    // Synchronisation Kol Youm UNIQUEMENT si le restaurant fait partie de la base de données Kol Youm
+                    const cleanLoc = location.trim().toLowerCase();
+                    const isPlaceInDb = places.some(p => p.label.trim().toLowerCase() === cleanLoc) || manuallyAddedPlaces.has(cleanLoc);
+
+                    if (isOnline && dishName && location && city && isPlaceInDb) {
                         try {
                             const syncResponse = await fetch('/api/sync-kol-youm', {
                                 method: 'POST',
@@ -737,7 +852,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                     cityName: city,
                                     category: selectedCategory || 'restaurants',
                                     dishName: dishName,
-                                    date: new Date().getTime(),
+                                    date: dateTimestamp,
                                     postUrl: `https://momenty-ten.vercel.app/plats?id=${newId}`,
                                     momentyImageUrl: mainPhoto
                                 })
@@ -747,8 +862,14 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                         } catch (e) {
                             console.error('[Kol Youm Sync Error]', e);
                         }
+                    } else if (!isPlaceInDb) {
+                        console.log(`[Kol Youm Sync Skipped] Le restaurant "${location}" n'est pas dans la base Kol Youm. Aucun envoi vers Kol Youm.`);
                     }
-                    toast({ title: "Nouveau plat ajouté !" });
+                    toast({
+                        title: isPlaceInDb
+                            ? "Nouveau plat ajouté et enregistré dans Kol Youm !"
+                            : "Nouveau plat ajouté !"
+                    });
             } else if (isAccommodation) {
                 if (!accommodationName) {
                     toast({ variant: "destructive", title: "Veuillez nommer le logement." });
@@ -758,7 +879,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 const newAccommodation: Omit<Accommodation, 'id'> = {
                     name: accommodationName,
                     description: description || "Un logement mémorable",
-                    date: new Date().toISOString(),
+                    date: finalDate,
                     location,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
@@ -846,7 +967,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     type: photos.length > 0 ? "photo" as const : "note" as const,
                     title: instantTitle,
                     description: finalDescription,
-                    date: new Date().toISOString(),
+                    date: finalDate,
                     location: instantLocation,
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photos: uploadedPhotoUrls,
@@ -909,7 +1030,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                 cityName: effectiveZone,
                                 category: 'Kharjet',
                                 dishName: cleanTags.length > 0 ? cleanTags.join(', ') : undefined,
-                                date: new Date().getTime(),
+                                date: dateTimestamp,
                                 postUrl: `https://momenty-ten.vercel.app/?instant=${newId}`,
                                 momentyImageUrl: uploadedPhotoUrls[0] || null
                             })
@@ -1542,148 +1663,253 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                             />
                                         </div>
                                     )}
+
+                                    {/* Date et heure du souvenir */}
+                                    <div className="space-y-1.5 border rounded-xl p-3 bg-muted/20">
+                                        <Label htmlFor="customMomentDate" className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                            <Calendar className="h-4 w-4 text-primary" />
+                                            <span>Date et heure du souvenir</span>
+                                        </Label>
+                                        <Input
+                                            id="customMomentDate"
+                                            type="datetime-local"
+                                            value={customDate}
+                                            onChange={(e) => setCustomDate(e.target.value)}
+                                            className="h-9 bg-background text-sm rounded-lg border-muted"
+                                            disabled={isLoading || isSubmitting}
+                                        />
+                                    </div>
                                     {/* Location Section */}
-                                    {(isDish || isKharjet) ? (
-                                        /* DISH MODE: Show restaurant autocomplete with zone */
-                                        <div className="space-y-2">
-                                            <Label htmlFor="location" className="flex items-center gap-2">
-                                                C'était ou ?
-                                                {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
-                                            </Label>
+                                    {isDish ? (
+                                        /* DISH MODE: Restaurant autocomplete from Kol Youm + Auto-filled Zone */
+                                        <div className="space-y-3 p-3.5 bg-muted/20 border rounded-2xl">
+                                            {/* Nom du restaurant avec suggestions Kol Youm */}
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="restaurant-search" className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Utensils className="h-4 w-4 text-primary" />
+                                                        <span>Nom du restaurant</span>
+                                                    </span>
+                                                    {(isLocating || isAnalyzing || isFetchingPlaces) && (
+                                                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                                            <span>Chargement Kol Youm...</span>
+                                                        </span>
+                                                    )}
+                                                </Label>
+                                                <div className="relative">
+                                                    <div className="flex items-center gap-1 border rounded-xl bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                                                        <Utensils className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                                                        <Input
+                                                            id="restaurant-search"
+                                                            placeholder="Tapez le nom du restaurant (suggestions dès 2 lettres)..."
+                                                            className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-xl"
+                                                            value={location}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setLocation(val);
+                                                                setOpenCombobox(val.trim().length >= 2);
+                                                                if (places.length === 0 && !isFetchingPlaces) {
+                                                                    fetchPlaces();
+                                                                }
+                                                                const exactMatch = places.find(p => p.label.toLowerCase() === val.trim().toLowerCase());
+                                                                if (exactMatch) {
+                                                                    setCity(exactMatch.zone);
+                                                                    setSelectedCategory(exactMatch.category);
+                                                                }
+                                                            }}
+                                                            onFocus={() => {
+                                                                if (location.trim().length >= 2) setOpenCombobox(true);
+                                                                if (places.length === 0 && !isFetchingPlaces) fetchPlaces();
+                                                            }}
+                                                            onBlur={() => {
+                                                                setTimeout(() => setOpenCombobox(false), 250);
+                                                            }}
+                                                            disabled={isLoading}
+                                                            autoComplete="off"
+                                                        />
+                                                    </div>
 
-                                            {showPlacesCombobox ? (
-                                                <div className="flex flex-col gap-2">
-                                                    {/* Simple autocomplete input */}
-                                                    <div className="relative">
-                                                        <div className="flex items-center gap-1 border rounded-md">
-                                                            <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            <Input
-                                                                id="restaurant-search"
-                                                                placeholder={isKharjet ? "Tapez le nom du spot (ex: Plage, Café, Rooftop...)" : "Tapez le nom du restaurant..."}
-                                                                className="border-0 focus-visible:ring-0 flex-grow"
-                                                                value={location}
-                                                                onChange={(e) => {
-                                                                    setLocation(e.target.value);
-                                                                    setOpenCombobox(e.target.value.length >= 2);
-                                                                    const exactMatch = places.find(p => p.label.toLowerCase() === e.target.value.toLowerCase());
-                                                                    if (exactMatch) {
-                                                                        setCity(exactMatch.zone);
-                                                                        setSelectedCategory(exactMatch.category);
-                                                                    }
-                                                                }}
-                                                                onFocus={() => {
-                                                                    if (location.length >= 2) setOpenCombobox(true);
-                                                                }}
-                                                                onBlur={() => {
-                                                                    setTimeout(() => setOpenCombobox(false), 200);
-                                                                }}
-                                                                disabled={isLoading || isFetchingPlaces}
-                                                                autoComplete="off"
-                                                            />
-                                                            {isFetchingPlaces && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
-                                                        </div>
-
-                                                        {openCombobox && location.length >= 2 && (
-                                                            <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
-                                                                {places
-                                                                    .filter(p => p.label.toLowerCase().includes(location.toLowerCase()))
-                                                                    .slice(0, 15)
-                                                                    .map((place) => (
-                                                                        <div
-                                                                            key={`${place.label}-${place.zone}`}
-                                                                            className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground flex flex-col"
-                                                                            onMouseDown={(e) => {
-                                                                                e.preventDefault();
-                                                                                setLocation(place.label);
-                                                                                setCity(place.zone);
-                                                                                setSelectedCategory(place.category);
-                                                                                setOpenCombobox(false);
-                                                                            }}
-                                                                        >
-                                                                            <span className="font-medium">{place.label}</span>
-                                                                            <span className="text-xs text-muted-foreground">{place.zone}</span>
+                                                    {openCombobox && location.trim().length >= 2 && (
+                                                        <div className="absolute z-50 w-full mt-1.5 bg-popover text-popover-foreground border rounded-xl shadow-xl max-h-[260px] overflow-y-auto p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                            {places
+                                                                .filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase()))
+                                                                .slice(0, 25)
+                                                                .map((place) => (
+                                                                    <div
+                                                                        key={`${place.label}-${place.zone}`}
+                                                                        className="px-3 py-2 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center justify-between gap-2 transition-colors select-none"
+                                                                        onPointerDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            handleSelectPlace(place);
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Utensils className="h-4 w-4 text-primary shrink-0" />
+                                                                            <span className="font-medium text-sm">{place.label}</span>
                                                                         </div>
-                                                                    ))}
-                                                                {places.filter(p => p.label.toLowerCase().includes(location.toLowerCase())).length === 0 && (
-                                                                    <div className="px-3 py-2 text-muted-foreground text-sm">
-                                                                        Aucun résultat trouvé
+                                                                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{place.zone}</span>
                                                                     </div>
-                                                                )}
+                                                                ))}
+                                                            {places.filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase())).length === 0 && (
+                                                                <div className="px-3 py-2 text-muted-foreground text-xs text-center">
+                                                                    {isFetchingPlaces ? "Recherche sur Kol Youm..." : `Aucun restaurant trouvé pour "${location}"`}
+                                                                </div>
+                                                            )}
+                                                            {!isPlaceInKolYoum && (
+                                                                <div
+                                                                    className="mt-1 p-2 bg-primary/10 hover:bg-primary/20 border-t border-primary/20 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors"
+                                                                    onPointerDown={(e) => {
+                                                                        e.preventDefault();
+                                                                        handleAddPlaceToKolYoum();
+                                                                    }}
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <Plus className="h-4 w-4 text-primary shrink-0" />
+                                                                        <span className="text-xs font-semibold text-primary truncate">
+                                                                            Ajouter « {location.trim()} » à la base Kol Youm
+                                                                        </span>
+                                                                    </div>
+                                                                    {isAddingPlaceToKolYoum ? (
+                                                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                                                                    ) : (
+                                                                        <span className="text-[11px] bg-primary text-primary-foreground font-medium px-2 py-0.5 rounded-md shrink-0">
+                                                                            + Ajouter
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Statut Kol Youm : Reconnu vs Non répertorié */}
+                                                {location.trim().length >= 2 && (
+                                                    <div className="pt-1">
+                                                        {isPlaceInKolYoum ? (
+                                                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
+                                                                <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                                                                <span><strong>Restaurant répertorié dans Kol Youm :</strong> ce souvenir sera enregistré et synchronisé dans Kol Youm.</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-amber-800 dark:text-amber-200 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
+                                                                <div className="flex items-start gap-1.5">
+                                                                    <span className="shrink-0 text-sm">ℹ️</span>
+                                                                    <span>
+                                                                        Ce restaurant n'est pas dans Kol Youm. <strong>Il ne sera pas enregistré dans Kol Youm</strong> sauf si vous l'ajoutez :
+                                                                    </span>
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-8 text-xs bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 font-semibold text-amber-900 dark:text-amber-100 shrink-0 self-start sm:self-auto rounded-lg"
+                                                                    disabled={isAddingPlaceToKolYoum}
+                                                                    onClick={() => handleAddPlaceToKolYoum()}
+                                                                >
+                                                                    {isAddingPlaceToKolYoum ? (
+                                                                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1 text-primary" />
+                                                                    ) : (
+                                                                        <Plus className="h-3.5 w-3.5 mr-1" />
+                                                                    )}
+                                                                    Ajouter à la base Kol Youm
+                                                                </Button>
                                                             </div>
                                                         )}
                                                     </div>
+                                                )}
+                                            </div>
 
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <div className="flex items-center gap-1 border rounded-md bg-background">
-                                                            <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            <select
-                                                                id="city"
-                                                                name="city"
-                                                                className="w-full bg-transparent border-0 h-9 px-2 text-xs focus:outline-hidden cursor-pointer"
-                                                                value={city || ""}
-                                                                onChange={(e) => setCity(e.target.value)}
-                                                            >
-                                                                <option value="">Sélectionnez la zone / ville...</option>
-                                                                {availableZones.map((z) => (
-                                                                    <option key={z} value={z}>{z}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                                                    </div>
+                                            {/* Zone / Ville qui se remplit automatiquement */}
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="dishCity" className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Building className="h-4 w-4 text-primary" />
+                                                        <span>Zone / Ville</span>
+                                                    </span>
+                                                    {city && (
+                                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                                            ✓ Remplie automatiquement
+                                                        </span>
+                                                    )}
+                                                </Label>
+                                                <div className="flex items-center gap-1 border rounded-xl bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                                                    <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                                                    <Input
+                                                        id="dishCity"
+                                                        name="city"
+                                                        list="available-zones-list"
+                                                        placeholder="Zone ou ville (ex: La Marsa, Gammarth, Lac 2...)"
+                                                        className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-xl"
+                                                        value={city}
+                                                        onChange={(e) => setCity(e.target.value)}
+                                                        disabled={isLoading}
+                                                    />
+                                                    <datalist id="available-zones-list">
+                                                        {availableZones.map((z) => (
+                                                            <option key={z} value={z} />
+                                                        ))}
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : isKharjet ? (
+                                        /* KHARJET MODE: Show spot search with zone */
+                                        <div className="space-y-2">
+                                            <Label htmlFor="location" className="flex items-center gap-2">
+                                                C'était où ?
+                                                {(isLocating || isAnalyzing) && <Loader2 className="h-4 w-4 animate-spin" />}
+                                            </Label>
+                                            <div className="relative">
+                                                <div className="flex items-center gap-1 border rounded-md">
+                                                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
+                                                    <Input
+                                                        id="kharjet-spot-search"
+                                                        placeholder="Tapez le nom du spot (ex: Plage, Café, Rooftop...)"
+                                                        className="border-0 focus-visible:ring-0 flex-grow"
+                                                        value={location}
+                                                        onChange={(e) => {
+                                                            setLocation(e.target.value);
+                                                            setOpenCombobox(e.target.value.length >= 2);
+                                                            const exactMatch = places.find(p => p.label.toLowerCase() === e.target.value.toLowerCase());
+                                                            if (exactMatch) {
+                                                                setCity(exactMatch.zone);
+                                                                setSelectedCategory(exactMatch.category);
+                                                            }
+                                                        }}
+                                                        onFocus={() => {
+                                                            if (location.length >= 2) setOpenCombobox(true);
+                                                        }}
+                                                        onBlur={() => {
+                                                            setTimeout(() => setOpenCombobox(false), 250);
+                                                        }}
+                                                        disabled={isLoading || isFetchingPlaces}
+                                                        autoComplete="off"
+                                                    />
+                                                    {isFetchingPlaces && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
+                                                </div>
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="link"
-                                                        className="h-auto p-0 text-xs text-muted-foreground self-start"
-                                                        onClick={() => setPlaces([])}
-                                                    >
-                                                        {isKharjet ? "Je ne trouve pas mon spot (Saisie manuelle)" : "Je ne trouve pas mon restaurant (Saisie manuelle)"}
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-grow space-y-2">
-                                                        <div className="flex items-center gap-1 border rounded-md">
-                                                            <Utensils className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-3" />
-                                                            <Input
-                                                                id="location"
-                                                                placeholder="Nom du restaurant"
-                                                                className="border-0 focus-visible:ring-0 flex-grow"
-                                                                value={location}
-                                                                onChange={(e) => setLocation(e.target.value)}
-                                                                disabled={isLoading}
-                                                            />
-                                                        </div>
-                                                        <div className="flex items-center gap-1 border rounded-md">
-                                                            <Building className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
-                                                            <Input
-                                                                id="city"
-                                                                name="city"
-                                                                placeholder="Ville"
-                                                                className="border-0 focus-visible:ring-0 flex-grow"
-                                                                value={city}
-                                                                onChange={(e) => setCity(e.target.value)}
-                                                                disabled={isLoading}
-                                                            />
-                                                        </div>
-                                                        <div className="flex items-center gap-1 border rounded-md">
-                                                            <Globe className="h-5 w-5 text-red-400 flex-shrink-0 ml-3" />
-                                                            <Input
-                                                                id="country"
-                                                                name="country"
-                                                                placeholder="Pays"
-                                                                className="border-0 focus-visible:ring-0 flex-grow"
-                                                                value={country}
-                                                                onChange={(e) => setCountry(e.target.value)}
-                                                                disabled={isLoading || !!activeContext}
-                                                            />
-                                                        </div>
+                                                {openCombobox && location.length >= 2 && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                                                        {places
+                                                            .filter(p => p.label.toLowerCase().includes(location.toLowerCase()))
+                                                            .slice(0, 15)
+                                                            .map((place) => (
+                                                                <div
+                                                                    key={`${place.label}-${place.zone}`}
+                                                                    className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground flex flex-col"
+                                                                    onPointerDown={(e) => {
+                                                                        e.preventDefault();
+                                                                        handleSelectPlace(place);
+                                                                    }}
+                                                                >
+                                                                    <span className="font-medium">{place.label}</span>
+                                                                    <span className="text-xs text-muted-foreground">{place.zone}</span>
+                                                                </div>
+                                                            ))}
                                                     </div>
-                                                    <Button type="button" variant="ghost" size="icon" onClick={handleGetLocation} disabled={isLoading} className="self-center text-red-400">
-                                                        <LocateFixed className="h-5 w-5" />
-                                                    </Button>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     ) : (
                                         /* OTHER MODES: Show only Ville and Pays (no "Nom du lieu") */

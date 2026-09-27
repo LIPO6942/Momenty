@@ -86,12 +86,10 @@ function PlatsContent() {
         }));
     };
 
-    // Filtered dishes
+    // Filtered dishes (sorted chronologically descending)
     const filteredDishes = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return dishes;
-
-        return dishes.filter((dish) => {
+        const base = !q ? dishes : dishes.filter((dish) => {
             const matchDish = (dish.name && dish.name.toLowerCase().includes(q)) ||
                               (dish.description && dish.description.toLowerCase().includes(q));
             const matchRestaurant = (dish.location && dish.location.toLowerCase().includes(q)) ||
@@ -101,6 +99,8 @@ function PlatsContent() {
             if (searchFilter === "restaurants") return matchRestaurant;
             return matchDish || matchRestaurant;
         });
+
+        return [...base].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [dishes, searchQuery, searchFilter]);
 
     return (

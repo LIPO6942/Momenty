@@ -78,25 +78,33 @@ const addRuntimeAttributes = (instant: Instant): Instant => {
     return { ...instant, icon, color };
 };
 
+const sortByDateDesc = <T extends { date?: string }>(items: T[]): T[] => {
+    return [...items].sort((a, b) => {
+        const timeA = a.date ? new Date(a.date).getTime() : 0;
+        const timeB = b.date ? new Date(b.date).getTime() : 0;
+        return timeB - timeA;
+    });
+};
+
 export const TimelineContext = createContext<TimelineContextType>({
     instants: [],
     groupedInstants: {},
-    addInstant: () => { },
+    addInstant: async () => "",
     updateInstant: () => { },
     deleteInstant: () => { },
     deleteInstantsByLocation: () => { },
     activeTrip: null,
     activeStay: null,
     encounters: [],
-    addEncounter: () => { },
+    addEncounter: async () => "",
     updateEncounter: async () => { },
     deleteEncounter: () => { },
     dishes: [],
-    addDish: () => { },
+    addDish: async () => "",
     updateDish: async () => { },
     deleteDish: () => { },
     accommodations: [],
-    addAccommodation: () => { },
+    addAccommodation: async () => "",
     updateAccommodation: async () => { },
     deleteAccommodation: () => { },
     isOnline: true,
@@ -170,10 +178,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
             const processedInstants = loadedInstants.map(addRuntimeAttributes);
 
-            setInstants(processedInstants);
-            setEncounters(loadedEncounters);
-            setDishes(loadedDishes);
-            setAccommodations(loadedAccommodations);
+            setInstants(sortByDateDesc(processedInstants));
+            setEncounters(sortByDateDesc(loadedEncounters));
+            setDishes(sortByDateDesc(loadedDishes));
+            setAccommodations(sortByDateDesc(loadedAccommodations));
         };
         loadData();
 
@@ -259,7 +267,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                     }
                 } else {
                     // Encounter, Dish, Accommodation
-                    const updateData = { [item.fieldName]: remoteUrl };
+                    const updateData = { [item.fieldName]: remoteUrl } as any;
                     if (item.collection === 'encounters') await saveEncounter(user.uid, updateData, item.docId);
                     else if (item.collection === 'dishes') await saveDish(user.uid, updateData, item.docId);
                     else if (item.collection === 'accommodations') await saveAccommodation(user.uid, updateData, item.docId);
@@ -299,28 +307,28 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const newId = await saveInstant(user.uid, newInstantForDb);
         const newInstantForState = addRuntimeAttributes({ ...newInstantForDb, id: newId });
-        setInstants(prevInstants => [newInstantForState, ...prevInstants]);
+        setInstants(prevInstants => sortByDateDesc([newInstantForState, ...prevInstants]));
         return newId;
     };
 
     const addEncounter = async (encounterData: Omit<Encounter, 'id'>) => {
         if (!user) throw new Error("User not authenticated");
         const newId = await saveEncounter(user.uid, encounterData);
-        setEncounters(prev => [{ ...encounterData, id: newId }, ...prev]);
+        setEncounters(prev => sortByDateDesc([{ ...encounterData, id: newId }, ...prev]));
         return newId;
     }
 
     const addDish = async (dishData: Omit<Dish, 'id'>) => {
         if (!user) throw new Error("User not authenticated");
         const newId = await saveDish(user.uid, dishData);
-        setDishes(prev => [{ ...dishData, id: newId }, ...prev]);
+        setDishes(prev => sortByDateDesc([{ ...dishData, id: newId }, ...prev]));
         return newId;
     }
 
     const addAccommodation = async (accommodationData: Omit<Accommodation, 'id'>) => {
         if (!user) throw new Error("User not authenticated");
         const newId = await saveAccommodation(user.uid, accommodationData);
-        setAccommodations(prev => [{ ...accommodationData, id: newId }, ...prev]);
+        setAccommodations(prev => sortByDateDesc([{ ...accommodationData, id: newId }, ...prev]));
         return newId;
     }
 
@@ -354,9 +362,9 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
 
         const updatedInstantForState = addRuntimeAttributes(updatedInstant);
 
-        setInstants(prevInstants => prevInstants.map(instant =>
+        setInstants(prevInstants => sortByDateDesc(prevInstants.map(instant =>
             instant.id === id ? updatedInstantForState : instant
-        ));
+        )));
 
         // Auto-sync edits with Kol Youm ONLY if this instant is explicitly a Kharjet outing
         const isKharjetInstant = updatedInstant.category?.includes('Kharjet') ||
@@ -539,7 +547,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!encounterToUpdate) return;
         const updatedEncounter = { ...encounterToUpdate, ...updatedData };
         await saveEncounter(user.uid, updatedEncounter, id);
-        setEncounters(prev => prev.map(e => e.id === id ? updatedEncounter : e));
+        setEncounters(prev => sortByDateDesc(prev.map(e => e.id === id ? updatedEncounter : e)));
     };
 
     const updateDish = async (id: string, updatedData: Partial<Omit<Dish, 'id'>>) => {
@@ -548,7 +556,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!dishToUpdate) return;
         const updatedDish = { ...dishToUpdate, ...updatedData };
         await saveDish(user.uid, updatedDish, id);
-        setDishes(prev => prev.map(d => d.id === id ? updatedDish : d));
+        setDishes(prev => sortByDateDesc(prev.map(d => d.id === id ? updatedDish : d)));
     };
 
     const updateAccommodation = async (id: string, updatedData: Partial<Omit<Accommodation, 'id'>>) => {
@@ -557,7 +565,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
         if (!accommodationToUpdate) return;
         const updatedAccommodation = { ...accommodationToUpdate, ...updatedData };
         await saveAccommodation(user.uid, updatedAccommodation, id);
-        setAccommodations(prev => prev.map(a => a.id === id ? updatedAccommodation : a));
+        setAccommodations(prev => sortByDateDesc(prev.map(a => a.id === id ? updatedAccommodation : a)));
     };
 
 

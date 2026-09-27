@@ -58,9 +58,9 @@ export default function AccommodationsPage() {
             .sort((a, b) => b.count - a.count);
     }, [accommodations]);
 
-    // Filter accommodations by selectedCountry and/or countryQuery
+    // Filter accommodations by selectedCountry and/or countryQuery (sorted chronologically descending)
     const filteredAccommodations = useMemo(() => {
-        return accommodations.filter(acc => {
+        const filtered = accommodations.filter(acc => {
             const accCountry = getCountry(acc.location);
             const accCity = getCity(acc.location);
 
@@ -84,6 +84,8 @@ export default function AccommodationsPage() {
 
             return true;
         });
+
+        return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [accommodations, selectedCountry, countryQuery]);
 
     const handleDelete = (id: string) => {
