@@ -108,12 +108,94 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isAddingPlaceToKolYoum, setIsAddingPlaceToKolYoum] = useState(false);
   const [manuallyAddedPlaces, setManuallyAddedPlaces] = useState<Set<string>>(new Set());
+  const restaurantComboboxRef = useRef<HTMLDivElement>(null);
+  const touchStartPos = useRef<{ x: number; y: number; moved: boolean }>({ x: 0, y: 0, moved: false });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        restaurantComboboxRef.current &&
+        !restaurantComboboxRef.current.contains(event.target as Node)
+      ) {
+        setOpenCombobox(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      touchStartPos.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        moved: false
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+      const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+      if (dx > 8 || dy > 8) {
+        touchStartPos.current.moved = true;
+      }
+    }
+  };
+
+  const normalizePlaceStr = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
   const isPlaceInKolYoum = useMemo(() => {
     if (!location.trim()) return false;
-    const clean = location.trim().toLowerCase();
-    return places.some(p => p.label.trim().toLowerCase() === clean) || manuallyAddedPlaces.has(clean);
+    const clean = normalizePlaceStr(location);
+    return places.some(p => normalizePlaceStr(p.label) === clean) || manuallyAddedPlaces.has(clean);
   }, [location, places, manuallyAddedPlaces]);
+
+  const filteredPlaces = useMemo(() => {
+    const q = normalizePlaceStr(location);
+    if (!q) return [];
+
+    const matches = places.filter(p => normalizePlaceStr(p.label).includes(q));
+
+    matches.sort((a, b) => {
+      const aNorm = normalizePlaceStr(a.label);
+      const bNorm = normalizePlaceStr(b.label);
+
+      // 1. Exact match top priority
+      const aExact = aNorm === q;
+      const bExact = bNorm === q;
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+
+      // 2. Starts with query priority
+      const aStarts = aNorm.startsWith(q);
+      const bStarts = bNorm.startsWith(q);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+
+      // 3. Word in name starts with query
+      const aWordStarts = aNorm.split(/\s+/).some(w => w.startsWith(q));
+      const bWordStarts = bNorm.split(/\s+/).some(w => w.startsWith(q));
+      if (aWordStarts && !bWordStarts) return -1;
+      if (!aWordStarts && bWordStarts) return 1;
+
+      // 4. Shorter names first (crucial for 2-letter and short names!)
+      if (a.label.length !== b.label.length) {
+        return a.label.length - b.label.length;
+      }
+
+      return a.label.localeCompare(b.label, 'fr');
+    });
+
+    return matches.slice(0, 35);
+  }, [places, location]);
 
   const handleAddPlaceToKolYoum = async (placeNameToAdd?: string, zoneToAdd?: string) => {
     const targetPlace = (placeNameToAdd || location).trim();
@@ -596,7 +678,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                       </span>
                     )}
                   </Label>
-                  <div className="relative">
+                  <div className="relative" ref={restaurantComboboxRef}>
                     <div className="flex items-center gap-1 border rounded-lg bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
                       <Utensils className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
                       <Input
@@ -607,58 +689,60 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                         onChange={(e) => {
                           const val = e.target.value;
                           setLocation(val);
-                          setOpenCombobox(val.trim().length >= 2);
-                          const exactMatch = places.find(p => p.label.toLowerCase() === val.trim().toLowerCase());
+                          setOpenCombobox(val.trim().length >= 1);
+                          const cleanVal = normalizePlaceStr(val);
+                          const exactMatch = places.find(p => normalizePlaceStr(p.label) === cleanVal);
                           if (exactMatch) {
                             setCity(exactMatch.zone);
                             setSelectedCategory(exactMatch.category);
                           }
                         }}
                         onFocus={() => {
-                          if (location.trim().length >= 2) setOpenCombobox(true);
+                          if (location.trim().length >= 1) setOpenCombobox(true);
                         }}
-                        onBlur={() => {
-                          setTimeout(() => setOpenCombobox(false), 250);
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setOpenCombobox(false);
                         }}
                         disabled={isLoading}
                         autoComplete="off"
                       />
                     </div>
 
-                    {openCombobox && location.trim().length >= 2 && (
+                    {openCombobox && location.trim().length >= 1 && (
                       <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-xl shadow-xl max-h-[260px] overflow-y-auto p-1">
-                        {places
-                          .filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase()))
-                          .slice(0, 25)
-                          .map((place) => (
-                            <div
-                              key={`${place.label}-${place.zone}`}
-                              className="px-3 py-2 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center justify-between gap-2 transition-colors select-none text-sm"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                setLocation(place.label);
-                                setCity(place.zone);
-                                setSelectedCategory(place.category);
-                                setOpenCombobox(false);
-                              }}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Utensils className="h-4 w-4 text-primary shrink-0" />
-                                <span className="font-medium">{place.label}</span>
-                              </div>
-                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{place.zone}</span>
+                        {filteredPlaces.map((place) => (
+                          <div
+                            key={`${place.label}-${place.zone}`}
+                            className="px-3 py-2.5 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground active:bg-accent/80 flex items-center justify-between gap-2 transition-colors select-none text-sm"
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onClick={() => {
+                              if (touchStartPos.current.moved) return;
+                              setLocation(place.label);
+                              setCity(place.zone);
+                              setSelectedCategory(place.category);
+                              setOpenCombobox(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Utensils className="h-4 w-4 text-primary shrink-0" />
+                              <span className="font-medium">{place.label}</span>
                             </div>
-                          ))}
-                        {places.filter(p => p.label.toLowerCase().includes(location.trim().toLowerCase())).length === 0 && (
+                            <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{place.zone}</span>
+                          </div>
+                        ))}
+                        {filteredPlaces.length === 0 && (
                           <div className="px-3 py-2 text-muted-foreground text-xs text-center">
                             {isFetchingPlaces ? "Recherche sur Kol Youm..." : `Aucun restaurant trouvé pour "${location}"`}
                           </div>
                         )}
-                        {!isPlaceInKolYoum && (
+                        {!isPlaceInKolYoum && location.trim().length >= 1 && (
                           <div
-                            className="mt-1 p-2 bg-primary/10 hover:bg-primary/20 border-t border-primary/20 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
+                            className="mt-1 p-2 bg-primary/10 hover:bg-primary/20 active:bg-primary/30 border-t border-primary/20 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors select-none"
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onClick={() => {
+                              if (touchStartPos.current.moved) return;
                               handleAddPlaceToKolYoum();
                             }}
                           >
@@ -682,7 +766,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                   </div>
 
                   {/* Statut Kol Youm : Reconnu vs Non répertorié */}
-                  {location.trim().length >= 2 && (
+                  {location.trim().length >= 1 && (
                     <div className="pt-1">
                       {isPlaceInKolYoum ? (
                         <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
