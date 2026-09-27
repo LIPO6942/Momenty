@@ -409,7 +409,7 @@ function TimelineContent() {
                                 </span>
                               </AccordionTrigger>
                         <AccordionContent>
-                          <div className="space-y-6 pt-4">
+                          <div className="space-y-4 pt-2">
                             {day.instants.map((instant) => (
                               <InstantCard key={instant.id} instant={instant} />
                             ))}
@@ -458,7 +458,7 @@ function TimelineContent() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-6 pt-4">
+                  <div className="space-y-4 pt-2">
                     {day.instants.map((instant) => (
                       <InstantCard key={instant.id} instant={instant} />
                     ))}
