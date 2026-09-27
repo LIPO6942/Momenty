@@ -484,48 +484,156 @@ export function getFlagEmoji(countryName: string): string {
 
 // ---------------------------------------------------------------------------
 // Country background photos for timeline group headers
-// Tunisia gets multiple photos that rotate per day (many entries expected).
-// Other countries use 1–2 iconic shots.
+// Every country has multiple photos so daily rotation works everywhere.
+// Tunisia gets the most (many entries expected).
 // ---------------------------------------------------------------------------
 const COUNTRY_BG_PHOTOS: Record<string, string[]> = {
-  // Tunisie — plusieurs photos pour varier chaque journée
+
+  // ── Tunisie ── 8 photos variées
   "tunisie": [
     "1564507592333-c60657eea523", // Sidi Bou Said bleu & blanc
     "1539037116277-4db20889f2d4", // Dunes du Sahara
     "1578895101408-1a36b5e1efec", // Médina de Tunis
-    "1548013146-72479768bada",    // Désert / paysage
+    "1548013146-72479768bada",    // Paysage désertique
     "1556103255-4443dbae8e5a",   // Côte méditerranéenne
     "1614551718538-e1e02e7dfb79", // Ruines romaines (El Jem)
     "1582555172866-f73bb12a2ab3", // Palmeraie / oasis
-    "1560679735-c7f4fe2cc62c",   // Port de pêche tunisien
+    "1560679735-c7f4fe2cc62c",   // Port de pêche
   ],
-  // Autres pays — 1 ou 2 clichés emblématiques
-  "france":    ["1502602898657-3e91760cbb34"], // Paris / Eiffel
-  "italie":    ["1529260830199-42c24126f198"], // Rome / Colisée
-  "espagne":   ["1543785734-4b6e564642f8"],  // Barcelone / Espagne
-  "maroc":     ["1512632578888-169bbbc64f33"],// Marrakech souks
-  "algerie":   ["1590756254933-2873d72a83b6"],// Algérie paysage
-  "egypte":    ["1539650116574-75c0c6d73f6e"],// Pyramides
-  "croatie":   ["1555990793-da04e4a4b4dd"], // Dubrovnik
-  "grece":     ["1555993539-1732b0258235"], // Santorin
-  "turquie":   ["1541432901042-2d8bd64b4a9b"],// Cappadoce
-  "maurice":   ["1540202404-1b927e27fa8b"], // Lagon de Maurice
-  "portugal":  ["1548707930-f208cb9ab5b8"], // Lisbonne
-  "japon":     ["1528360983277-13d401cdc186"],// Tokyo / Japon
-  "thaïlande": ["1528181304800-259b08848526"],// Thaïlande plage
-  "senegal":   ["1583249598754-b7a2f59651fb"],// Sénégal
-  "dubai":     ["1512453979798-5ea266f8880c"],// Dubaï skyline
-  "usa":       ["1485738422979-f5ef3d362c28"],// NYC / USA
-  "canada":    ["1494519870370-1b212fa4e0ac"],// Canada nature
-  "london":    ["1513635269975-59663e0ac1ad"],// Londres
-  "allemagne": ["1467269204908-d98c17d7f63d"],// Allemagne
-  "pays-bas":  ["1512470876302-972faa2aa98a"],// Amsterdam
+
+  // ── France ── 4 photos
+  "france": [
+    "1502602898657-3e91760cbb34", // Paris / Tour Eiffel
+    "1520250497591-112f2f40a3f4", // Provence lavande
+    "1499856871958-5b9627545d1a", // Rue parisienne
+    "1504609813442-a8924e83f76e", // Mont-Saint-Michel
+  ],
+
+  // ── Italie ── 4 photos
+  "italie": [
+    "1529260830199-42c24126f198", // Rome / Colisée
+    "1523906834658-6e24ef2386f9", // Venise canaux
+    "1534445867742-43195f401b6c", // Côte Amalfitaine
+    "1512343879966-a3abd00db0bd", // Toscane collines
+  ],
+
+  // ── Espagne ── 4 photos
+  "espagne": [
+    "1543785734-4b6e564642f8",   // Barcelone
+    "1502602898506-b8e1e71a15a6", // Alhambra de Grenade
+    "1558618666-fcd25c85cd64",   // Flamenco / Séville
+    "1501854140801-50d01698950b", // Paysage espagnol
+  ],
+
+  // ── Maroc ── 3 photos
+  "maroc": [
+    "1512632578888-169bbbc64f33", // Marrakech souks
+    "1548504769-900b70ed1519",   // Chefchaouen bleu
+    "1547234935-80f7a3f6dbbd",   // Sahara marocain
+  ],
+
+  // ── Grèce ── 3 photos
+  "grece": [
+    "1555993539-1732b0258235",   // Santorin maisons bleues
+    "1603565816030-6b389eeb23cb", // Athènes Acropole
+    "1533105079780-92b9be482077", // Mykonos
+  ],
+
+  // ── Maurice ── 3 photos
+  "maurice": [
+    "1540202404-1b927e27fa8b",   // Lagon turquoise
+    "1507525428034-b723cf961d3e", // Plage tropicale
+    "1544551763-46a013bb70d5",   // Île verdoyante
+  ],
+
+  // ── Portugal ── 3 photos
+  "portugal": [
+    "1548707930-f208cb9ab5b8",   // Lisbonne tramway
+    "1555881400-74d7acaacd47",   // Porto Douro
+    "1513735492246-483525079686", // Sintra palais
+  ],
+
+  // ── Croatie ── 3 photos
+  "croatie": [
+    "1555990793-da04e4a4b4dd",   // Dubrovnik remparts
+    "1562271887-f66a2e3eeaca",   // Plitvice lacs
+    "1507608158173-1dcec673a103", // Côte dalmate
+  ],
+
+  // ── Turquie ── 3 photos
+  "turquie": [
+    "1541432901042-2d8bd64b4a9b", // Cappadoce ballons
+    "1524231757912-21f4fe3a7200", // Bosphore Istanbul
+    "1548159890-90e9b7023ee8",   // Hagia Sophia
+  ],
+
+  // ── Japon ── 3 photos
+  "japon": [
+    "1528360983277-13d401cdc186", // Tokyo Shibuya
+    "1545569341-9eb8b30979d9",   // Mont Fuji cerisiers
+    "1493976040374-85c8e12f0c0e", // Temple kyoto
+  ],
+
+  // ── Algérie ── 2 photos
+  "algerie": [
+    "1590756254933-2873d72a83b6", // Paysage algérien
+    "1547483238-2313d0e8fdb4",   // Casbah d'Alger
+  ],
+
+  // ── Égypte ── 2 photos
+  "egypte": [
+    "1539650116574-75c0c6d73f6e", // Pyramides de Gizeh
+    "1553913861-c0fddf2619b9",   // Louxor temple
+  ],
+
+  // ── Sénégal ── 2 photos
+  "senegal": [
+    "1583249598754-b7a2f59651fb", // Sénégal paysage
+    "1568515387631-8b650bbcdb90", // Lac rose Retba
+  ],
+
+  // ── Thaïlande ── 2 photos
+  "thaïlande": [
+    "1528181304800-259b08848526", // Plage tropicale
+    "1506461883276-594a12b11093", // Temple bangkok
+  ],
+
+  // ── Dubaï / Émirats ── 2 photos
+  "dubai": [
+    "1512453979798-5ea266f8880c", // Dubaï skyline
+    "1546412414-e45e7e32f57c",   // Désert Émirats
+  ],
+
+  // ── États-Unis ── 2 photos
+  "usa": [
+    "1485738422979-f5ef3d362c28", // NYC skyline
+    "1501594907352-04cda38ebc29", // Grand Canyon
+  ],
+
+  // ── Canada ── 2 photos
+  "canada": [
+    "1494519870370-1b212fa4e0ac", // Montagnes Rocheuses
+    "1517137374823-b1929fb35c7c", // Niagara falls
+  ],
+
+  // ── Allemagne ── 2 photos
+  "allemagne": [
+    "1467269204908-d98c17d7f63d", // Château Neuschwanstein
+    "1528360983277-13d401cdc186", // Berlin
+  ],
+
+  // ── Pays-Bas ── 2 photos
+  "pays-bas": [
+    "1512470876302-972faa2aa98a", // Amsterdam canaux
+    "1558618047-3b6ab8af3bfe",   // Champs de tulipes
+  ],
+
 };
 
 /**
  * Returns an Unsplash background photo URL for the given country name.
  * `seed` is a numeric value (e.g. derived from the dayKey) used to rotate
- * photos for countries that have multiple entries (esp. Tunisia).
+ * photos — each day of the same country gets a different image.
  * Returns `null` if the country is unknown.
  */
 export function getCountryBgPhoto(countryName: string, seed: number): string | null {
@@ -541,7 +649,8 @@ export function getCountryBgPhoto(countryName: string, seed: number): string | n
     const keyNorm = norm(key);
     if (normalizedInput.includes(keyNorm) || keyNorm.includes(normalizedInput)) {
       const idx = Math.abs(seed) % photoIds.length;
-      return `https://images.unsplash.com/photo-${photoIds[idx]}?w=900&h=180&fit=crop&q=75`;
+      // w=900&h=200 matches the banner proportions; fit=crop ensures full cover
+      return `https://images.unsplash.com/photo-${photoIds[idx]}?w=900&h=200&fit=crop&crop=entropy&q=75`;
     }
   }
 

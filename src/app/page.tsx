@@ -381,21 +381,31 @@ function TimelineContent() {
                               <AccordionTrigger
                                 className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
                                 style={day.photoUrl ? {
-                                  backgroundImage: `url(${day.photoUrl})`,
-                                  backgroundSize: 'cover',
-                                  backgroundPosition: 'center',
                                   backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
-                                  minHeight: '68px',
+                                  minHeight: '72px',
                                 } : {
                                   backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
                                   borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
                                 }}
                               >
-                                {/* Dark gradient overlay on photo */}
+                                {/* Blurred background image — separate div so blur doesn't affect text */}
                                 {day.photoUrl && (
-                                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/20 pointer-events-none" />
+                                  <div
+                                    className="absolute inset-0 pointer-events-none"
+                                    style={{
+                                      backgroundImage: `url(${day.photoUrl})`,
+                                      backgroundSize: 'cover',
+                                      backgroundPosition: 'center',
+                                      filter: 'blur(4px)',
+                                      transform: 'scale(1.08)',
+                                    }}
+                                  />
                                 )}
-                                <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-md' : 'text-foreground'}`}>
+                                {/* Dark overlay for readability */}
+                                {day.photoUrl && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/45 to-black/25 pointer-events-none" />
+                                )}
+                                <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-lg' : 'text-foreground'}`}>
                                   {day.flag && <span>{day.flag}</span>}{day.title}
                                 </span>
                               </AccordionTrigger>
@@ -420,21 +430,31 @@ function TimelineContent() {
                 <AccordionTrigger
                   className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
                   style={day.photoUrl ? {
-                    backgroundImage: `url(${day.photoUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
                     backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
-                    minHeight: '68px',
+                    minHeight: '72px',
                   } : {
                     backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
                     borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
                   }}
                 >
-                  {/* Dark gradient overlay on photo */}
+                  {/* Blurred background image — separate div so blur doesn't affect text */}
                   {day.photoUrl && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/20 pointer-events-none" />
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        backgroundImage: `url(${day.photoUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(4px)',
+                        transform: 'scale(1.08)',
+                      }}
+                    />
                   )}
-                  <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-md' : 'text-foreground'}`}>
+                  {/* Dark overlay for readability */}
+                  {day.photoUrl && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/45 to-black/25 pointer-events-none" />
+                  )}
+                  <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-lg' : 'text-foreground'}`}>
                     {day.flag && <span>{day.flag}</span>}{day.title}
                   </span>
                 </AccordionTrigger>
