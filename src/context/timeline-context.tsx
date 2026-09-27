@@ -7,7 +7,7 @@ import type { Instant, Trip, Encounter, Dish, Accommodation } from '@/lib/types'
 import { BookText, Utensils, Camera, Palette, ShoppingBag, Landmark, Mountain, Heart, Plane, Car, Train, Bus, Ship, Anchor, Leaf } from "lucide-react";
 import { format, startOfDay, parseISO, isToday, isYesterday, formatRelative } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatInstantDate, getCity, getCountry, abbreviateCity, getFlagEmoji } from '@/lib/utils';
+import { formatInstantDate, getCity, getCountry, abbreviateCity, getFlagEmoji, getCountryBgPhoto } from '@/lib/utils';
 import {
     getInstants, saveInstant, deleteInstant as deleteInstantFromDB,
     getEncounters, saveEncounter, deleteEncounter as deleteEncounterFromDB,
@@ -26,6 +26,7 @@ interface GroupedInstants {
         title: string;
         date: string;
         flag: string;
+        photoUrl: string;
         instants: Instant[];
     };
 }
@@ -512,6 +513,7 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
                     title: '', // Will be filled later
                     date: '',  // Will be filled later
                     flag: '',  // Will be filled later
+                    photoUrl: '', // Will be filled later
                     instants: []
                 };
             }
@@ -545,6 +547,10 @@ export const TimelineProvider = ({ children }: TimelineProviderProps) => {
             const firstLocWithCountry = dayInstants.find(i => i.location && getCountry(i.location));
             const countryName = firstLocWithCountry ? getCountry(firstLocWithCountry.location) : '';
             groups[dayKey].flag = countryName ? getFlagEmoji(countryName) : '';
+
+            // Background photo: seed from dayKey digits so Tunisia rotates daily
+            const daySeed = dayKey.replace(/-/g, '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            groups[dayKey].photoUrl = (countryName ? getCountryBgPhoto(countryName, daySeed) : null) || '';
         });
 
         return groups;

@@ -482,3 +482,69 @@ export function getFlagEmoji(countryName: string): string {
   return "";
 }
 
+// ---------------------------------------------------------------------------
+// Country background photos for timeline group headers
+// Tunisia gets multiple photos that rotate per day (many entries expected).
+// Other countries use 1–2 iconic shots.
+// ---------------------------------------------------------------------------
+const COUNTRY_BG_PHOTOS: Record<string, string[]> = {
+  // Tunisie — plusieurs photos pour varier chaque journée
+  "tunisie": [
+    "1564507592333-c60657eea523", // Sidi Bou Said bleu & blanc
+    "1539037116277-4db20889f2d4", // Dunes du Sahara
+    "1578895101408-1a36b5e1efec", // Médina de Tunis
+    "1548013146-72479768bada",    // Désert / paysage
+    "1556103255-4443dbae8e5a",   // Côte méditerranéenne
+    "1614551718538-e1e02e7dfb79", // Ruines romaines (El Jem)
+    "1582555172866-f73bb12a2ab3", // Palmeraie / oasis
+    "1560679735-c7f4fe2cc62c",   // Port de pêche tunisien
+  ],
+  // Autres pays — 1 ou 2 clichés emblématiques
+  "france":    ["1502602898657-3e91760cbb34"], // Paris / Eiffel
+  "italie":    ["1529260830199-42c24126f198"], // Rome / Colisée
+  "espagne":   ["1543785734-4b6e564642f8"],  // Barcelone / Espagne
+  "maroc":     ["1512632578888-169bbbc64f33"],// Marrakech souks
+  "algerie":   ["1590756254933-2873d72a83b6"],// Algérie paysage
+  "egypte":    ["1539650116574-75c0c6d73f6e"],// Pyramides
+  "croatie":   ["1555990793-da04e4a4b4dd"], // Dubrovnik
+  "grece":     ["1555993539-1732b0258235"], // Santorin
+  "turquie":   ["1541432901042-2d8bd64b4a9b"],// Cappadoce
+  "maurice":   ["1540202404-1b927e27fa8b"], // Lagon de Maurice
+  "portugal":  ["1548707930-f208cb9ab5b8"], // Lisbonne
+  "japon":     ["1528360983277-13d401cdc186"],// Tokyo / Japon
+  "thaïlande": ["1528181304800-259b08848526"],// Thaïlande plage
+  "senegal":   ["1583249598754-b7a2f59651fb"],// Sénégal
+  "dubai":     ["1512453979798-5ea266f8880c"],// Dubaï skyline
+  "usa":       ["1485738422979-f5ef3d362c28"],// NYC / USA
+  "canada":    ["1494519870370-1b212fa4e0ac"],// Canada nature
+  "london":    ["1513635269975-59663e0ac1ad"],// Londres
+  "allemagne": ["1467269204908-d98c17d7f63d"],// Allemagne
+  "pays-bas":  ["1512470876302-972faa2aa98a"],// Amsterdam
+};
+
+/**
+ * Returns an Unsplash background photo URL for the given country name.
+ * `seed` is a numeric value (e.g. derived from the dayKey) used to rotate
+ * photos for countries that have multiple entries (esp. Tunisia).
+ * Returns `null` if the country is unknown.
+ */
+export function getCountryBgPhoto(countryName: string, seed: number): string | null {
+  if (!countryName) return null;
+
+  // Normalize: lowercase + strip accents
+  const norm = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const normalizedInput = norm(countryName);
+
+  for (const [key, photoIds] of Object.entries(COUNTRY_BG_PHOTOS)) {
+    const keyNorm = norm(key);
+    if (normalizedInput.includes(keyNorm) || keyNorm.includes(normalizedInput)) {
+      const idx = Math.abs(seed) % photoIds.length;
+      return `https://images.unsplash.com/photo-${photoIds[idx]}?w=900&h=180&fit=crop&q=75`;
+    }
+  }
+
+  return null;
+}
+

@@ -378,10 +378,25 @@ function TimelineContent() {
                   <div className="pl-4 border-l-2 border-primary/20 space-y-4 ml-2">
                     {group.days.map((day) => (
                       <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
-                              <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
-                                style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
-                                <span className="font-bold truncate leading-tight text-left">
-                                  {day.flag && <span className="mr-1.5">{day.flag}</span>}{day.title}
+                              <AccordionTrigger
+                                className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
+                                style={day.photoUrl ? {
+                                  backgroundImage: `url(${day.photoUrl})`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                  backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
+                                  minHeight: '68px',
+                                } : {
+                                  backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
+                                  borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
+                                }}
+                              >
+                                {/* Dark gradient overlay on photo */}
+                                {day.photoUrl && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/20 pointer-events-none" />
+                                )}
+                                <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-md' : 'text-foreground'}`}>
+                                  {day.flag && <span>{day.flag}</span>}{day.title}
                                 </span>
                               </AccordionTrigger>
                         <AccordionContent>
@@ -402,10 +417,25 @@ function TimelineContent() {
             const day = group.days[0];
             return (
               <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
-                <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
-                  style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
-                  <span className="font-bold truncate leading-tight text-left">
-                    {day.flag && <span className="mr-1.5">{day.flag}</span>}{day.title}
+                <AccordionTrigger
+                  className={`mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline relative overflow-hidden [&>svg]:relative [&>svg]:z-10 [&>svg]:shrink-0 ${day.photoUrl ? '[&>svg]:text-white' : ''}`}
+                  style={day.photoUrl ? {
+                    backgroundImage: `url(${day.photoUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
+                    minHeight: '68px',
+                  } : {
+                    backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`,
+                    borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)`
+                  }}
+                >
+                  {/* Dark gradient overlay on photo */}
+                  {day.photoUrl && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/20 pointer-events-none" />
+                  )}
+                  <span className={`relative z-10 font-bold truncate leading-tight text-left text-xl flex items-center gap-1.5 ${day.photoUrl ? 'text-white drop-shadow-md' : 'text-foreground'}`}>
+                    {day.flag && <span>{day.flag}</span>}{day.title}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
