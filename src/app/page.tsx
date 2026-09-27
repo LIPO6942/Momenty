@@ -380,13 +380,7 @@ function TimelineContent() {
                       <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
                               <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
                                 style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
-                                <span className="flex items-center justify-between w-full gap-2 min-w-0">
-                                  <span className="font-bold truncate leading-tight">{day.title}</span>
-                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                                    style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 85%)`, color: `hsl(${hashHue(day.dayKey)}, 70%, 30%)` }}>
-                                    {day.date}
-                                  </span>
-                                </span>
+                                <span className="font-bold truncate leading-tight text-left">{day.title}</span>
                               </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-6 pt-4">
@@ -408,13 +402,7 @@ function TimelineContent() {
               <AccordionItem key={day.dayKey} value={day.dayKey} className="border-none">
                 <AccordionTrigger className="text-xl font-bold text-foreground mb-2 p-4 rounded-xl shadow-md shadow-slate-200/80 hover:no-underline"
                   style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 95%)`, borderLeft: `3px solid hsl(${hashHue(day.dayKey)}, 70%, 50%)` }}>
-                  <span className="flex items-center justify-between w-full gap-2 min-w-0">
-                    <span className="font-bold truncate leading-tight">{day.title}</span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                      style={{ backgroundColor: `hsl(${hashHue(day.dayKey)}, 70%, 85%)`, color: `hsl(${hashHue(day.dayKey)}, 70%, 30%)` }}>
-                      {day.date}
-                    </span>
-                  </span>
+                  <span className="font-bold truncate leading-tight text-left">{day.title}</span>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-6 pt-4">
