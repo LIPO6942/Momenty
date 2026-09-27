@@ -21,7 +21,7 @@ import {
 import { TimelineContext } from "@/context/timeline-context";
 import type { Dish, DisplayTransform } from "@/lib/types";
 import { InteractiveImageFrame } from "@/components/timeline/interactive-image-frame";
-import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus, Building } from "lucide-react";
+import { Image as ImageIcon, MapPin, Trash2, CalendarIcon, Wand2, Loader2, Utensils, Check, ChevronsUpDown, Plus, Building, Globe } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { format, parseISO, isValid } from "date-fns";
 import {
@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { compressImage, uploadImageString } from "@/lib/image-upload-helper";
+import { countries } from "@/lib/countries";
 
 
 // Helper to format ISO string to datetime-local string
@@ -105,6 +106,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
   const [isFetchingPlaces, setIsFetchingPlaces] = useState(false);
   const [openCombobox, setOpenCombobox] = useState(false);
   const [city, setCity] = useState(dishToEdit.city || "");
+  const [country, setCountry] = useState(dishToEdit.country || "");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isAddingPlaceToKolYoum, setIsAddingPlaceToKolYoum] = useState(false);
   const [manuallyAddedPlaces, setManuallyAddedPlaces] = useState<Set<string>>(new Set());
@@ -278,6 +280,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
       setEmotions(Array.isArray(dishToEdit.emotion) ? dishToEdit.emotion : (dishToEdit.emotion ? [dishToEdit.emotion] : []));
       setDate(dishToEdit.date);
       setCity(dishToEdit.city || "");
+      setCountry(dishToEdit.country || "");
       setDisplayPreset(dishToEdit.displayTransform?.preset ?? 'landscape');
       setDisplayCrop(dishToEdit.displayTransform?.crop ?? 'fit');
       setDisplayGravity(dishToEdit.displayTransform?.gravity ?? 'auto');
@@ -311,6 +314,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
     if (selectedPlace) {
       setLocation(selectedPlace.label);
       setCity(selectedPlace.zone);
+      setCountry("Tunisie");
       setSelectedCategory(selectedPlace.category);
       setOpenCombobox(false);
     }
@@ -350,6 +354,7 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
         photo2: uploadedPhoto2Url,
         location,
         city,
+        country: country.trim() || undefined,
         emotion: emotions.length > 0 ? emotions : ["Neutre"],
         date: dateToSave.toISOString(),
         displayTransform: {
@@ -827,6 +832,44 @@ export function EditDishDialog({ children, dishToEdit, open: controlledOpen, onO
                       disabled={isLoading}
                     />
                   </div>
+                </div>
+
+                {/* Pays (notamment si lieu hors Kol Youm ou personnalisé) */}
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  <Label htmlFor="editDishCountry" className="text-sm font-medium text-foreground flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" />
+                      Pays {!isPlaceInKolYoum && <span className="text-muted-foreground font-normal text-xs">(optionnel)</span>}
+                    </span>
+                    {country && (
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        {country}
+                      </span>
+                    )}
+                  </Label>
+                  <div className="flex items-center gap-1 border rounded-lg bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                    <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                    <Input
+                      id="editDishCountry"
+                      name="country"
+                      list="edit-available-dish-countries-list"
+                      placeholder={isPlaceInKolYoum ? "Tunisie (Kol Youm)" : "Pays (ex: France, Italie, Tunisie, Espagne...)"}
+                      className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-lg"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <datalist id="edit-available-dish-countries-list">
+                      {countries.map((c) => (
+                        <option key={c.value} value={c.label} />
+                      ))}
+                    </datalist>
+                  </div>
+                  {!isPlaceInKolYoum && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Ce lieu n'étant pas dans la base Kol Youm, vous pouvez indiquer son pays si vous le souhaitez (ex: voyage à l'étranger).
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="pt-2">

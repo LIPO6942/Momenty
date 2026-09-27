@@ -86,6 +86,24 @@ function PlatsContent() {
         }));
     };
 
+    const getDishLocationText = (dish: Dish): string => {
+        const restaurant = dish.location?.trim();
+        const city = dish.city?.trim() || getCity(dish.location);
+        const country = dish.country?.trim() || getCountry(dish.location);
+
+        if (restaurant && (city || country)) {
+            const zoneInfo = [city, country].filter(Boolean).join(", ");
+            if (city && restaurant.toLowerCase().includes(city.toLowerCase())) {
+                return country && !restaurant.toLowerCase().includes(country.toLowerCase())
+                    ? `${restaurant}, ${country}`
+                    : restaurant;
+            }
+            return `${restaurant} (${zoneInfo})`;
+        }
+        if (restaurant) return restaurant;
+        return [city, country].filter(Boolean).join(", ") || "Lieu non précisé";
+    };
+
     // Filtered dishes (sorted chronologically descending)
     const filteredDishes = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -93,7 +111,8 @@ function PlatsContent() {
             const matchDish = (dish.name && dish.name.toLowerCase().includes(q)) ||
                               (dish.description && dish.description.toLowerCase().includes(q));
             const matchRestaurant = (dish.location && dish.location.toLowerCase().includes(q)) ||
-                                    (dish.city && dish.city.toLowerCase().includes(q));
+                                    (dish.city && dish.city.toLowerCase().includes(q)) ||
+                                    (dish.country && dish.country.toLowerCase().includes(q));
 
             if (searchFilter === "dishes") return matchDish;
             if (searchFilter === "restaurants") return matchRestaurant;
@@ -337,7 +356,7 @@ function PlatsContent() {
                                                 <div className="mt-3 space-y-0.5">
                                                     <div className="flex items-center gap-1.5 font-semibold text-sm">
                                                         <MapPin className="h-4 w-4 text-white/90 shrink-0" />
-                                                        <span>Dégusté à {getCity(dish.location)}, {getCountry(dish.location)}</span>
+                                                        <span>Dégusté à {getDishLocationText(dish)}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
@@ -361,7 +380,7 @@ function PlatsContent() {
                                                 <div className="mt-1 space-y-0.5">
                                                     <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                                                         <MapPin className="h-4 w-4 shrink-0" />
-                                                        Dégusté à {getCity(dish.location)}, {getCountry(dish.location)}
+                                                        Dégusté à {getDishLocationText(dish)}
                                                     </div>
                                                 </div>
                                             </div>

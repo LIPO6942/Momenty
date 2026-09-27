@@ -57,6 +57,7 @@ import { VoiceInput } from "@/components/ui/voice-input";
 import { useAuth } from "@/context/auth-context";
 import { AudioPicker } from "@/components/ui/audio-picker";
 import { queueMediaForUpload } from "@/lib/offline-sync";
+import { countries } from "@/lib/countries";
 
 
 interface AddInstantDialogProps {
@@ -406,6 +407,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
         if (placeObj) {
             setLocation(placeObj.label);
             setCity(placeObj.zone);
+            setCountry("Tunisie");
             if (placeObj.category) setSelectedCategory(placeObj.category);
             setOpenCombobox(false);
         } else {
@@ -874,6 +876,7 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                     date: finalDate,
                     location,
                     city,
+                    country: country.trim() || (isPlaceInKolYoum ? "Tunisie" : undefined),
                     emotion: emotions.length > 0 ? emotions : ["Neutre"],
                     photo: mainPhoto,
                     photo2: secondPhoto,
@@ -1935,6 +1938,44 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                         ))}
                                                     </datalist>
                                                 </div>
+                                            </div>
+
+                                            {/* Pays (disponible pour préciser le pays, notamment si lieu hors Kol Youm / à l'étranger) */}
+                                            <div className="space-y-1.5 animate-in fade-in duration-200">
+                                                <Label htmlFor="dishCountry" className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Globe className="h-4 w-4 text-primary" />
+                                                        <span>Pays {!isPlaceInKolYoum && <span className="text-muted-foreground font-normal text-[11px]">(optionnel)</span>}</span>
+                                                    </span>
+                                                    {country && (
+                                                        <span className="text-[10px] text-muted-foreground font-medium">
+                                                            {country}
+                                                        </span>
+                                                    )}
+                                                </Label>
+                                                <div className="flex items-center gap-1 border rounded-xl bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                                                    <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+                                                    <Input
+                                                        id="dishCountry"
+                                                        name="dishCountry"
+                                                        list="available-dish-countries-list"
+                                                        placeholder={isPlaceInKolYoum ? "Tunisie (Kol Youm)" : "Pays (ex: France, Italie, Tunisie, Espagne...)"}
+                                                        className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-xl"
+                                                        value={country}
+                                                        onChange={(e) => setCountry(e.target.value)}
+                                                        disabled={isLoading}
+                                                    />
+                                                    <datalist id="available-dish-countries-list">
+                                                        {countries.map((c) => (
+                                                            <option key={c.value} value={c.label} />
+                                                        ))}
+                                                    </datalist>
+                                                </div>
+                                                {!isPlaceInKolYoum && (
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        Ce lieu n'étant pas dans la base Kol Youm, vous pouvez indiquer son pays si vous le souhaitez (ex: voyage à l'étranger).
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     ) : isKharjet ? (

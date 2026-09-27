@@ -139,6 +139,7 @@ export interface Dish {
     date: string; // ISO String
     location: string;
     city?: string; // Zone/City name
+    country?: string; // Optional Country name
     emotion: string | string[];
     photo?: string | null; // Cloudinary URL
     photo2?: string | null; // Second photo (optional)
