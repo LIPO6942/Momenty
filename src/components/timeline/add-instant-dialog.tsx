@@ -51,7 +51,7 @@ import { describePhoto } from "@/ai/flows/describe-photo-flow";
 
 import { Separator } from "../ui/separator";
 import type { Encounter, Dish, Accommodation } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getFlagEmoji, getFlagEmojiByCode } from "@/lib/utils";
 import type heic2any from "heic2any";
 import { VoiceInput } from "@/components/ui/voice-input";
 import { useAuth } from "@/context/auth-context";
@@ -245,6 +245,8 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
     const [isAddingPlaceToKolYoum, setIsAddingPlaceToKolYoum] = useState(false);
     const [manuallyAddedPlaces, setManuallyAddedPlaces] = useState<Set<string>>(new Set());
     const restaurantComboboxRef = useRef<HTMLDivElement>(null);
+    const countryComboboxRef = useRef<HTMLDivElement>(null);
+    const [openCountryCombobox, setOpenCountryCombobox] = useState(false);
     const touchStartPos = useRef<{ x: number; y: number; moved: boolean }>({ x: 0, y: 0, moved: false });
 
     useEffect(() => {
@@ -254,6 +256,12 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                 !restaurantComboboxRef.current.contains(event.target as Node)
             ) {
                 setOpenCombobox(false);
+            }
+            if (
+                countryComboboxRef.current &&
+                !countryComboboxRef.current.contains(event.target as Node)
+            ) {
+                setOpenCountryCombobox(false);
             }
         };
 
@@ -332,6 +340,44 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
 
         return matches.slice(0, 35);
     }, [places, location]);
+
+    // Par défaut le pays reste en Tunisie en mode plat
+    useEffect(() => {
+        if (isDish && (!country || country.trim() === "")) {
+            setCountry("Tunisie");
+        }
+    }, [isDish, country]);
+
+    const filteredCountries = useMemo(() => {
+        const q = country.trim().toLowerCase();
+        const POPULAR_CODES = ["TN", "FR", "IT", "ES", "DZ", "MA", "TR", "DE", "CH", "BE", "CA", "US", "GB", "AE", "SA"];
+
+        if (!q || q === "tunisie") {
+            const popular = countries.filter(c => POPULAR_CODES.includes(c.value));
+            const others = countries.filter(c => !POPULAR_CODES.includes(c.value));
+            return [...popular, ...others];
+        }
+
+        const normQ = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const matches = countries.filter(c => {
+            const labelNorm = c.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const enNorm = c.enLabel.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const codeNorm = c.value.toLowerCase();
+            return labelNorm.includes(normQ) || enNorm.includes(normQ) || codeNorm.includes(normQ);
+        });
+
+        matches.sort((a, b) => {
+            const aNorm = a.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const bNorm = b.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            if (aNorm === normQ && bNorm !== normQ) return -1;
+            if (bNorm === normQ && aNorm !== normQ) return 1;
+            if (aNorm.startsWith(normQ) && !bNorm.startsWith(normQ)) return -1;
+            if (bNorm.startsWith(normQ) && !aNorm.startsWith(normQ)) return 1;
+            return a.label.localeCompare(b.label, 'fr');
+        });
+
+        return matches;
+    }, [country]);
 
     const handleAddPlaceToKolYoum = async (placeNameToAdd?: string, zoneToAdd?: string) => {
         const targetPlace = (placeNameToAdd || location).trim();
@@ -1940,42 +1986,114 @@ export function AddInstantDialog({ children, open, onOpenChange }: AddInstantDia
                                                 </div>
                                             </div>
 
-                                            {/* Pays (disponible pour préciser le pays, notamment si lieu hors Kol Youm / à l'étranger) */}
+                                            {/* Pays avec saisie assistée depuis tous les pays du monde (par défaut Tunisie) */}
                                             <div className="space-y-1.5 animate-in fade-in duration-200">
                                                 <Label htmlFor="dishCountry" className="text-xs font-semibold text-foreground flex items-center justify-between">
                                                     <span className="flex items-center gap-1.5">
                                                         <Globe className="h-4 w-4 text-primary" />
-                                                        <span>Pays {!isPlaceInKolYoum && <span className="text-muted-foreground font-normal text-[11px]">(optionnel)</span>}</span>
+                                                        <span>Pays <span className="text-muted-foreground font-normal text-[11px]">(saisie assistée)</span></span>
                                                     </span>
                                                     {country && (
-                                                        <span className="text-[10px] text-muted-foreground font-medium">
-                                                            {country}
+                                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                                            <span>{getFlagEmoji(country) || "🌍"}</span>
+                                                            <span>{country}</span>
                                                         </span>
                                                     )}
                                                 </Label>
-                                                <div className="flex items-center gap-1 border rounded-xl bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
-                                                    <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
-                                                    <Input
-                                                        id="dishCountry"
-                                                        name="dishCountry"
-                                                        list="available-dish-countries-list"
-                                                        placeholder={isPlaceInKolYoum ? "Tunisie (Kol Youm)" : "Pays (ex: France, Italie, Tunisie, Espagne...)"}
-                                                        className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-xl"
-                                                        value={country}
-                                                        onChange={(e) => setCountry(e.target.value)}
-                                                        disabled={isLoading}
-                                                    />
-                                                    <datalist id="available-dish-countries-list">
-                                                        {countries.map((c) => (
-                                                            <option key={c.value} value={c.label} />
-                                                        ))}
-                                                    </datalist>
+                                                <div className="relative" ref={countryComboboxRef}>
+                                                    <div className="flex items-center gap-1 border rounded-xl bg-background shadow-xs focus-within:ring-2 focus-within:ring-primary/20">
+                                                        <span className="text-base ml-3 select-none flex-shrink-0">
+                                                            {country ? (getFlagEmoji(country) || "🌍") : "🌍"}
+                                                        </span>
+                                                        <Input
+                                                            id="dishCountry"
+                                                            name="dishCountry"
+                                                            placeholder="Tapez un pays (ex: Tunisie, France, Italie, Espagne...)"
+                                                            className="border-0 focus-visible:ring-0 flex-grow text-sm h-10 rounded-xl"
+                                                            value={country}
+                                                            onChange={(e) => {
+                                                                setCountry(e.target.value);
+                                                                setOpenCountryCombobox(true);
+                                                            }}
+                                                            onFocus={() => {
+                                                                setOpenCountryCombobox(true);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Escape') setOpenCountryCombobox(false);
+                                                            }}
+                                                            disabled={isLoading}
+                                                            autoComplete="off"
+                                                        />
+                                                        {country && country.toLowerCase() !== "tunisie" && (
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground mr-1"
+                                                                onClick={() => {
+                                                                    setCountry("Tunisie");
+                                                                    setOpenCountryCombobox(false);
+                                                                }}
+                                                                title="Revenir à Tunisie"
+                                                            >
+                                                                🇹🇳 Tunisie
+                                                            </Button>
+                                                        )}
+                                                    </div>
+
+                                                    {openCountryCombobox && (
+                                                        <div className="absolute z-50 w-full mt-1.5 bg-popover text-popover-foreground border rounded-xl shadow-xl max-h-[240px] overflow-y-auto p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                            <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40 mb-1 flex items-center justify-between">
+                                                                <span>Pays du monde (saisie assistée)</span>
+                                                                <span
+                                                                    className="text-[10px] text-primary cursor-pointer hover:underline"
+                                                                    onClick={() => {
+                                                                        setCountry("Tunisie");
+                                                                        setOpenCountryCombobox(false);
+                                                                    }}
+                                                                >
+                                                                    Par défaut : 🇹🇳 Tunisie
+                                                                </span>
+                                                            </div>
+                                                            {filteredCountries.slice(0, 35).map((c) => {
+                                                                const isSelected = country.toLowerCase() === c.label.toLowerCase();
+                                                                return (
+                                                                    <div
+                                                                        key={c.value}
+                                                                        className={cn(
+                                                                            "px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors select-none text-sm",
+                                                                            isSelected ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent hover:text-accent-foreground"
+                                                                        )}
+                                                                        onTouchStart={handleTouchStart}
+                                                                        onTouchMove={handleTouchMove}
+                                                                        onClick={() => {
+                                                                            if (touchStartPos.current.moved) return;
+                                                                            setCountry(c.label);
+                                                                            setOpenCountryCombobox(false);
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                                            <span className="text-lg leading-none shrink-0">{getFlagEmojiByCode(c.value)}</span>
+                                                                            <span className="truncate">{c.label}</span>
+                                                                            {c.enLabel && c.enLabel !== c.label && (
+                                                                                <span className="text-xs text-muted-foreground truncate">({c.enLabel})</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-xs text-muted-foreground/70 font-mono shrink-0">{c.value}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {filteredCountries.length === 0 && (
+                                                                <div className="px-3 py-3 text-muted-foreground text-xs text-center">
+                                                                    Aucun pays trouvé pour "{country}"
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {!isPlaceInKolYoum && (
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        Ce lieu n'étant pas dans la base Kol Youm, vous pouvez indiquer son pays si vous le souhaitez (ex: voyage à l'étranger).
-                                                    </p>
-                                                )}
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    Par défaut sur 🇹🇳 Tunisie. Vous pouvez sélectionner ou taper n'importe quel pays du monde.
+                                                </p>
                                             </div>
                                         </div>
                                     ) : isKharjet ? (
