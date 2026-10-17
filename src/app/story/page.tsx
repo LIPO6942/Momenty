@@ -28,7 +28,6 @@ import {
     Clock,
     Camera,
     Play,
-    UserCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/firestore';
@@ -248,11 +247,30 @@ const cleanTitle = (raw: string) => {
 
 const isDateString = (str: string): boolean => {
     if (!str) return false;
-    const clean = str.trim().toLowerCase();
-    if (/^du\s+\d+/i.test(clean)) return true;
-    if (/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+/i.test(clean)) return true;
-    if (/^\d{1,2}\s+(janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc|\d{1,2})/i.test(clean)) return true;
-    if (/^\d{4}-\d{2}-\d{2}/.test(clean)) return true;
+    const clean = str
+        .replace(/^#+\s*/, '')
+        .replace(/^[*_~`]+|[*_~`]+$/g, '')
+        .replace(/^(date\s*:\s*)/i, '')
+        .trim()
+        .toLowerCase();
+    if (!clean) return true;
+    if (/^(du|le|au|ce|en)\s+\d+/i.test(clean)) return true;
+    if (/^(journée\s+(du\s+)?|récit\s+(du\s+)?|jour\s+\d+|étape\s+\d+)/i.test(clean)) return true;
+    if (/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)[,\s]+\d+/i.test(clean)) return true;
+    if (/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/i.test(clean)) return true;
+    if (/^\d{1,2}\s+(janv|févr|fevr|mars|avr|mai|juin|juil|août|aout|sept|oct|nov|déc|dec|\d{1,2})/i.test(clean)) return true;
+    if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(clean)) return true;
+    if (/^\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/.test(clean)) return true;
+    return false;
+};
+
+const hasDateInTitle = (title: string, dateStr: string): boolean => {
+    if (!title) return false;
+    if (isDateString(title)) return true;
+    const clean = cleanTitle(title).toLowerCase();
+    const formatted = formatStoryDate(dateStr).toLowerCase();
+    if (formatted && clean.includes(formatted)) return true;
+    if (dateStr && clean.includes(dateStr.toLowerCase())) return true;
     return false;
 };
 
@@ -384,6 +402,73 @@ const BannerPhotosDefilantes = ({
     );
 };
 
+/**
+ * Renders 1 or 2 thumbnail photos side-by-side (côte à côte) at the end of a paragraph,
+ * strictly adapting to mobile phone width without stacking vertically.
+ */
+const ParagraphPhotos = ({
+    photos,
+    onSelectPhoto,
+}: {
+    photos: string[];
+    onSelectPhoto: (photo: string) => void;
+}) => {
+    if (!photos || photos.length === 0) return null;
+
+    if (photos.length === 1) {
+        return (
+            <div className="py-2">
+                <div
+                    onClick={() => onSelectPhoto(photos[0])}
+                    className="group relative w-28 sm:w-36 aspect-square rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted"
+                    title="Cliquer pour agrandir"
+                >
+                    <Image
+                        src={photos[0]}
+                        alt=""
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                        <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                    </div>
+                    <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] text-white font-medium">
+                        🔍 Agrandir
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 2 photos strictly side by side (côte à côte) on mobile (grid grid-cols-2)
+    // Guaranteed never to stack vertically even on small phone screens (iPhone SE, 360px Android)
+    return (
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 py-2 w-full max-w-[270px] sm:max-w-sm">
+            {photos.slice(0, 2).map((photo, pIdx) => (
+                <div
+                    key={pIdx}
+                    onClick={() => onSelectPhoto(photo)}
+                    className="group relative aspect-square w-full rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted"
+                    title="Cliquer pour agrandir"
+                >
+                    <Image
+                        src={photo}
+                        alt=""
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                        <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                    </div>
+                    <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] text-white font-medium">
+                        🔍 Agrandir
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 interface StoryReaderProps {
     text: string;
     photos: string[];
@@ -392,27 +477,45 @@ interface StoryReaderProps {
 
 const StoryReader = ({ text, photos, onSelectPhoto }: StoryReaderProps) => {
     const rawParagraphs = text.split(/\n+/).map(p => p.trim()).filter(Boolean);
-    const hasMarkdownTitle = rawParagraphs[0]?.startsWith('#');
-    const contentParagraphs = hasMarkdownTitle ? rawParagraphs.slice(1) : rawParagraphs;
 
-    // Distribute photos across paragraphs (1 or 2 photos per paragraph ending)
+    // Strip ALL leading markdown titles, subtitles, dividers or redundant date headers at the start of story text
+    let contentParagraphs = [...rawParagraphs];
+    while (contentParagraphs.length > 0) {
+        const first = contentParagraphs[0];
+        const stripped = first.replace(/^#+\s*/, '').replace(/^[*_~`]+|[*_~`]+$/g, '').trim();
+        if (
+            first.startsWith('#') ||
+            first.startsWith('---') ||
+            first.startsWith('***') ||
+            isDateString(first) ||
+            isDateString(stripped) ||
+            stripped.toLowerCase().startsWith('date') ||
+            stripped.toLowerCase().startsWith('journée') ||
+            stripped.toLowerCase().startsWith('récit')
+        ) {
+            contentParagraphs.shift();
+        } else {
+            break;
+        }
+    }
+
+    // Distribute photos across paragraphs (maximum 2 photos per paragraph ending)
     const photosPerParagraph = useMemo(() => {
         const result: string[][] = Array.from({ length: contentParagraphs.length }, () => []);
         if (photos.length === 0 || contentParagraphs.length === 0) return result;
 
         let photoIdx = 0;
+        // First pass: 1 photo per paragraph
         for (let i = 0; i < contentParagraphs.length && photoIdx < photos.length; i++) {
             result[i].push(photos[photoIdx]);
             photoIdx++;
         }
+        // Second pass: 2nd photo per paragraph (strictly forms side-by-side pairs)
         for (let i = 0; i < contentParagraphs.length && photoIdx < photos.length; i++) {
-            result[i].push(photos[photoIdx]);
-            photoIdx++;
-        }
-        while (photoIdx < photos.length) {
-            const targetPara = Math.min(result.length - 1, Math.floor(photoIdx / 2));
-            result[targetPara].push(photos[photoIdx]);
-            photoIdx++;
+            if (result[i].length < 2) {
+                result[i].push(photos[photoIdx]);
+                photoIdx++;
+            }
         }
         return result;
     }, [contentParagraphs.length, photos]);
@@ -426,30 +529,14 @@ const StoryReader = ({ text, photos, onSelectPhoto }: StoryReaderProps) => {
                 if (isQuote) {
                     const cleanQuote = para.replace(/^>\s*/, '').replace(/^«|»$/g, '').trim();
                     return (
-                        <div key={idx} className="space-y-3">
-                            <div className="my-5 px-5 py-3.5 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-xl italic flex gap-3 text-foreground">
+                        <div key={idx} className="space-y-2.5">
+                            <div className="my-4 px-4 sm:px-5 py-3 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-xl italic flex gap-3 text-foreground">
                                 <Quote className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                                 <p className="font-medium text-base sm:text-lg leading-relaxed">
                                     « {cleanQuote} »
                                 </p>
                             </div>
-                            {paraPhotos.length > 0 && (
-                                <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1">
-                                    {paraPhotos.map((photo, pIdx) => (
-                                        <div
-                                            key={pIdx}
-                                            onClick={() => onSelectPhoto(photo)}
-                                            className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
-                                            title="Cliquer pour agrandir"
-                                        >
-                                            <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                                                <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <ParagraphPhotos photos={paraPhotos} onSelectPhoto={onSelectPhoto} />
                         </div>
                     );
                 }
@@ -459,56 +546,24 @@ const StoryReader = ({ text, photos, onSelectPhoto }: StoryReaderProps) => {
                     const firstChar = para.charAt(0);
                     const rest = para.slice(1);
                     return (
-                        <div key={idx} className="space-y-3">
+                        <div key={idx} className="space-y-2.5">
                             <p className="text-justify font-serif text-foreground/90">
                                 <span className="float-left text-5xl sm:text-6xl font-serif font-black text-amber-600 dark:text-amber-400 mr-3 mb-0 leading-none select-none drop-shadow-sm">
                                     {firstChar}
                                 </span>
                                 {rest}
                             </p>
-                            {paraPhotos.length > 0 && (
-                                <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1.5">
-                                    {paraPhotos.map((photo, pIdx) => (
-                                        <div
-                                            key={pIdx}
-                                            onClick={() => onSelectPhoto(photo)}
-                                            className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
-                                            title="Cliquer pour agrandir"
-                                        >
-                                            <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                                                <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <ParagraphPhotos photos={paraPhotos} onSelectPhoto={onSelectPhoto} />
                         </div>
                     );
                 }
 
                 return (
-                    <div key={idx} className="space-y-3">
+                    <div key={idx} className="space-y-2.5">
                         <p className="text-justify font-serif text-foreground/90">
                             {para}
                         </p>
-                        {paraPhotos.length > 0 && (
-                            <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1.5">
-                                {paraPhotos.map((photo, pIdx) => (
-                                    <div
-                                        key={pIdx}
-                                        onClick={() => onSelectPhoto(photo)}
-                                        className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
-                                        title="Cliquer pour agrandir"
-                                    >
-                                        <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                                            <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <ParagraphPhotos photos={paraPhotos} onSelectPhoto={onSelectPhoto} />
                     </div>
                 );
             })}
@@ -558,29 +613,14 @@ const StoryDisplay = ({
     }, [story.instants]);
 
     return (
-        <div className="space-y-5">
-            {/* Story Header Badges & Title */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-primary/10 to-transparent border border-amber-500/20">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <Badge className="bg-primary/90 text-primary-foreground text-xs">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatStoryDate(story.date)}
-                    </Badge>
-                    {locations.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {locations.slice(0, 2).join(', ')}{locations.length > 2 ? ` +${locations.length - 2}` : ''}
-                        </Badge>
-                    )}
-                    <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {getReadingTime(story.story)}
-                    </Badge>
+        <div className="space-y-4 pt-1">
+            {/* Subtle locations line if locations are defined (NO DUPLICATE DATE) */}
+            {locations.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-1">
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="truncate">Lieux : {locations.join(', ')}</span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-                    {cleanTitle(story.title)}
-                </h3>
-            </div>
+            )}
 
             {/* Interactive Audio & Actions Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 backdrop-blur-sm">
@@ -695,7 +735,7 @@ const StoryDisplay = ({
             </div>
 
             {/* Carnet de Voyage Paper View with inline photos at paragraph ends */}
-            <div className="relative rounded-2xl p-5 sm:p-8 bg-gradient-to-br from-amber-50/70 via-background to-orange-50/30 dark:from-zinc-900/80 dark:via-zinc-900/40 dark:to-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
+            <div className="relative rounded-2xl p-5 sm:p-7 bg-gradient-to-br from-amber-50/70 via-background to-orange-50/30 dark:from-zinc-900/80 dark:via-zinc-900/40 dark:to-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
                 <div className="absolute top-0 right-8 w-6 h-8 bg-amber-500/80 rounded-b-sm shadow-sm" />
                 <StoryReader
                     text={story.story}
@@ -706,12 +746,12 @@ const StoryDisplay = ({
 
             {/* Original Notes / Field Journal */}
             {notes.length > 0 && (
-                <div className="mt-4 p-4 rounded-xl bg-muted/40 border border-border/40 space-y-2.5">
+                <div className="mt-3 p-3.5 rounded-xl bg-muted/40 border border-border/40 space-y-2">
                     <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <BookText className="h-3.5 w-3.5 text-primary" />
                         Notes originales de terrain
                     </h4>
-                    <div className="space-y-1.5 text-sm text-foreground/80">
+                    <div className="space-y-1 text-sm text-foreground/80">
                         {notes.map(note => (
                             <div key={note.id} className="flex gap-2 items-start pl-1">
                                 <span className="text-amber-600 text-xs mt-0.5">•</span>
@@ -1056,7 +1096,7 @@ export default function StoryPage() {
 
     return (
         <div className="container mx-auto max-w-2xl px-4 pt-20 sm:pt-24 pb-12 min-h-screen">
-            {/* Compact Header Block */}
+            {/* Compact Header Block (Tagline removed to save space) */}
             <div className="pt-1 pb-1 text-center mb-3">
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center justify-center gap-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
@@ -1244,7 +1284,7 @@ export default function StoryPage() {
                 </CardContent>
             </Card>
 
-            {/* Stories List (Directly displayed without redundant header text to save space) */}
+            {/* Stories List (Immediately displayed without redundant header text to maximize space) */}
             <div className="space-y-3">
                 {stories.length > 0 ? (
                     <Accordion
@@ -1260,7 +1300,7 @@ export default function StoryPage() {
                             );
                             const readingTime = getReadingTime(story.story);
                             const flagTheme = getStoryCountriesTheme(story);
-                            const titleIsDate = isDateString(story.title);
+                            const titleHasDate = hasDateInTitle(story.title, story.date);
 
                             return (
                                 <AccordionItem
@@ -1302,8 +1342,8 @@ export default function StoryPage() {
                                                         </span>
                                                     )}
 
-                                                    {/* Show date pill ONLY if the title itself isn't already a date */}
-                                                    {!titleIsDate && (
+                                                    {/* Show date pill ONLY if the title itself doesn't already contain or represent the date */}
+                                                    {!titleHasDate && (
                                                         <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
                                                             {formatStoryDate(story.date)}
                                                         </span>
