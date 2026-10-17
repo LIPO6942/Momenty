@@ -20,6 +20,7 @@ interface GenerateStoryRequestBody {
   userFirstName?: string;
   userAge?: string | number;
   userGender?: string;
+  storyTone?: string;
 }
 
 function renderStoryPrompt(input: GenerateStoryRequestBody): string {
@@ -27,6 +28,14 @@ function renderStoryPrompt(input: GenerateStoryRequestBody): string {
   if (input.userFirstName) narratorLines.push(`- Le narrateur s'appelle ${input.userFirstName}.`);
   if (input.userAge) narratorLines.push(`- Âge : ${input.userAge} ans.`);
   if (input.userGender) narratorLines.push(`- Genre : ${input.userGender}.`);
+
+  const toneMap: Record<string, string> = {
+    aventure: "Ton dynamique, aventurier et captivant, axé sur l'exploration, l'action et l'émerveillement des découvertes.",
+    poetique: "Ton poétique, contemplatif et chaleureux, axé sur la beauté des ambiances, les lumières, les sensations et la nostalgie douce.",
+    humour: "Ton décalé, amusant et spontané, avec de l'esprit, du second degré et des anecdotes pétillantes.",
+    intime: "Ton intimiste, sincère et introspectif, comme une page secrète d'un précieux carnet de bord personnel.",
+  };
+  const toneDescription = (input.storyTone && toneMap[input.storyTone]) || toneMap.poetique;
 
   const voyageCtx = input.companionName
     ? `- Je voyage avec ${input.companionType || 'mon compagnon'}, nommé(e) ${input.companionName}. Le récit doit être écrit à la première personne du pluriel ("nous").`
@@ -58,7 +67,7 @@ function renderStoryPrompt(input: GenerateStoryRequestBody): string {
     })
     .join('\n');
 
-  return `Tu es un écrivain de voyage poétique et concis. Ta mission est de transformer une série de moments (notes, souvenirs, émotions) en un récit de voyage immersif, chaleureux, réaliste et bien structuré en français.
+  return `Tu es un écrivain de voyage talentueux et captivant. Ta mission est de transformer une série de moments (notes, souvenirs, émotions) en un récit de voyage immersif, chaleureux, réaliste et bien structuré en français.
 
 Le récit ne doit PAS dépasser 3 ou 4 paragraphes au total. Sois évocateur, synthétique et va à l'essentiel.
 
@@ -68,12 +77,15 @@ ${narratorLines.length > 0 ? narratorLines.join('\n') : '- Voyageur passionné.'
 Contexte du voyage:
 ${voyageCtx}
 
+Style et Tonalité:
+- ${toneDescription}
+
 Moments vécus à raconter:
 ${instantsBlock || '- Quelques moments mémorables du séjour.'}
 
 Consignes:
-1. Rédige une histoire fluide et harmonieuse reliant ces moments.
-2. Évite les listes à puces. Raconte une vraie histoire vécue.
+1. Rédige une histoire fluide et harmonieuse reliant ces moments selon le style demandé.
+2. Évite les listes à puces. Raconte une vraie histoire vécue comme dans un beau carnet de voyage littéraire.
 3. Commence par un titre principal percutant en Markdown (ex: # ...).
 4. Plante le décor dans le premier paragraphe, développe l'atmosphère et les ressentis, puis termine par une note inspirante.
 5. Réponds directement avec le texte formaté en Markdown, sans préambule ni méta-commentaire.`;
