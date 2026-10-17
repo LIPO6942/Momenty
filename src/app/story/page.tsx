@@ -27,8 +27,8 @@ import {
     Calendar,
     Clock,
     Camera,
-    Sliders,
     Play,
+    UserCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/firestore';
@@ -68,12 +68,65 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { cn, getCountry } from '@/lib/utils';
 import { getDestinationAssets } from '@/lib/destination-assets';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/context/auth-context';
+
+export interface CuratedStoryVoice {
+    id: 'femme-1' | 'femme-2' | 'homme-1' | 'homme-2';
+    name: string;
+    gender: 'femme' | 'homme';
+    genderEmoji: string;
+    label: string;
+    description: string;
+    pitch: number;
+    rate: number;
+}
+
+const CURATED_VOICES: CuratedStoryVoice[] = [
+    {
+        id: 'femme-1',
+        name: 'Chloé',
+        gender: 'femme',
+        genderEmoji: '👩',
+        label: 'Chloé (Femme)',
+        description: 'Voix douce, chaleureuse & poétique',
+        pitch: 1.05,
+        rate: 0.95,
+    },
+    {
+        id: 'femme-2',
+        name: 'Léa',
+        gender: 'femme',
+        genderEmoji: '👩',
+        label: 'Léa (Femme)',
+        description: 'Voix claire, spontanée & lumineuse',
+        pitch: 1.15,
+        rate: 1.0,
+    },
+    {
+        id: 'homme-1',
+        name: 'Alexandre',
+        gender: 'homme',
+        genderEmoji: '👨',
+        label: 'Alexandre (Homme)',
+        description: 'Voix posée, narrative & captivante',
+        pitch: 0.88,
+        rate: 0.92,
+    },
+    {
+        id: 'homme-2',
+        name: 'Julien',
+        gender: 'homme',
+        genderEmoji: '👨',
+        label: 'Julien (Homme)',
+        description: 'Voix amicale, dynamique & aventurière',
+        pitch: 0.95,
+        rate: 0.98,
+    },
+];
 
 const STORY_TONES = [
     { id: 'poetique', label: 'Poétique', icon: Sparkles, desc: 'Lumières, sensations & émotions' },
@@ -218,6 +271,40 @@ const formatStoryDate = (dateStr: string) => {
 };
 
 /**
+ * Resolves the underlying speech synthesis voice from the system based on the curated persona
+ */
+function getSystemVoiceForPersona(
+    personaId: CuratedStoryVoice['id'],
+    systemVoices: SpeechSynthesisVoice[]
+): SpeechSynthesisVoice | null {
+    if (systemVoices.length === 0) return null;
+
+    const frenchVoices = systemVoices.filter(v => v.lang.toLowerCase().startsWith('fr'));
+    const pool = frenchVoices.length > 0 ? frenchVoices : systemVoices;
+
+    const femaleKeywords = ['julie', 'hortense', 'amelie', 'amélie', 'marie', 'audrey', 'aurelie', 'aurélie', 'denise', 'celine', 'female', 'femme'];
+    const maleKeywords = ['paul', 'henri', 'thomas', 'nicolas', 'antoine', 'mathieu', 'male', 'homme'];
+
+    const matchedFemales = pool.filter(v => femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
+    const matchedMales = pool.filter(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+
+    if (personaId === 'femme-1') {
+        return matchedFemales[0] || pool[0];
+    }
+    if (personaId === 'femme-2') {
+        return matchedFemales[1] || matchedFemales[0] || pool[0];
+    }
+    if (personaId === 'homme-1') {
+        return matchedMales[0] || pool[1] || pool[0];
+    }
+    if (personaId === 'homme-2') {
+        return matchedMales[1] || matchedMales[0] || pool[1] || pool[0];
+    }
+
+    return pool[0];
+}
+
+/**
  * Animated photo slideshow & reel inside the folded banner
  */
 const BannerPhotosDefilantes = ({
@@ -243,7 +330,6 @@ const BannerPhotosDefilantes = ({
         <div
             className="flex items-center gap-2 shrink-0"
             onClick={(e) => {
-                // Clicking directly on photo opens lightbox without toggling accordion
                 e.stopPropagation();
                 onPhotoClick(photos[currentIndex]);
             }}
@@ -262,7 +348,6 @@ const BannerPhotosDefilantes = ({
                     </div>
                 ))}
 
-                {/* Subtle photo count pill */}
                 {photos.length > 1 && (
                     <div className="absolute bottom-1 right-1 z-20 px-1 py-0.5 rounded bg-black/65 backdrop-blur-sm text-[9px] font-medium text-white leading-none">
                         {currentIndex + 1}/{photos.length}
@@ -270,7 +355,7 @@ const BannerPhotosDefilantes = ({
                 )}
             </div>
 
-            {/* Mini horizontal strip (shows the roll of memories) */}
+            {/* Mini horizontal strip */}
             {photos.length > 1 && (
                 <div className="hidden sm:flex items-center gap-1.5 overflow-hidden max-w-[120px] opacity-75 hover:opacity-100 transition-opacity">
                     {photos.slice(0, 3).map((p, i) => (
@@ -299,26 +384,72 @@ const BannerPhotosDefilantes = ({
     );
 };
 
-const StoryReader = ({ text }: { text: string }) => {
+interface StoryReaderProps {
+    text: string;
+    photos: string[];
+    onSelectPhoto: (photo: string) => void;
+}
+
+const StoryReader = ({ text, photos, onSelectPhoto }: StoryReaderProps) => {
     const rawParagraphs = text.split(/\n+/).map(p => p.trim()).filter(Boolean);
     const hasMarkdownTitle = rawParagraphs[0]?.startsWith('#');
     const contentParagraphs = hasMarkdownTitle ? rawParagraphs.slice(1) : rawParagraphs;
 
+    // Distribute photos across paragraphs (1 or 2 photos per paragraph ending)
+    const photosPerParagraph = useMemo(() => {
+        const result: string[][] = Array.from({ length: contentParagraphs.length }, () => []);
+        if (photos.length === 0 || contentParagraphs.length === 0) return result;
+
+        let photoIdx = 0;
+        for (let i = 0; i < contentParagraphs.length && photoIdx < photos.length; i++) {
+            result[i].push(photos[photoIdx]);
+            photoIdx++;
+        }
+        for (let i = 0; i < contentParagraphs.length && photoIdx < photos.length; i++) {
+            result[i].push(photos[photoIdx]);
+            photoIdx++;
+        }
+        while (photoIdx < photos.length) {
+            const targetPara = Math.min(result.length - 1, Math.floor(photoIdx / 2));
+            result[targetPara].push(photos[photoIdx]);
+            photoIdx++;
+        }
+        return result;
+    }, [contentParagraphs.length, photos]);
+
     return (
-        <div className="space-y-4 font-serif text-base sm:text-lg leading-relaxed sm:leading-loose text-foreground/90">
+        <div className="space-y-5 font-serif text-base sm:text-lg leading-relaxed sm:leading-loose text-foreground/90">
             {contentParagraphs.map((para, idx) => {
                 const isQuote = para.startsWith('>') || (para.startsWith('«') && para.endsWith('»'));
+                const paraPhotos = photosPerParagraph[idx] || [];
+
                 if (isQuote) {
                     const cleanQuote = para.replace(/^>\s*/, '').replace(/^«|»$/g, '').trim();
                     return (
-                        <div
-                            key={idx}
-                            className="my-5 px-5 py-3.5 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-xl italic flex gap-3 text-foreground"
-                        >
-                            <Quote className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                            <p className="font-medium text-base sm:text-lg leading-relaxed">
-                                « {cleanQuote} »
-                            </p>
+                        <div key={idx} className="space-y-3">
+                            <div className="my-5 px-5 py-3.5 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-xl italic flex gap-3 text-foreground">
+                                <Quote className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <p className="font-medium text-base sm:text-lg leading-relaxed">
+                                    « {cleanQuote} »
+                                </p>
+                            </div>
+                            {paraPhotos.length > 0 && (
+                                <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1">
+                                    {paraPhotos.map((photo, pIdx) => (
+                                        <div
+                                            key={pIdx}
+                                            onClick={() => onSelectPhoto(photo)}
+                                            className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
+                                            title="Cliquer pour agrandir"
+                                        >
+                                            <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                                <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 }
@@ -328,19 +459,57 @@ const StoryReader = ({ text }: { text: string }) => {
                     const firstChar = para.charAt(0);
                     const rest = para.slice(1);
                     return (
-                        <p key={idx} className="text-justify font-serif text-foreground/90">
-                            <span className="float-left text-5xl sm:text-6xl font-serif font-black text-amber-600 dark:text-amber-400 mr-3 mb-0 leading-none select-none drop-shadow-sm">
-                                {firstChar}
-                            </span>
-                            {rest}
-                        </p>
+                        <div key={idx} className="space-y-3">
+                            <p className="text-justify font-serif text-foreground/90">
+                                <span className="float-left text-5xl sm:text-6xl font-serif font-black text-amber-600 dark:text-amber-400 mr-3 mb-0 leading-none select-none drop-shadow-sm">
+                                    {firstChar}
+                                </span>
+                                {rest}
+                            </p>
+                            {paraPhotos.length > 0 && (
+                                <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1.5">
+                                    {paraPhotos.map((photo, pIdx) => (
+                                        <div
+                                            key={pIdx}
+                                            onClick={() => onSelectPhoto(photo)}
+                                            className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
+                                            title="Cliquer pour agrandir"
+                                        >
+                                            <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                                <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     );
                 }
 
                 return (
-                    <p key={idx} className="text-justify font-serif text-foreground/90">
-                        {para}
-                    </p>
+                    <div key={idx} className="space-y-3">
+                        <p className="text-justify font-serif text-foreground/90">
+                            {para}
+                        </p>
+                        {paraPhotos.length > 0 && (
+                            <div className="flex flex-wrap gap-2.5 sm:gap-3 py-1.5">
+                                {paraPhotos.map((photo, pIdx) => (
+                                    <div
+                                        key={pIdx}
+                                        onClick={() => onSelectPhoto(photo)}
+                                        className="group relative h-28 w-28 sm:h-36 sm:w-36 rounded-xl overflow-hidden border border-border/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-105 bg-muted shrink-0"
+                                        title="Cliquer pour agrandir"
+                                    >
+                                        <Image src={photo} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                            <Maximize2 className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 );
             })}
         </div>
@@ -352,7 +521,7 @@ interface StoryDisplayProps {
     isSpeaking: boolean;
     onToggleSpeech: () => void;
     onOpenVoiceSettings: () => void;
-    currentVoiceLabel: string;
+    currentPersona: CuratedStoryVoice;
     onCopy: () => void;
     onShare: () => void;
     onEdit: () => void;
@@ -366,7 +535,7 @@ const StoryDisplay = ({
     isSpeaking,
     onToggleSpeech,
     onOpenVoiceSettings,
-    currentVoiceLabel,
+    currentPersona,
     onCopy,
     onShare,
     onEdit,
@@ -389,57 +558,29 @@ const StoryDisplay = ({
     }, [story.instants]);
 
     return (
-        <div className="space-y-6">
-            {/* Hero Cover Banner if photos exist, or stylish gradient banner */}
-            {photos.length > 0 ? (
-                <div className="relative h-48 sm:h-60 w-full rounded-2xl overflow-hidden shadow-md group">
-                    <Image
-                        src={photos[0]}
-                        alt={story.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
-                    <div className="absolute bottom-4 left-4 right-4 text-white">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge className="bg-amber-500/90 hover:bg-amber-500 text-white border-none font-semibold text-xs shadow-sm">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {formatStoryDate(story.date)}
-                            </Badge>
-                            {locations.length > 0 && (
-                                <Badge variant="secondary" className="bg-white/20 backdrop-blur-md text-white border-none text-xs">
-                                    <MapPin className="h-3 w-3 mr-1" />
-                                    {locations.slice(0, 2).join(', ')}{locations.length > 2 ? ` +${locations.length - 2}` : ''}
-                                </Badge>
-                            )}
-                            <Badge variant="secondary" className="bg-white/20 backdrop-blur-md text-white border-none text-xs">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {getReadingTime(story.story)}
-                            </Badge>
-                        </div>
-                        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-md line-clamp-2">
-                            {cleanTitle(story.title)}
-                        </h3>
-                    </div>
-                </div>
-            ) : (
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-primary/10 to-transparent border border-amber-500/20">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <Badge className="bg-primary/90 text-primary-foreground text-xs">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {formatStoryDate(story.date)}
-                        </Badge>
+        <div className="space-y-5">
+            {/* Story Header Badges & Title */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-primary/10 to-transparent border border-amber-500/20">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <Badge className="bg-primary/90 text-primary-foreground text-xs">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatStoryDate(story.date)}
+                    </Badge>
+                    {locations.length > 0 && (
                         <Badge variant="secondary" className="text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {getReadingTime(story.story)}
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {locations.slice(0, 2).join(', ')}{locations.length > 2 ? ` +${locations.length - 2}` : ''}
                         </Badge>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-                        {cleanTitle(story.title)}
-                    </h3>
+                    )}
+                    <Badge variant="secondary" className="text-xs">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {getReadingTime(story.story)}
+                    </Badge>
                 </div>
-            )}
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground">
+                    {cleanTitle(story.title)}
+                </h3>
+            </div>
 
             {/* Interactive Audio & Actions Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 backdrop-blur-sm">
@@ -468,16 +609,16 @@ const StoryDisplay = ({
                         )}
                     </Button>
 
-                    {/* Change Voice Button */}
+                    {/* Change Voice Button: Shows current narrator */}
                     <Button
                         size="sm"
                         variant="ghost"
                         onClick={onOpenVoiceSettings}
                         className="rounded-full text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-2.5 border border-border/50"
-                        title="Modifier la voix ou le rythme de lecture"
+                        title="Changer de conteur (2 femmes, 2 hommes)"
                     >
-                        <Sliders className="h-3.5 w-3.5 mr-1.5 text-amber-600 dark:text-amber-400" />
-                        <span className="truncate max-w-[110px] sm:max-w-[140px]">{currentVoiceLabel || "Voix"}</span>
+                        <span className="mr-1">{currentPersona.genderEmoji}</span>
+                        <span>Voix : {currentPersona.name}</span>
                     </Button>
 
                     {isSpeaking && (
@@ -553,58 +694,15 @@ const StoryDisplay = ({
                 </div>
             </div>
 
-            {/* Carnet de Voyage Paper View */}
+            {/* Carnet de Voyage Paper View with inline photos at paragraph ends */}
             <div className="relative rounded-2xl p-5 sm:p-8 bg-gradient-to-br from-amber-50/70 via-background to-orange-50/30 dark:from-zinc-900/80 dark:via-zinc-900/40 dark:to-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
                 <div className="absolute top-0 right-8 w-6 h-8 bg-amber-500/80 rounded-b-sm shadow-sm" />
-                <StoryReader text={story.story} />
+                <StoryReader
+                    text={story.story}
+                    photos={photos}
+                    onSelectPhoto={onSelectPhoto}
+                />
             </div>
-
-            {/* Photo Polaroid Collection */}
-            {photos.length > 0 && (
-                <div className="mt-6 pt-4">
-                    <div className="flex items-center justify-between mb-3 px-1">
-                        <h4 className="font-bold text-sm sm:text-base flex items-center gap-2 text-foreground">
-                            <Camera className="h-4 w-4 text-amber-600" />
-                            Clichés du voyage ({photos.length})
-                        </h4>
-                        <span className="text-[11px] text-muted-foreground">Cliquez pour agrandir</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {photos.map((photo, index) => {
-                            const rotations = ['rotate-1', '-rotate-1', 'rotate-2', '-rotate-2', 'rotate-0'];
-                            const rot = rotations[index % rotations.length];
-                            return (
-                                <div
-                                    key={index}
-                                    onClick={() => onSelectPhoto(photo)}
-                                    className={cn(
-                                        "group relative bg-card p-2 pb-4 rounded-xl shadow-sm hover:shadow-lg border border-border/60 transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-1 hover:rotate-0",
-                                        rot
-                                    )}
-                                >
-                                    <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-muted">
-                                        <Image
-                                            src={photo}
-                                            alt={`Souvenir ${index + 1}`}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                                            <Maximize2 className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
-                                        </div>
-                                    </div>
-                                    <div className="pt-2 text-center">
-                                        <span className="text-[10px] text-muted-foreground font-serif tracking-wider uppercase">
-                                            Cliché #{index + 1}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
             {/* Original Notes / Field Journal */}
             {notes.length > 0 && (
@@ -649,49 +747,24 @@ export default function StoryPage() {
     const [copiedStoryId, setCopiedStoryId] = useState<string | null>(null);
     const [selectedLightboxPhoto, setSelectedLightboxPhoto] = useState<string | null>(null);
 
-    // Voice customisation state
-    const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-    const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
-    const [speechRate, setSpeechRate] = useState<number>(0.95);
-    const [speechPitch, setSpeechPitch] = useState<number>(1.0);
+    // Curated voice state: exactly 2 female voices and 2 male voices
+    const [selectedVoiceId, setSelectedVoiceId] = useState<CuratedStoryVoice['id']>('femme-1');
+    const [availableSystemVoices, setAvailableSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
     const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
-    const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
+    const [testingPersonaId, setTestingPersonaId] = useState<string | null>(null);
 
-    // Load available speech synthesis voices
+    // Load available voices from system
     useEffect(() => {
         if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
         const updateVoices = () => {
             const all = window.speechSynthesis.getVoices();
             if (all.length === 0) return;
+            setAvailableSystemVoices(all);
 
-            // Prioritize French voices, then keep others
-            const french = all.filter(v => v.lang.toLowerCase().startsWith('fr'));
-            const others = all.filter(v => !v.lang.toLowerCase().startsWith('fr'));
-            const sorted = [...french, ...others];
-            setAvailableVoices(sorted);
-
-            const savedVoice = localStorage.getItem('momenty_story_voice');
-            const savedRate = localStorage.getItem('momenty_story_rate');
-            const savedPitch = localStorage.getItem('momenty_story_pitch');
-
-            if (savedRate) setSpeechRate(Number(savedRate));
-            if (savedPitch) setSpeechPitch(Number(savedPitch));
-
-            if (savedVoice && all.some(v => v.voiceURI === savedVoice)) {
-                setSelectedVoiceURI(savedVoice);
-            } else if (french.length > 0) {
-                // Preferred high quality voice if available
-                const best = french.find(v =>
-                    v.name.toLowerCase().includes('natural') ||
-                    v.name.toLowerCase().includes('google') ||
-                    v.name.toLowerCase().includes('amelie') ||
-                    v.name.toLowerCase().includes('thomas') ||
-                    v.name.toLowerCase().includes('julie')
-                );
-                setSelectedVoiceURI((best || french[0]).voiceURI);
-            } else if (all.length > 0) {
-                setSelectedVoiceURI(all[0].voiceURI);
+            const savedVoiceId = localStorage.getItem('momenty_story_curated_voice') as CuratedStoryVoice['id'] | null;
+            if (savedVoiceId && CURATED_VOICES.some(v => v.id === savedVoiceId)) {
+                setSelectedVoiceId(savedVoiceId);
             }
         };
 
@@ -712,31 +785,32 @@ export default function StoryPage() {
         };
     }, []);
 
-    const currentVoiceObject = useMemo(() => {
-        return availableVoices.find(v => v.voiceURI === selectedVoiceURI) || null;
-    }, [availableVoices, selectedVoiceURI]);
+    const currentPersona = useMemo(() => {
+        return CURATED_VOICES.find(v => v.id === selectedVoiceId) || CURATED_VOICES[0];
+    }, [selectedVoiceId]);
 
-    const currentVoiceLabel = useMemo(() => {
-        if (!currentVoiceObject) return "Voix par défaut";
-        // Clean display name
-        return currentVoiceObject.name.replace(/(Microsoft|Google|Apple)\s*/gi, '').trim() || currentVoiceObject.name;
-    }, [currentVoiceObject]);
-
-    const handleTestVoice = () => {
+    const handlePreviewPersona = (persona: CuratedStoryVoice) => {
         if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
 
-        const testUtterance = new SpeechSynthesisUtterance("Bonjour ! Voici un aperçu de ma voix pour raconter vos plus beaux souvenirs de voyage.");
-        testUtterance.lang = currentVoiceObject?.lang || 'fr-FR';
-        if (currentVoiceObject) testUtterance.voice = currentVoiceObject;
-        testUtterance.rate = speechRate;
-        testUtterance.pitch = speechPitch;
+        const sample = persona.gender === 'femme'
+            ? `Bonjour, je suis ${persona.name}. Laissez-moi vous raconter vos plus beaux souvenirs de voyage.`
+            : `Bonjour, je m'appelle ${persona.name}. Je serai votre conteur pour revivre cette aventure.`;
 
-        setIsTestingVoice(true);
-        testUtterance.onend = () => setIsTestingVoice(false);
-        testUtterance.onerror = () => setIsTestingVoice(false);
+        const utterance = new SpeechSynthesisUtterance(sample);
+        utterance.lang = 'fr-FR';
 
-        window.speechSynthesis.speak(testUtterance);
+        const sysVoice = getSystemVoiceForPersona(persona.id, availableSystemVoices);
+        if (sysVoice) utterance.voice = sysVoice;
+
+        utterance.rate = persona.rate;
+        utterance.pitch = persona.pitch;
+
+        setTestingPersonaId(persona.id);
+        utterance.onend = () => setTestingPersonaId(null);
+        utterance.onerror = () => setTestingPersonaId(null);
+
+        window.speechSynthesis.speak(utterance);
     };
 
     const toggleStorySpeech = (story: GeneratedStory) => {
@@ -762,10 +836,13 @@ export default function StoryPage() {
             .trim();
 
         const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
-        utterance.lang = currentVoiceObject?.lang || 'fr-FR';
-        if (currentVoiceObject) utterance.voice = currentVoiceObject;
-        utterance.rate = speechRate;
-        utterance.pitch = speechPitch;
+        utterance.lang = 'fr-FR';
+
+        const sysVoice = getSystemVoiceForPersona(currentPersona.id, availableSystemVoices);
+        if (sysVoice) utterance.voice = sysVoice;
+
+        utterance.rate = currentPersona.rate;
+        utterance.pitch = currentPersona.pitch;
 
         utterance.onend = () => setSpeakingStoryId(null);
         utterance.onerror = () => setSpeakingStoryId(null);
@@ -810,7 +887,6 @@ export default function StoryPage() {
             return { ...story, instants: storyInstants };
         });
         setStories(hydratedStories);
-        // Do NOT auto-open stories; they stay folded by default
     };
 
     useEffect(() => {
@@ -911,7 +987,6 @@ export default function StoryPage() {
             const fullNewStory = { ...newStory, instants: allInstantsForStory };
 
             setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== storyId)]);
-            // Open the freshly generated story
             setOpenAccordionItem(newStory.id);
             setManualCompanionType("");
             setManualCompanionName("");
@@ -980,30 +1055,24 @@ export default function StoryPage() {
     };
 
     return (
-        <div className="container mx-auto max-w-2xl px-4 pt-24 sm:pt-28 pb-12 min-h-screen">
-            {/* Header Block */}
-            <div className="pt-1 pb-3 text-center space-y-1.5 mb-6">
-                <Badge variant="outline" className="border-primary/40 text-primary gap-1.5 px-3 py-1 bg-primary/5 rounded-full text-xs font-medium">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                    Carnet de Voyage IA
-                </Badge>
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+        <div className="container mx-auto max-w-2xl px-4 pt-20 sm:pt-24 pb-12 min-h-screen">
+            {/* Compact Header Block */}
+            <div className="pt-1 pb-1 text-center mb-3">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center justify-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
                     Générateur d'Histoires
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
-                    Transformez vos journées en récits de voyage vivants, illustrés et captivants.
-                </p>
             </div>
 
             {/* Creation Card (Step 1) */}
-            <Card className="mb-8 border-border/70 shadow-sm overflow-hidden bg-card/90 backdrop-blur-sm">
-                <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Card className="mb-4 sm:mb-5 border-border/70 shadow-sm overflow-hidden bg-card/90 backdrop-blur-sm">
+                <CardHeader className="py-2.5 px-4 border-b border-border/40 bg-muted/20">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                         <Wand2 className="h-4 w-4 text-primary" />
-                        1. Créer ou recréer une histoire
+                        Créer ou recréer une histoire
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-3.5 p-4">
                     {/* Day Selector */}
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
@@ -1070,10 +1139,10 @@ export default function StoryPage() {
 
                     {/* Previews & Options once at least 1 day is selected */}
                     {selectedDays.length > 0 && (
-                        <div className="space-y-4 pt-1 animate-in fade-in-50 duration-300">
+                        <div className="space-y-3.5 pt-1 animate-in fade-in-50 duration-300">
                             {/* Photo Filmstrip */}
                             {selectedDaysPhotos.length > 0 && (
-                                <div className="p-3 rounded-xl bg-muted/40 border border-border/40">
+                                <div className="p-2.5 rounded-xl bg-muted/40 border border-border/40">
                                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                                         <span className="flex items-center gap-1.5 font-medium text-foreground">
                                             <Camera className="h-3.5 w-3.5 text-amber-600" />
@@ -1159,7 +1228,7 @@ export default function StoryPage() {
                             <Button
                                 onClick={handleGenerateStory}
                                 disabled={isLoading || !user}
-                                className="w-full mt-2 h-11 font-medium bg-gradient-to-r from-primary via-amber-600 to-primary text-white shadow-md shadow-primary/20 hover:opacity-95 transition-all"
+                                className="w-full mt-2 h-10 font-medium bg-gradient-to-r from-primary via-amber-600 to-primary text-white shadow-md shadow-primary/20 hover:opacity-95 transition-all"
                             >
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1175,27 +1244,15 @@ export default function StoryPage() {
                 </CardContent>
             </Card>
 
-            {/* Stories Collection Section (Folded by default) */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                    <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                        Mes Récits ({stories.length})
-                    </h2>
-                    {stories.length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                            {stories.length} histoire{stories.length > 1 ? 's' : ''} dans votre carnet
-                        </span>
-                    )}
-                </div>
-
+            {/* Stories List (Directly displayed without redundant header text to save space) */}
+            <div className="space-y-3">
                 {stories.length > 0 ? (
                     <Accordion
                         type="single"
                         collapsible
                         value={openAccordionItem}
                         onValueChange={setOpenAccordionItem}
-                        className="w-full space-y-4"
+                        className="w-full space-y-3"
                     >
                         {stories.map(story => {
                             const storyPhotos = Array.from(
@@ -1279,7 +1336,7 @@ export default function StoryPage() {
                                             isSpeaking={speakingStoryId === story.id}
                                             onToggleSpeech={() => toggleStorySpeech(story)}
                                             onOpenVoiceSettings={() => setIsVoiceDialogOpen(true)}
-                                            currentVoiceLabel={currentVoiceLabel}
+                                            currentPersona={currentPersona}
                                             onCopy={() => handleCopyStory(story)}
                                             onShare={() => handleShareStory(story)}
                                             onEdit={() => handleEditStory(story)}
@@ -1293,142 +1350,102 @@ export default function StoryPage() {
                         })}
                     </Accordion>
                 ) : (
-                    <div className="text-center py-12 px-4 border border-dashed rounded-2xl border-border/80 bg-muted/10 space-y-3">
-                        <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <BookOpen className="h-6 w-6" />
+                    <div className="text-center py-10 px-4 border border-dashed rounded-2xl border-border/80 bg-muted/10 space-y-2.5">
+                        <div className="h-11 w-11 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <BookOpen className="h-5 w-5" />
                         </div>
                         <p className="text-sm font-medium text-foreground">
                             {user ? "Votre carnet de récits est encore vierge." : "Connectez-vous pour voir vos histoires."}
                         </p>
                         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                            Sélectionnez une ou plusieurs journées plus haut pour donner vie à vos premiers souvenirs de voyage.
+                            Sélectionnez une ou plusieurs journées plus haut pour créer votre premier récit illustré.
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* Voice Settings Dialog */}
+            {/* Voice Settings Dialog: Exactly 2 natural female voices and 2 natural male voices */}
             <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-lg">
-                            <Sliders className="h-5 w-5 text-primary" />
-                            Paramètres de la Voix de Lecture
+                            <Volume2 className="h-5 w-5 text-primary" />
+                            Choisir la Voix du Conteur
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="space-y-4 py-2">
-                        {/* Voice selection */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
-                                Voix du conteur
-                            </Label>
-                            {availableVoices.length > 0 ? (
-                                <Select
-                                    value={selectedVoiceURI}
-                                    onValueChange={(val) => {
-                                        setSelectedVoiceURI(val);
-                                        localStorage.setItem('momenty_story_voice', val);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10 text-xs sm:text-sm">
-                                        <SelectValue placeholder="Choisir une voix..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-64">
-                                        {availableVoices.map((voice) => {
-                                            const isFr = voice.lang.toLowerCase().startsWith('fr');
-                                            return (
-                                                <SelectItem key={voice.voiceURI} value={voice.voiceURI} className="text-xs">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <span>{isFr ? "🇫🇷" : "🌐"}</span>
-                                                        <span className="font-medium">{voice.name}</span>
-                                                        <span className="text-muted-foreground text-[10px]">({voice.lang})</span>
-                                                    </span>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <p className="text-xs text-muted-foreground italic">
-                                    Chargement des voix de votre système...
-                                </p>
-                            )}
-                        </div>
+                    <div className="space-y-3 py-2">
+                        <p className="text-xs text-muted-foreground">
+                            Sélectionnez la voix française qui vous accompagnera pour raconter vos aventures :
+                        </p>
 
-                        {/* Speech Rate Slider */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-xs font-semibold">
-                                <span className="text-muted-foreground uppercase tracking-wider">Vitesse de lecture</span>
-                                <span className="text-primary font-bold">{speechRate.toFixed(2)}x</span>
-                            </div>
-                            <Slider
-                                value={[speechRate]}
-                                min={0.7}
-                                max={1.3}
-                                step={0.05}
-                                onValueChange={([val]) => {
-                                    setSpeechRate(val);
-                                    localStorage.setItem('momenty_story_rate', String(val));
-                                }}
-                            />
-                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                                <span>Posé (0.7x)</span>
-                                <span>Standard (1.0x)</span>
-                                <span>Rapide (1.3x)</span>
-                            </div>
-                        </div>
+                        <div className="grid grid-cols-1 gap-2.5">
+                            {CURATED_VOICES.map((persona) => {
+                                const isSelected = selectedVoiceId === persona.id;
+                                const isCurrentlyTesting = testingPersonaId === persona.id;
 
-                        {/* Speech Pitch Slider */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-xs font-semibold">
-                                <span className="text-muted-foreground uppercase tracking-wider">Tonalité (Pitch)</span>
-                                <span className="text-primary font-bold">{speechPitch.toFixed(2)}</span>
-                            </div>
-                            <Slider
-                                value={[speechPitch]}
-                                min={0.8}
-                                max={1.2}
-                                step={0.05}
-                                onValueChange={([val]) => {
-                                    setSpeechPitch(val);
-                                    localStorage.setItem('momenty_story_pitch', String(val));
-                                }}
-                            />
-                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                                <span>Plus grave</span>
-                                <span>Naturel</span>
-                                <span>Plus aigu</span>
-                            </div>
-                        </div>
+                                return (
+                                    <div
+                                        key={persona.id}
+                                        onClick={() => {
+                                            setSelectedVoiceId(persona.id);
+                                            localStorage.setItem('momenty_story_curated_voice', persona.id);
+                                        }}
+                                        className={cn(
+                                            "flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                                            isSelected
+                                                ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40"
+                                                : "border-border/60 hover:bg-muted/40"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl select-none">{persona.genderEmoji}</span>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm text-foreground">{persona.name}</span>
+                                                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 font-normal">
+                                                        {persona.gender === 'femme' ? "Voix féminine" : "Voix masculine"}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-0.5">{persona.description}</p>
+                                            </div>
+                                        </div>
 
-                        {/* Preview Audio Button */}
-                        <div className="pt-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleTestVoice}
-                                disabled={isTestingVoice}
-                                className="w-full text-xs font-medium border-amber-500/40 hover:bg-amber-500/10"
-                            >
-                                {isTestingVoice ? (
-                                    <>
-                                        <Volume2 className="h-4 w-4 mr-2 animate-bounce text-amber-600" />
-                                        <span>Écoute en cours...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="h-4 w-4 mr-2 text-amber-600" />
-                                        <span>Tester cette voix</span>
-                                    </>
-                                )}
-                            </Button>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {/* Preview button for this voice */}
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePreviewPersona(persona);
+                                                }}
+                                                className={cn(
+                                                    "h-8 px-2.5 text-xs rounded-full border-border/70",
+                                                    isCurrentlyTesting && "bg-primary text-primary-foreground animate-pulse"
+                                                )}
+                                                title={`Écouter un extrait de ${persona.name}`}
+                                            >
+                                                <Play className="h-3 w-3 mr-1" />
+                                                <span>{isCurrentlyTesting ? "Écoute..." : "Tester"}</span>
+                                            </Button>
+
+                                            {isSelected && (
+                                                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                                                    <Check className="h-3.5 w-3.5" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <DialogFooter>
                         <Button onClick={() => setIsVoiceDialogOpen(false)} className="w-full sm:w-auto">
-                            Valider
+                            Confirmer cette voix
                         </Button>
                     </DialogFooter>
                 </DialogContent>
