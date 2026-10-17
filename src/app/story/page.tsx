@@ -111,9 +111,9 @@ const CURATED_VOICES: CuratedStoryVoice[] = [
         gender: 'homme',
         genderEmoji: '👨',
         label: 'Alexandre (Homme)',
-        description: 'Voix posée, narrative & captivante',
-        pitch: 0.88,
-        rate: 0.92,
+        description: 'Voix posée, narrative & masculine (Baryton)',
+        pitch: 0.58,
+        rate: 0.90,
     },
     {
         id: 'homme-2',
@@ -121,9 +121,9 @@ const CURATED_VOICES: CuratedStoryVoice[] = [
         gender: 'homme',
         genderEmoji: '👨',
         label: 'Julien (Homme)',
-        description: 'Voix amicale, dynamique & aventurière',
-        pitch: 0.95,
-        rate: 0.98,
+        description: 'Voix dynamique, chaleureuse & masculine (Ténor)',
+        pitch: 0.70,
+        rate: 0.96,
     },
 ];
 
@@ -289,37 +289,88 @@ const formatStoryDate = (dateStr: string) => {
 };
 
 /**
- * Resolves the underlying speech synthesis voice from the system based on the curated persona
+ * Resolves the underlying speech synthesis voice and calibrated acoustic parameters
+ * to guarantee distinct, realistic male voices (Alexandre & Julien) and female voices (Chloé & Léa)
+ * even on platforms/browsers that only supply female French base voices.
  */
-function getSystemVoiceForPersona(
-    personaId: CuratedStoryVoice['id'],
+function resolveVoiceSettings(
+    persona: CuratedStoryVoice,
     systemVoices: SpeechSynthesisVoice[]
-): SpeechSynthesisVoice | null {
-    if (systemVoices.length === 0) return null;
+): {
+    voice: SpeechSynthesisVoice | null;
+    pitch: number;
+    rate: number;
+} {
+    if (systemVoices.length === 0) {
+        return { voice: null, pitch: persona.pitch, rate: persona.rate };
+    }
 
     const frenchVoices = systemVoices.filter(v => v.lang.toLowerCase().startsWith('fr'));
     const pool = frenchVoices.length > 0 ? frenchVoices : systemVoices;
 
-    const femaleKeywords = ['julie', 'hortense', 'amelie', 'amélie', 'marie', 'audrey', 'aurelie', 'aurélie', 'denise', 'celine', 'female', 'femme'];
-    const maleKeywords = ['paul', 'henri', 'thomas', 'nicolas', 'antoine', 'mathieu', 'male', 'homme'];
+    const femaleKeywords = [
+        'julie', 'hortense', 'amelie', 'amélie', 'marie', 'audrey', 'aurelie', 'aurélie',
+        'denise', 'celine', 'céline', 'brigitte', 'eloise', 'éloïse', 'jacqueline',
+        'charlotte', 'virginie', 'sophie', 'lea', 'léa', 'chloe', 'chloé', 'camille',
+        'female', 'femme', 'fille', 'féminin'
+    ];
 
-    const matchedFemales = pool.filter(v => femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
-    const matchedMales = pool.filter(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+    const maleKeywords = [
+        'paul', 'henri', 'thomas', 'nicolas', 'antoine', 'mathieu', 'matthieu',
+        'claude', 'alain', 'fabrice', 'jerome', 'jérôme', 'maurice', 'jean',
+        'gerard', 'gérard', 'didier', 'guy', 'pierre', 'louis', 'gabriel',
+        'lucas', 'arthur', 'jules', 'hugo', 'léon', 'leon', 'male', 'homme',
+        'garçon', 'masculin', 'fr-fr-b', 'fr-fr-d', 'fr-ca-b', 'fr-ca-d',
+        'neural2-b', 'neural2-d', 'wavenet-b', 'wavenet-d', 'standard-b', 'standard-d'
+    ];
 
-    if (personaId === 'femme-1') {
-        return matchedFemales[0] || pool[0];
-    }
-    if (personaId === 'femme-2') {
-        return matchedFemales[1] || matchedFemales[0] || pool[0];
-    }
-    if (personaId === 'homme-1') {
-        return matchedMales[0] || pool[1] || pool[0];
-    }
-    if (personaId === 'homme-2') {
-        return matchedMales[1] || matchedMales[0] || pool[1] || pool[0];
+    const matchedFemales = pool.filter(v => {
+        const lower = (v.name + ' ' + v.voiceURI).toLowerCase();
+        return femaleKeywords.some(k => lower.includes(k));
+    });
+
+    const matchedMales = pool.filter(v => {
+        const lower = (v.name + ' ' + v.voiceURI).toLowerCase();
+        return maleKeywords.some(k => lower.includes(k));
+    });
+
+    const hasNativeMaleVoice = matchedMales.length > 0;
+
+    if (persona.id === 'femme-1') {
+        const voice = matchedFemales[0] || pool[0];
+        return { voice, pitch: 1.02, rate: 0.95 };
     }
 
-    return pool[0];
+    if (persona.id === 'femme-2') {
+        const voice = matchedFemales[1] || matchedFemales[0] || pool[0];
+        return { voice, pitch: 1.15, rate: 1.00 };
+    }
+
+    if (persona.id === 'homme-1') {
+        if (hasNativeMaleVoice) {
+            // Real native male voice available on OS/Browser
+            const voice = matchedMales[0];
+            return { voice, pitch: 0.90, rate: 0.92 };
+        }
+        // No native male voice found (only female available, e.g. Google français or Julie)
+        // Shift acoustic pitch to 0.58 to transform into a deep, warm masculine baritone
+        const voice = pool[0];
+        return { voice, pitch: 0.58, rate: 0.90 };
+    }
+
+    if (persona.id === 'homme-2') {
+        if (hasNativeMaleVoice) {
+            // Real native male voice available on OS/Browser
+            const voice = matchedMales[1] || matchedMales[0];
+            return { voice, pitch: 1.00, rate: 0.98 };
+        }
+        // No native male voice found:
+        // Shift acoustic pitch to 0.70 to transform into an energetic, masculine tenor
+        const voice = pool[0];
+        return { voice, pitch: 0.70, rate: 0.96 };
+    }
+
+    return { voice: pool[0], pitch: persona.pitch, rate: persona.rate };
 }
 
 /**
@@ -840,11 +891,11 @@ export default function StoryPage() {
         const utterance = new SpeechSynthesisUtterance(sample);
         utterance.lang = 'fr-FR';
 
-        const sysVoice = getSystemVoiceForPersona(persona.id, availableSystemVoices);
-        if (sysVoice) utterance.voice = sysVoice;
+        const settings = resolveVoiceSettings(persona, availableSystemVoices);
+        if (settings.voice) utterance.voice = settings.voice;
 
-        utterance.rate = persona.rate;
-        utterance.pitch = persona.pitch;
+        utterance.rate = settings.rate;
+        utterance.pitch = settings.pitch;
 
         setTestingPersonaId(persona.id);
         utterance.onend = () => setTestingPersonaId(null);
@@ -878,11 +929,11 @@ export default function StoryPage() {
         const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
         utterance.lang = 'fr-FR';
 
-        const sysVoice = getSystemVoiceForPersona(currentPersona.id, availableSystemVoices);
-        if (sysVoice) utterance.voice = sysVoice;
+        const settings = resolveVoiceSettings(currentPersona, availableSystemVoices);
+        if (settings.voice) utterance.voice = settings.voice;
 
-        utterance.rate = currentPersona.rate;
-        utterance.pitch = currentPersona.pitch;
+        utterance.rate = settings.rate;
+        utterance.pitch = settings.pitch;
 
         utterance.onend = () => setSpeakingStoryId(null);
         utterance.onerror = () => setSpeakingStoryId(null);
