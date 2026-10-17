@@ -27,6 +27,8 @@ import {
     Calendar,
     Clock,
     Camera,
+    Sliders,
+    Play,
 } from 'lucide-react';
 import Image from 'next/image';
 import { saveStory, getStories, deleteStory as deleteStoryFromDB } from '@/lib/firestore';
@@ -66,7 +68,9 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
+import { cn, getCountry } from '@/lib/utils';
+import { getDestinationAssets } from '@/lib/destination-assets';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/context/auth-context';
@@ -78,14 +82,131 @@ const STORY_TONES = [
     { id: 'intime', label: 'Carnet Secret', icon: BookOpen, desc: 'Récit introspectif & sincère' },
 ];
 
+const COUNTRY_FLAGS: Record<string, { name: string; emoji: string; colors: string[] }> = {
+    FR: { name: 'France', emoji: '🇫🇷', colors: ['#002395', '#FFFFFF', '#ED2939'] },
+    IT: { name: 'Italie', emoji: '🇮🇹', colors: ['#009246', '#FFFFFF', '#CE2B37'] },
+    ES: { name: 'Espagne', emoji: '🇪🇸', colors: ['#AA151B', '#F1BF00', '#AA151B'] },
+    MA: { name: 'Maroc', emoji: '🇲🇦', colors: ['#C1272D', '#006233'] },
+    TN: { name: 'Tunisie', emoji: '🇹🇳', colors: ['#E70013', '#FFFFFF'] },
+    DZ: { name: 'Algérie', emoji: '🇩🇿', colors: ['#006233', '#FFFFFF', '#D21034'] },
+    JP: { name: 'Japon', emoji: '🇯🇵', colors: ['#FFFFFF', '#BC002D'] },
+    DE: { name: 'Allemagne', emoji: '🇩🇪', colors: ['#1A1A1A', '#DD0000', '#FFCE00'] },
+    GB: { name: 'Royaume-Uni', emoji: '🇬🇧', colors: ['#012169', '#C8102E', '#FFFFFF'] },
+    US: { name: 'États-Unis', emoji: '🇺🇸', colors: ['#3C3B6E', '#FFFFFF', '#B22234'] },
+    GR: { name: 'Grèce', emoji: '🇬🇷', colors: ['#0D5EAF', '#FFFFFF'] },
+    PT: { name: 'Portugal', emoji: '🇵🇹', colors: ['#006600', '#FF0000'] },
+    BE: { name: 'Belgique', emoji: '🇧🇪', colors: ['#1A1A1A', '#FDDA24', '#EF3340'] },
+    CH: { name: 'Suisse', emoji: '🇨🇭', colors: ['#D52B1E', '#FFFFFF'] },
+    NL: { name: 'Pays-Bas', emoji: '🇳🇱', colors: ['#AE1C28', '#FFFFFF', '#21468B'] },
+    TR: { name: 'Turquie', emoji: '🇹🇷', colors: ['#E30A17', '#FFFFFF'] },
+    BR: { name: 'Brésil', emoji: '🇧🇷', colors: ['#009739', '#FEDD00', '#012169'] },
+    ID: { name: 'Indonésie', emoji: '🇮🇩', colors: ['#CE1126', '#FFFFFF'] },
+    TH: { name: 'Thaïlande', emoji: '🇹🇭', colors: ['#A51931', '#F4F5F8', '#2D2A4A'] },
+    CA: { name: 'Canada', emoji: '🇨🇦', colors: ['#FF0000', '#FFFFFF', '#FF0000'] },
+    EG: { name: 'Égypte', emoji: '🇪🇬', colors: ['#C8102E', '#FFFFFF', '#000000'] },
+    AE: { name: 'Émirats Arabes Unis', emoji: '🇦🇪', colors: ['#00732F', '#FFFFFF', '#000000', '#FF0000'] },
+    SN: { name: 'Sénégal', emoji: '🇸🇳', colors: ['#00853F', '#FDEF42', '#E31B23'] },
+    CI: { name: "Côte d'Ivoire", emoji: '🇨🇮', colors: ['#F77F00', '#FFFFFF', '#009E60'] },
+    MX: { name: 'Mexique', emoji: '🇲🇽', colors: ['#006847', '#FFFFFF', '#CE1126'] },
+    VN: { name: 'Vietnam', emoji: '🇻🇳', colors: ['#DA251D', '#FFFF00'] },
+    IN: { name: 'Inde', emoji: '🇮🇳', colors: ['#FF9933', '#FFFFFF', '#128807'] },
+    IE: { name: 'Irlande', emoji: '🇮🇪', colors: ['#169B62', '#FFFFFF', '#FF883E'] },
+    HR: { name: 'Croatie', emoji: '🇭🇷', colors: ['#FF0000', '#FFFFFF', '#171796'] },
+    AT: { name: 'Autriche', emoji: '🇦🇹', colors: ['#ED2939', '#FFFFFF', '#ED2939'] },
+    SE: { name: 'Suède', emoji: '🇸🇪', colors: ['#006AA7', '#FECC00'] },
+    NO: { name: 'Norvège', emoji: '🇳🇴', colors: ['#BA0C2F', '#FFFFFF', '#00205B'] },
+    DK: { name: 'Danemark', emoji: '🇩🇰', colors: ['#C60C30', '#FFFFFF'] },
+    IS: { name: 'Islande', emoji: '🇮🇸', colors: ['#02529C', '#FFFFFF', '#DC1E35'] },
+    AU: { name: 'Australie', emoji: '🇦🇺', colors: ['#00008B', '#FF0000', '#FFFFFF'] },
+};
+
+function colorsToStripeCss(colors: string[]): string {
+    if (!colors || colors.length === 0) return 'linear-gradient(90deg, #D97706, #3B82F6)';
+    if (colors.length === 1) return colors[0];
+    const step = 100 / colors.length;
+    const stops = colors.map((col, idx) => {
+        const start = (idx * step).toFixed(1);
+        const end = ((idx + 1) * step).toFixed(1);
+        return `${col} ${start}%, ${col} ${end}%`;
+    });
+    return `linear-gradient(90deg, ${stops.join(', ')})`;
+}
+
+interface StoryCountryTheme {
+    stripeCss: string;
+    primaryColor: string;
+    emojis: string;
+    countryLabel: string;
+    hasCountries: boolean;
+}
+
+function getStoryCountriesTheme(story: GeneratedStory): StoryCountryTheme {
+    const rawCountryNames = story.instants
+        .map(i => i.location ? getCountry(i.location) : '')
+        .filter(Boolean);
+
+    const uniqueNames = Array.from(new Set(rawCountryNames)) as string[];
+
+    const foundCountries: { code: string; name: string; emoji: string; colors: string[] }[] = [];
+
+    for (const name of uniqueNames) {
+        const assets = getDestinationAssets(name);
+        const code = assets.countryCode?.toUpperCase();
+        if (code && COUNTRY_FLAGS[code]) {
+            foundCountries.push({
+                code,
+                name: COUNTRY_FLAGS[code].name || assets.countryName,
+                emoji: COUNTRY_FLAGS[code].emoji || assets.flagEmoji,
+                colors: COUNTRY_FLAGS[code].colors,
+            });
+        } else if (code) {
+            foundCountries.push({
+                code,
+                name: assets.countryName || name,
+                emoji: assets.flagEmoji || '🌍',
+                colors: ['#D97706', '#2563EB'],
+            });
+        }
+    }
+
+    if (foundCountries.length === 0) {
+        return {
+            stripeCss: 'linear-gradient(90deg, #D97706 0%, #F59E0B 50%, #3B82F6 100%)',
+            primaryColor: '#D97706',
+            emojis: '🌍',
+            countryLabel: 'Voyage',
+            hasCountries: false,
+        };
+    }
+
+    const allColors = foundCountries.flatMap(c => c.colors);
+    return {
+        stripeCss: colorsToStripeCss(allColors),
+        primaryColor: foundCountries[0].colors[0] || '#D97706',
+        emojis: foundCountries.map(c => c.emoji).join(' '),
+        countryLabel: foundCountries.map(c => c.name).join(' • '),
+        hasCountries: true,
+    };
+}
+
 const cleanTitle = (raw: string) => {
     return raw.replace(/^#+\s*/, '').trim();
+};
+
+const isDateString = (str: string): boolean => {
+    if (!str) return false;
+    const clean = str.trim().toLowerCase();
+    if (/^du\s+\d+/i.test(clean)) return true;
+    if (/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+/i.test(clean)) return true;
+    if (/^\d{1,2}\s+(janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc|\d{1,2})/i.test(clean)) return true;
+    if (/^\d{4}-\d{2}-\d{2}/.test(clean)) return true;
+    return false;
 };
 
 const getReadingTime = (text: string) => {
     const words = text.trim().split(/\s+/).length;
     const minutes = Math.max(1, Math.round(words / 160));
-    return `${minutes} min de lecture`;
+    return `${minutes} min`;
 };
 
 const formatStoryDate = (dateStr: string) => {
@@ -94,6 +215,88 @@ const formatStoryDate = (dateStr: string) => {
     } catch {
         return dateStr;
     }
+};
+
+/**
+ * Animated photo slideshow & reel inside the folded banner
+ */
+const BannerPhotosDefilantes = ({
+    photos,
+    onPhotoClick,
+}: {
+    photos: string[];
+    onPhotoClick: (photo: string) => void;
+}) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        if (photos.length <= 1) return;
+        const timer = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % photos.length);
+        }, 2500);
+        return () => clearInterval(timer);
+    }, [photos.length]);
+
+    if (photos.length === 0) return null;
+
+    return (
+        <div
+            className="flex items-center gap-2 shrink-0"
+            onClick={(e) => {
+                // Clicking directly on photo opens lightbox without toggling accordion
+                e.stopPropagation();
+                onPhotoClick(photos[currentIndex]);
+            }}
+        >
+            {/* Animated crossfading photo window */}
+            <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden border border-border/70 shadow-md bg-muted">
+                {photos.map((photo, idx) => (
+                    <div
+                        key={idx}
+                        className={cn(
+                            "absolute inset-0 transition-opacity duration-700 ease-in-out",
+                            idx === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                        )}
+                    >
+                        <Image src={photo} alt="" fill className="object-cover" />
+                    </div>
+                ))}
+
+                {/* Subtle photo count pill */}
+                {photos.length > 1 && (
+                    <div className="absolute bottom-1 right-1 z-20 px-1 py-0.5 rounded bg-black/65 backdrop-blur-sm text-[9px] font-medium text-white leading-none">
+                        {currentIndex + 1}/{photos.length}
+                    </div>
+                )}
+            </div>
+
+            {/* Mini horizontal strip (shows the roll of memories) */}
+            {photos.length > 1 && (
+                <div className="hidden sm:flex items-center gap-1.5 overflow-hidden max-w-[120px] opacity-75 hover:opacity-100 transition-opacity">
+                    {photos.slice(0, 3).map((p, i) => (
+                        <div
+                            key={i}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPhotoClick(p);
+                            }}
+                            className={cn(
+                                "relative h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-border/60 shadow-sm cursor-pointer transition-all",
+                                i === currentIndex ? "ring-2 ring-primary scale-105" : "opacity-70 hover:opacity-100"
+                            )}
+                        >
+                            <Image src={p} alt="" fill className="object-cover" />
+                        </div>
+                    ))}
+                    {photos.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground font-semibold shrink-0">
+                            +{photos.length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 };
 
 const StoryReader = ({ text }: { text: string }) => {
@@ -148,6 +351,8 @@ interface StoryDisplayProps {
     story: GeneratedStory;
     isSpeaking: boolean;
     onToggleSpeech: () => void;
+    onOpenVoiceSettings: () => void;
+    currentVoiceLabel: string;
     onCopy: () => void;
     onShare: () => void;
     onEdit: () => void;
@@ -160,6 +365,8 @@ const StoryDisplay = ({
     story,
     isSpeaking,
     onToggleSpeech,
+    onOpenVoiceSettings,
+    currentVoiceLabel,
     onCopy,
     onShare,
     onEdit,
@@ -236,7 +443,7 @@ const StoryDisplay = ({
 
             {/* Interactive Audio & Actions Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 backdrop-blur-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <Button
                         size="sm"
                         variant={isSpeaking ? "default" : "outline"}
@@ -261,12 +468,24 @@ const StoryDisplay = ({
                         )}
                     </Button>
 
+                    {/* Change Voice Button */}
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onOpenVoiceSettings}
+                        className="rounded-full text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-2.5 border border-border/50"
+                        title="Modifier la voix ou le rythme de lecture"
+                    >
+                        <Sliders className="h-3.5 w-3.5 mr-1.5 text-amber-600 dark:text-amber-400" />
+                        <span className="truncate max-w-[110px] sm:max-w-[140px]">{currentVoiceLabel || "Voix"}</span>
+                    </Button>
+
                     {isSpeaking && (
                         <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300 font-medium ml-1">
                             <span className="inline-block w-1.5 h-3 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
                             <span className="inline-block w-1.5 h-4 bg-amber-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
                             <span className="inline-block w-1.5 h-3 bg-amber-500 rounded-full animate-bounce" />
-                            <span className="ml-1 text-[11px] hidden sm:inline">Conteur audio actif</span>
+                            <span className="ml-1 text-[11px] hidden sm:inline">Conteur actif</span>
                         </div>
                     )}
                 </div>
@@ -336,9 +555,7 @@ const StoryDisplay = ({
 
             {/* Carnet de Voyage Paper View */}
             <div className="relative rounded-2xl p-5 sm:p-8 bg-gradient-to-br from-amber-50/70 via-background to-orange-50/30 dark:from-zinc-900/80 dark:via-zinc-900/40 dark:to-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
-                {/* Decorative bookmark ribbon effect */}
                 <div className="absolute top-0 right-8 w-6 h-8 bg-amber-500/80 rounded-b-sm shadow-sm" />
-
                 <StoryReader text={story.story} />
             </div>
 
@@ -419,7 +636,10 @@ export default function StoryPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState<GeneratedStory | null>(null);
     const [editText, setEditText] = useState("");
-    const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>();
+
+    // Stories folded/collapsed by default
+    const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
+
     const [userProfile, setUserProfile] = useState<Omit<ProfileData, 'id'> | null>(null);
     const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
     const [manualCompanionType, setManualCompanionType] = useState<string>("");
@@ -429,6 +649,60 @@ export default function StoryPage() {
     const [copiedStoryId, setCopiedStoryId] = useState<string | null>(null);
     const [selectedLightboxPhoto, setSelectedLightboxPhoto] = useState<string | null>(null);
 
+    // Voice customisation state
+    const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+    const [speechRate, setSpeechRate] = useState<number>(0.95);
+    const [speechPitch, setSpeechPitch] = useState<number>(1.0);
+    const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
+    const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
+
+    // Load available speech synthesis voices
+    useEffect(() => {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+        const updateVoices = () => {
+            const all = window.speechSynthesis.getVoices();
+            if (all.length === 0) return;
+
+            // Prioritize French voices, then keep others
+            const french = all.filter(v => v.lang.toLowerCase().startsWith('fr'));
+            const others = all.filter(v => !v.lang.toLowerCase().startsWith('fr'));
+            const sorted = [...french, ...others];
+            setAvailableVoices(sorted);
+
+            const savedVoice = localStorage.getItem('momenty_story_voice');
+            const savedRate = localStorage.getItem('momenty_story_rate');
+            const savedPitch = localStorage.getItem('momenty_story_pitch');
+
+            if (savedRate) setSpeechRate(Number(savedRate));
+            if (savedPitch) setSpeechPitch(Number(savedPitch));
+
+            if (savedVoice && all.some(v => v.voiceURI === savedVoice)) {
+                setSelectedVoiceURI(savedVoice);
+            } else if (french.length > 0) {
+                // Preferred high quality voice if available
+                const best = french.find(v =>
+                    v.name.toLowerCase().includes('natural') ||
+                    v.name.toLowerCase().includes('google') ||
+                    v.name.toLowerCase().includes('amelie') ||
+                    v.name.toLowerCase().includes('thomas') ||
+                    v.name.toLowerCase().includes('julie')
+                );
+                setSelectedVoiceURI((best || french[0]).voiceURI);
+            } else if (all.length > 0) {
+                setSelectedVoiceURI(all[0].voiceURI);
+            }
+        };
+
+        updateVoices();
+        window.speechSynthesis.onvoiceschanged = updateVoices;
+
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+        };
+    }, []);
+
     // Stop audio on unmount
     useEffect(() => {
         return () => {
@@ -437,6 +711,33 @@ export default function StoryPage() {
             }
         };
     }, []);
+
+    const currentVoiceObject = useMemo(() => {
+        return availableVoices.find(v => v.voiceURI === selectedVoiceURI) || null;
+    }, [availableVoices, selectedVoiceURI]);
+
+    const currentVoiceLabel = useMemo(() => {
+        if (!currentVoiceObject) return "Voix par défaut";
+        // Clean display name
+        return currentVoiceObject.name.replace(/(Microsoft|Google|Apple)\s*/gi, '').trim() || currentVoiceObject.name;
+    }, [currentVoiceObject]);
+
+    const handleTestVoice = () => {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+
+        const testUtterance = new SpeechSynthesisUtterance("Bonjour ! Voici un aperçu de ma voix pour raconter vos plus beaux souvenirs de voyage.");
+        testUtterance.lang = currentVoiceObject?.lang || 'fr-FR';
+        if (currentVoiceObject) testUtterance.voice = currentVoiceObject;
+        testUtterance.rate = speechRate;
+        testUtterance.pitch = speechPitch;
+
+        setIsTestingVoice(true);
+        testUtterance.onend = () => setIsTestingVoice(false);
+        testUtterance.onerror = () => setIsTestingVoice(false);
+
+        window.speechSynthesis.speak(testUtterance);
+    };
 
     const toggleStorySpeech = (story: GeneratedStory) => {
         if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -461,9 +762,10 @@ export default function StoryPage() {
             .trim();
 
         const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.0;
+        utterance.lang = currentVoiceObject?.lang || 'fr-FR';
+        if (currentVoiceObject) utterance.voice = currentVoiceObject;
+        utterance.rate = speechRate;
+        utterance.pitch = speechPitch;
 
         utterance.onend = () => setSpeakingStoryId(null);
         utterance.onerror = () => setSpeakingStoryId(null);
@@ -508,9 +810,7 @@ export default function StoryPage() {
             return { ...story, instants: storyInstants };
         });
         setStories(hydratedStories);
-        if (hydratedStories.length > 0 && !openAccordionItem) {
-            setOpenAccordionItem(hydratedStories[0].id);
-        }
+        // Do NOT auto-open stories; they stay folded by default
     };
 
     useEffect(() => {
@@ -611,6 +911,7 @@ export default function StoryPage() {
             const fullNewStory = { ...newStory, instants: allInstantsForStory };
 
             setStories(prev => [fullNewStory, ...prev.filter(s => s.id !== storyId)]);
+            // Open the freshly generated story
             setOpenAccordionItem(newStory.id);
             setManualCompanionType("");
             setManualCompanionName("");
@@ -874,7 +1175,7 @@ export default function StoryPage() {
                 </CardContent>
             </Card>
 
-            {/* Stories Collection Section (The core request) */}
+            {/* Stories Collection Section (Folded by default) */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
@@ -897,45 +1198,88 @@ export default function StoryPage() {
                         className="w-full space-y-4"
                     >
                         {stories.map(story => {
-                            const firstPhoto = story.instants.flatMap(i => i.photos || []).find(Boolean);
+                            const storyPhotos = Array.from(
+                                new Set(story.instants.flatMap(i => i.photos || []).filter(Boolean) as string[])
+                            );
                             const readingTime = getReadingTime(story.story);
+                            const flagTheme = getStoryCountriesTheme(story);
+                            const titleIsDate = isDateString(story.title);
 
                             return (
                                 <AccordionItem
                                     key={story.id}
                                     value={story.id}
-                                    className="border border-border/70 rounded-2xl overflow-hidden shadow-sm bg-card hover:border-primary/40 transition-colors"
+                                    style={{
+                                        borderLeft: `4px solid ${flagTheme.primaryColor}`,
+                                    }}
+                                    className="relative border border-border/70 rounded-2xl overflow-hidden shadow-sm bg-card hover:border-primary/40 transition-all duration-300"
                                 >
-                                    <AccordionTrigger className="p-4 hover:no-underline w-full text-left [&[data-state=open]>div>.story-preview-thumb]:opacity-0">
-                                        <div className="flex items-center justify-between w-full pr-3 gap-3">
-                                            <div className="space-y-1 min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                                        {formatStoryDate(story.date)}
-                                                    </span>
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                        • {readingTime}
+                                    {/* Top Flag Stripe Ribbon for visited country/countries */}
+                                    <div
+                                        className="h-1.5 w-full shrink-0"
+                                        style={{
+                                            background: flagTheme.stripeCss,
+                                        }}
+                                    />
+
+                                    {/* Folded Banner Trigger */}
+                                    <AccordionTrigger className="p-3.5 sm:p-4 hover:no-underline w-full text-left">
+                                        <div className="flex items-center justify-between w-full pr-2 gap-3">
+                                            {/* Left details */}
+                                            <div className="space-y-1.5 min-w-0 flex-1">
+                                                {/* Meta Pills: Country Flag & Reading Time (NO DUPLICATE DATE) */}
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {flagTheme.hasCountries && (
+                                                        <span
+                                                            className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 border shadow-xs"
+                                                            style={{
+                                                                borderColor: `${flagTheme.primaryColor}40`,
+                                                                backgroundColor: `${flagTheme.primaryColor}15`,
+                                                                color: flagTheme.primaryColor,
+                                                            }}
+                                                        >
+                                                            <span>{flagTheme.emojis}</span>
+                                                            <span className="truncate max-w-[140px] sm:max-w-[200px]">
+                                                                {flagTheme.countryLabel}
+                                                            </span>
+                                                        </span>
+                                                    )}
+
+                                                    {/* Show date pill ONLY if the title itself isn't already a date */}
+                                                    {!titleIsDate && (
+                                                        <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+                                                            {formatStoryDate(story.date)}
+                                                        </span>
+                                                    )}
+
+                                                    <span className="text-[11px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {readingTime}
                                                     </span>
                                                 </div>
-                                                <h3 className="font-bold text-base sm:text-lg text-foreground truncate">
+
+                                                {/* Main Title */}
+                                                <h3 className="font-bold text-base sm:text-lg text-foreground truncate pr-1">
                                                     {cleanTitle(story.title)}
                                                 </h3>
                                             </div>
 
-                                            {/* Small thumbnail for collapsed view */}
-                                            {firstPhoto && (
-                                                <div className="story-preview-thumb relative h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-border/60 shadow-sm transition-opacity">
-                                                    <Image src={firstPhoto} alt="" fill className="object-cover" />
-                                                </div>
-                                            )}
+                                            {/* Photo scrolling / slideshow inside folded banner */}
+                                            <BannerPhotosDefilantes
+                                                photos={storyPhotos}
+                                                onPhotoClick={(photo) => setSelectedLightboxPhoto(photo)}
+                                            />
                                         </div>
                                     </AccordionTrigger>
 
+                                    {/* Unfolded Content (Carnet de voyage) */}
                                     <AccordionContent className="pt-0 pb-6 px-4 sm:px-6">
                                         <StoryDisplay
                                             story={story}
                                             isSpeaking={speakingStoryId === story.id}
                                             onToggleSpeech={() => toggleStorySpeech(story)}
+                                            onOpenVoiceSettings={() => setIsVoiceDialogOpen(true)}
+                                            currentVoiceLabel={currentVoiceLabel}
                                             onCopy={() => handleCopyStory(story)}
                                             onShare={() => handleShareStory(story)}
                                             onEdit={() => handleEditStory(story)}
@@ -962,6 +1306,133 @@ export default function StoryPage() {
                     </div>
                 )}
             </div>
+
+            {/* Voice Settings Dialog */}
+            <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-lg">
+                            <Sliders className="h-5 w-5 text-primary" />
+                            Paramètres de la Voix de Lecture
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        {/* Voice selection */}
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                                Voix du conteur
+                            </Label>
+                            {availableVoices.length > 0 ? (
+                                <Select
+                                    value={selectedVoiceURI}
+                                    onValueChange={(val) => {
+                                        setSelectedVoiceURI(val);
+                                        localStorage.setItem('momenty_story_voice', val);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-10 text-xs sm:text-sm">
+                                        <SelectValue placeholder="Choisir une voix..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-64">
+                                        {availableVoices.map((voice) => {
+                                            const isFr = voice.lang.toLowerCase().startsWith('fr');
+                                            return (
+                                                <SelectItem key={voice.voiceURI} value={voice.voiceURI} className="text-xs">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span>{isFr ? "🇫🇷" : "🌐"}</span>
+                                                        <span className="font-medium">{voice.name}</span>
+                                                        <span className="text-muted-foreground text-[10px]">({voice.lang})</span>
+                                                    </span>
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <p className="text-xs text-muted-foreground italic">
+                                    Chargement des voix de votre système...
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Speech Rate Slider */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-semibold">
+                                <span className="text-muted-foreground uppercase tracking-wider">Vitesse de lecture</span>
+                                <span className="text-primary font-bold">{speechRate.toFixed(2)}x</span>
+                            </div>
+                            <Slider
+                                value={[speechRate]}
+                                min={0.7}
+                                max={1.3}
+                                step={0.05}
+                                onValueChange={([val]) => {
+                                    setSpeechRate(val);
+                                    localStorage.setItem('momenty_story_rate', String(val));
+                                }}
+                            />
+                            <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <span>Posé (0.7x)</span>
+                                <span>Standard (1.0x)</span>
+                                <span>Rapide (1.3x)</span>
+                            </div>
+                        </div>
+
+                        {/* Speech Pitch Slider */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-semibold">
+                                <span className="text-muted-foreground uppercase tracking-wider">Tonalité (Pitch)</span>
+                                <span className="text-primary font-bold">{speechPitch.toFixed(2)}</span>
+                            </div>
+                            <Slider
+                                value={[speechPitch]}
+                                min={0.8}
+                                max={1.2}
+                                step={0.05}
+                                onValueChange={([val]) => {
+                                    setSpeechPitch(val);
+                                    localStorage.setItem('momenty_story_pitch', String(val));
+                                }}
+                            />
+                            <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <span>Plus grave</span>
+                                <span>Naturel</span>
+                                <span>Plus aigu</span>
+                            </div>
+                        </div>
+
+                        {/* Preview Audio Button */}
+                        <div className="pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleTestVoice}
+                                disabled={isTestingVoice}
+                                className="w-full text-xs font-medium border-amber-500/40 hover:bg-amber-500/10"
+                            >
+                                {isTestingVoice ? (
+                                    <>
+                                        <Volume2 className="h-4 w-4 mr-2 animate-bounce text-amber-600" />
+                                        <span>Écoute en cours...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="h-4 w-4 mr-2 text-amber-600" />
+                                        <span>Tester cette voix</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button onClick={() => setIsVoiceDialogOpen(false)} className="w-full sm:w-auto">
+                            Valider
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Photo Lightbox Dialog */}
             <Dialog open={!!selectedLightboxPhoto} onOpenChange={(open) => !open && setSelectedLightboxPhoto(null)}>
