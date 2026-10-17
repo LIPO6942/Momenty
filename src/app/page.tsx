@@ -286,31 +286,35 @@ function TimelineContent() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
-        <div className="py-16 space-y-4 text-center">
-          <Skeleton className="h-10 w-3/4 mx-auto" />
-          <Skeleton className="h-6 w-1/2 mx-auto" />
+      <div className="container mx-auto max-w-2xl px-4 pt-24 sm:pt-28 pb-8 min-h-screen">
+        <div className="pt-1 pb-1 sm:pt-2 sm:pb-2 space-y-1.5 text-center">
+          <Skeleton className="h-7 sm:h-8 w-3/4 max-w-xs sm:max-w-md mx-auto" />
+          <Skeleton className="h-4 sm:h-5 w-1/2 max-w-[220px] mx-auto" />
+        </div>
+        <div className="flex gap-2.5 sm:gap-4 mt-2 sm:mt-3 mb-4 sm:mb-6">
+          <Skeleton className="h-9 sm:h-10 w-1/2 rounded-md" />
+          <Skeleton className="h-9 sm:h-10 w-1/2 rounded-md" />
         </div>
         <div className="space-y-4">
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-14 sm:h-16 w-full rounded-xl" />
+          <Skeleton className="h-44 sm:h-48 w-full rounded-xl" />
+          <Skeleton className="h-14 sm:h-16 w-full rounded-xl" />
+          <Skeleton className="h-44 sm:h-48 w-full rounded-xl" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
-      <div className="py-16 space-y-2 text-center">
-        <h1 className="text-4xl font-bold text-primary">
+    <div className="container mx-auto max-w-2xl px-4 pt-24 sm:pt-28 pb-8 min-h-screen">
+      <div className="pt-1 pb-1 sm:pt-2 sm:pb-2 space-y-1 sm:space-y-1.5 text-center">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary tracking-tight leading-snug">
           {firstName ? `Bienvenue ${firstName} sur Momenty` : 'Bienvenue sur Momenty'}
         </h1>
-        <p className="text-muted-foreground">Le journal de vos plus beaux souvenirs.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Le journal de vos plus beaux souvenirs.</p>
       </div>
 
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-2.5 sm:gap-4 mt-2 sm:mt-3 mb-4 sm:mb-6">
         <Select
           value={String(selectedYear)}
           onValueChange={(val) => {
@@ -320,7 +324,7 @@ function TimelineContent() {
           }}
           disabled={availableFilters.years.length === 0}
         >
-          <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
+          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm bg-primary/20 border-primary/50 text-primary-foreground font-medium">
             <SelectValue placeholder="Année" />
           </SelectTrigger>
           <SelectContent>
@@ -336,7 +340,7 @@ function TimelineContent() {
           onValueChange={(val) => setSelectedMonth(Number(val))}
           disabled={selectedYear !== -1 && !availableFilters.months[selectedYear]}
         >
-          <SelectTrigger className="bg-primary/20 border-primary/50 text-primary-foreground">
+          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm bg-primary/20 border-primary/50 text-primary-foreground font-medium">
             <SelectValue placeholder="Mois" />
           </SelectTrigger>
           <SelectContent>
@@ -482,16 +486,20 @@ function TimelineContent() {
 export default function TimelinePage() {
   return (
     <Suspense fallback={
-      <div className="container mx-auto max-w-2xl px-4 py-8 min-h-screen">
-        <div className="py-16 space-y-4 text-center">
-          <Skeleton className="h-10 w-3/4 mx-auto" />
-          <Skeleton className="h-6 w-1/2 mx-auto" />
+      <div className="container mx-auto max-w-2xl px-4 pt-24 sm:pt-28 pb-8 min-h-screen">
+        <div className="pt-1 pb-1 sm:pt-2 sm:pb-2 space-y-1.5 text-center">
+          <Skeleton className="h-7 sm:h-8 w-3/4 max-w-xs sm:max-w-md mx-auto" />
+          <Skeleton className="h-4 sm:h-5 w-1/2 max-w-[220px] mx-auto" />
+        </div>
+        <div className="flex gap-2.5 sm:gap-4 mt-2 sm:mt-3 mb-4 sm:mb-6">
+          <Skeleton className="h-9 sm:h-10 w-1/2 rounded-md" />
+          <Skeleton className="h-9 sm:h-10 w-1/2 rounded-md" />
         </div>
         <div className="space-y-4">
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-14 sm:h-16 w-full rounded-xl" />
+          <Skeleton className="h-44 sm:h-48 w-full rounded-xl" />
+          <Skeleton className="h-14 sm:h-16 w-full rounded-xl" />
+          <Skeleton className="h-44 sm:h-48 w-full rounded-xl" />
         </div>
       </div>
     }>
