@@ -34,6 +34,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/android-chrome-192x192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/android-chrome-512x512.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Momenty" />
       </head>
       <body
         className={cn(
